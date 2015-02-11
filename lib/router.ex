@@ -111,8 +111,12 @@ defmodule Mazurka.Protocols.HTTP.Router do
   defp format_path(path), do: path
 
   def __handle__(mod, _params, conn) do
-    {:ok, body} = apply(mod, :hyper_json_action, [&resolve/7, conn])
-    Plug.Conn.send_resp(conn, 200, body)
+    ## TODO accept multiple formats
+    accept = Plug.Conn.get_req_header(conn, "accept")
+    #handler = choose_mediatype(accept, apply(mod, :supported_actions, []))
+    {:ok, body, conn} = apply(mod, :hyper_json_action, [&resolve/7, conn])
+    conn = Plug.Conn.put_resp_header(conn, "content-type", "application/json")
+    Plug.Conn.send_resp(conn, conn.status || 200, body)
   end
 
   defp resolve(:__internal, :resolve, ["params", param], conn, _, _, _) do
@@ -121,8 +125,47 @@ defmodule Mazurka.Protocols.HTTP.Router do
     normalized = if val == nil, do: :undefined, else: URI.decode(val)
     {:ok, normalized}
   end
-  defp resolve(_, _, _, req, _, _, _) do
-    {:ok, :false}
+  defp resolve(:__internal, :resolve, ["req", "host"], conn, _, _, _) do
+    {:ok, conn.host}
+  end
+  defp resolve(:__internal, :resolve, ["req", "method"], conn, _, _, _) do
+    {:ok, conn.method}
+  end
+  defp resolve(:__internal, :resolve, ["req", "port"], conn, _, _, _) do
+    {:ok, conn.port}
+  end
+  defp resolve(:__internal, :resolve, ["req", "peer"], conn, _, _, _) do
+    {:ok, conn.peer}
+  end
+  defp resolve(:__internal, :resolve, ["req", "remote_ip"], conn, _, _, _) do
+    {:ok, conn.remote_ip}
+  end
+  defp resolve(:__internal, :resolve, ["req", "headers"], conn, _, _, _) do
+    {:ok, conn.headers}
+  end
+  defp resolve(:__internal, :resolve, ["req", "scheme"], conn, _, _, _) do
+    {:ok, conn.scheme}
+  end
+  defp resolve(:__internal, :resolve, ["req", "query_string"], conn, _, _, _) do
+    {:ok, conn.query_string}
+  end
+  defp resolve(:res, :status, [code], conn, _, _, _) do
+    {:ok, :ok, Plug.Conn.put_status(conn, code)}
+  end
+  defp resolve(:res, :set, [key, value], conn, _, _, _) do
+    {:ok, :ok, Plug.Conn.put_resp_header(conn, key, value)}
+  end
+  defp resolve(:res, :redirect, [%{"href" => url} | rest], conn, _, _, _) do
+    code = case rest do
+      [] -> 302
+      [status] -> status
+    end
+    conn = Plug.Conn.put_resp_header(conn, "location", url)
+           |> Plug.Conn.put_status(code)
+    {:ok, :ok, conn}
+  end
+  defp resolve(mod, fun, args, conn, sender, ref, attrs) do
+    Api.Fns.resolve(mod, fun, args, conn, sender, ref, attrs)
   end
 
   defp compile(method, expr, options, contents) do

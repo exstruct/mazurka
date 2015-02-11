@@ -52,6 +52,33 @@ defmodule Mazurka.Compiler do
       defmodule unquote(ast[:name]) do
         @moduledoc unquote(ast[:docs])
 
+        @doc """
+        accepts should be a list of acceptable types
+
+            []
+
+            [{\"text\", \"html\", %{}} | _]
+
+            [{\"*\", \"json\", %{}} | _]
+
+            [{\"*\", \"*\", %{:profile => \"vendor.org.type\"}} | _]
+        """
+        def handle([], _, _) do
+          {:error, :unacceptable}
+        end
+        def handle([{type, subtype, params} | accepts], resolve, context) do
+          case do_handle(type, subtype, params, resolve, context) do
+            {:error, :unacceptable} -> handle(accepts, resolve, context)
+            res -> res
+          end
+        end
+
+#        unquote(gen_do_handle(ast[:children], []))
+
+        defp do_handle(_, _, _, _, _) do
+          {:error, :unacceptable}
+        end
+
         def supported_actions do
           unquote(gen_supported_types_map(ast[:children], :action, 2))
         end
@@ -63,6 +90,43 @@ defmodule Mazurka.Compiler do
         unquote(Enum.map(ast[:children], &gen_child/1))
       end
     end
+  end
+
+  def gen_do_handle([], acc) do
+    acc
+  end
+  def gen_do_handle([child | children], []) do
+    [type | rest] = child[:types]
+    name = gen_name(child, :action)
+    {:ok, [res]} = expand_type(type)
+    child = Map.put(child, :types, rest)
+    gen_do_handle([child | children], [gen_do_handle_type(name, res, :first)])
+  end
+  def gen_do_handle([child | children], acc) do
+    acc = acc ++ Enum.map(child[:types], fn(type) ->
+      name = gen_name(child, :action)
+      {:ok, [res]} = expand_type(type)
+      gen_do_handle_type(name, res, :not_first)
+    end)
+    gen_do_handle(children, acc)
+  end
+
+  def gen_do_handle_type(name, type, :first) do
+    prev = gen_do_handle_type(name, type, :not_first)
+    [quote do
+      defp do_handle("*", "*", %{}, resolve, context) do
+        unquote(name)(resolve, context)
+      end
+    end | prev]
+  end
+  def gen_do_handle_type(name, {type, subtype, params}, _) do
+    [
+      quote do
+        defp do_handle(unquote(type), unquote(subtype), unquote(Macro.escape(params)), resolve, context) do
+          unquote(name)(resolve, context)
+        end
+      end
+    ]
   end
 
   def gen_supported_types_map(children, name, arity) do
@@ -96,8 +160,8 @@ defmodule Mazurka.Compiler do
     {:ok, exprs} = :expr.compile(body)
     quote do
       case :expr.execute(unquote(Macro.escape(exprs)), resolve, context) do
-        {:ok, out, _state} ->
-          {:ok, unquote(mod).serialize(out)}
+        {:ok, out, state} ->
+          {:ok, unquote(mod).serialize(out), :expr.context(state)}
         error ->
           error
       end
@@ -106,7 +170,7 @@ defmodule Mazurka.Compiler do
 
   def compile_body(%{:parser => parser} = section, _handler) do
     mod = load_parser(parser || "")
-    if !mod, do: raise parser <> " could not be loaded"
+    if !mod, do: raise parser <> " mediatype could not be loaded"
     case apply(mod, :parse, [section[:code], %{}]) do
       {:ok, ast} ->
         {ast, mod}
