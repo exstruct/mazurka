@@ -112,11 +112,15 @@ defmodule Mazurka.Protocols.HTTP.Router do
 
   def __handle__(mod, _params, conn) do
     ## TODO accept multiple formats
-    accept = Plug.Conn.get_req_header(conn, "accept")
+    # accept = Plug.Conn.get_req_header(conn, "accept")
     #handler = choose_mediatype(accept, apply(mod, :supported_actions, []))
-    {:ok, body, conn} = apply(mod, :hyper_json_action, [&resolve/7, conn])
-    conn = Plug.Conn.put_resp_header(conn, "content-type", "application/json")
-    Plug.Conn.send_resp(conn, conn.status || 200, body)
+    case apply(mod, :hyper_json_action, [&resolve/7, conn]) do
+      {:ok, body, conn} ->
+        conn = Plug.Conn.put_resp_header(conn, "content-type", "application/json")
+        Plug.Conn.send_resp(conn, conn.status || 200, body)
+      {:error, :not_found, _} ->
+        Plug.Conn.send_resp(conn, 404, "{\"error\": {\"message\": \"not found!\"}}")
+    end
   end
 
   defp resolve(:__internal, :resolve, ["params", param], conn, _, _, _) do
@@ -164,7 +168,12 @@ defmodule Mazurka.Protocols.HTTP.Router do
            |> Plug.Conn.put_status(code)
     {:ok, :ok, conn}
   end
+  defp resolve(:res, :invalidates, [%{"href" => url}], conn, _, _, _) do
+    conn = Plug.Conn.put_resp_header(conn, "link", "<" <> url <> ">; rel=\"invalidates\"")
+    {:ok, :ok, conn}
+  end
   defp resolve(mod, fun, args, conn, sender, ref, attrs) do
+    ## TODO pull from config
     Api.Fns.resolve(mod, fun, args, conn, sender, ref, attrs)
   end
 
