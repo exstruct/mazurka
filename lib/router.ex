@@ -14,7 +14,7 @@ defmodule Mazurka.Protocols.HTTP.Router do
       defp match(conn, _opts) do
         {mod, params} = do_match(conn.method, conn.path_info, conn.host)
         Plug.Conn.put_private(conn, :mazurka_route, mod)
-         |> Plug.Conn.put_private(:mazurka_params, params) 
+         |> Plug.Conn.put_private(:mazurka_params, params)
       end
 
       def resolve(mod) do
@@ -169,7 +169,8 @@ defmodule Mazurka.Protocols.HTTP.Router do
     {:ok, :ok, conn}
   end
   defp resolve(:res, :invalidates, [%{"href" => url}], conn, _, _, _) do
-    conn = Plug.Conn.put_resp_header(conn, "link", "<" <> url <> ">; rel=\"invalidates\"")
+    conn = Plug.Conn.put_resp_header(conn, "link", "<" <> url <> ">; rel=\"invalidates\"") |>
+      Plug.Conn.put_resp_header("x-invalidates", url)
     {:ok, :ok, conn}
   end
   defp resolve(mod, fun, args, conn, sender, ref, attrs) do
