@@ -159,6 +159,20 @@ defmodule Mazurka.Protocols.HTTP.Router do
   defp resolve(:res, :set, [key, value], conn, _, _, _) do
     {:ok, :ok, Plug.Conn.put_resp_header(conn, key, value)}
   end
+  defp resolve(:res, :cache, [params], conn, _, _, _) when is_map(params) do
+    value = Enum.map_join(params, ", ", fn
+      ({k, v}) when is_boolean(v) ->
+        k
+      ({_k, v}) when v == nil or v == :undefined ->
+        ""
+      ({k, v}) ->
+        [k, "=", to_string(v)]
+    end)
+    {:ok, true, Plug.Conn.put_resp_header(conn, "cache-control", value)}
+  end
+  defp resolve(:res, :cache, [params], conn, _, _, _) when is_binary(params) do
+    {:ok, true, Plug.Conn.put_resp_header(conn, "cache-control", params)}
+  end
   defp resolve(:res, :redirect, [%{"href" => url} | rest], conn, _, _, _) do
     code = case rest do
       [] -> 302
