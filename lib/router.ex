@@ -116,8 +116,9 @@ defmodule Mazurka.Protocols.HTTP.Router do
     #handler = choose_mediatype(accept, apply(mod, :supported_actions, []))
     case apply(mod, :hyper_json_action, [&resolve/7, conn]) do
       {:ok, body, conn} ->
-        conn = Plug.Conn.put_resp_header(conn, "content-type", "application/json")
-        Plug.Conn.send_resp(conn, conn.status || 200, body)
+        conn |>
+          put_resp_header("content-type", "application/json")
+          Plug.Conn.send_resp(conn.status || 200, body)
       {:error, :not_found, _} ->
         Plug.Conn.send_resp(conn, 404, "{\"error\": {\"message\": \"not found!\"}}")
     end
@@ -156,8 +157,8 @@ defmodule Mazurka.Protocols.HTTP.Router do
   defp resolve(:res, :status, [code], conn, _, _, _) do
     {:ok, :ok, Plug.Conn.put_status(conn, code)}
   end
-  defp resolve(:res, :set, [key, value], %Plug.Conn{resp_headers: headers} = conn, _, _, _) do
-    {:ok, :ok, %{conn | resp_headers: [{key, value} | headers]}}
+  defp resolve(:res, :set, [key, value], conn, _, _, _) do
+    {:ok, :ok, put_resp_header(conn, key, value)}
     # TODO open a pull request to plug to allow setting more than one header
     # {:ok, :ok, Plug.Conn.put_resp_header(conn, key, value)}
   end
@@ -170,28 +171,33 @@ defmodule Mazurka.Protocols.HTTP.Router do
       ({k, v}) ->
         [k, "=", to_string(v)]
     end)
-    {:ok, true, Plug.Conn.put_resp_header(conn, "cache-control", value)}
+    {:ok, true, put_resp_header(conn, "cache-control", value)}
   end
   defp resolve(:res, :cache, [params], conn, _, _, _) when is_binary(params) do
-    {:ok, true, Plug.Conn.put_resp_header(conn, "cache-control", params)}
+    {:ok, true, put_resp_header(conn, "cache-control", params)}
   end
   defp resolve(:res, :redirect, [%{"href" => url} | rest], conn, _, _, _) do
     code = case rest do
       [] -> 302
       [status] -> status
     end
-    conn = Plug.Conn.put_resp_header(conn, "location", url)
+    conn = put_resp_header(conn, "location", url)
            |> Plug.Conn.put_status(code)
     {:ok, :ok, conn}
   end
   defp resolve(:res, :invalidates, [%{"href" => url}], conn, _, _, _) do
-    conn = Plug.Conn.put_resp_header(conn, "link", "<" <> url <> ">; rel=\"invalidates\"") |>
-      Plug.Conn.put_resp_header("x-invalidates", url)
+    conn = conn |>
+      put_resp_header("link", "<" <> url <> ">; rel=\"invalidates\"") |>
+      put_resp_header("x-invalidates", url)
     {:ok, :ok, conn}
   end
   defp resolve(mod, fun, args, conn, sender, ref, attrs) do
     ## TODO pull from config
     Api.Fns.resolve(mod, fun, args, conn, sender, ref, attrs)
+  end
+
+  defp put_resp_header(%Plug.Conn{resp_headers: headers} = conn, key, value) do
+    %{conn | resp_headers: [{key, value} | headers]}
   end
 
   defp compile(method, expr, options, contents) do
