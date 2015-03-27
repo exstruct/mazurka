@@ -156,8 +156,10 @@ defmodule Mazurka.Protocols.HTTP.Router do
   defp resolve(:res, :status, [code], conn, _, _, _) do
     {:ok, :ok, Plug.Conn.put_status(conn, code)}
   end
-  defp resolve(:res, :set, [key, value], conn, _, _, _) do
-    {:ok, :ok, Plug.Conn.put_resp_header(conn, key, value)}
+  defp resolve(:res, :set, [key, value], %Plug.Conn{resp_headers: headers} = conn, _, _, _) do
+    {:ok, :ok, %{conn | resp_headers: [{key, value} | headers]}}
+    # TODO open a pull request to plug to allow setting more than one header
+    # {:ok, :ok, Plug.Conn.put_resp_header(conn, key, value)}
   end
   defp resolve(:res, :cache, [params], conn, _, _, _) when is_map(params) do
     value = Enum.map_join(params, ", ", fn
