@@ -25,7 +25,8 @@ defmodule Mazurka.Mixfile do
   #
   # Type `mix help deps` for more examples and options
   defp deps do
-    [{:expr, git: "https://github.com/camshaft/expr.git"},
+    [{:plug, ">= 0.9.0"},
+     {:expr, git: "https://github.com/camshaft/expr.git"},
      {:mazurka_dsl, git: "https://github.com/mazurka/mazurka_dsl.git"},
      {:mimetype_parser, git: "https://github.com/camshaft/mimetype_parser"}]
   end

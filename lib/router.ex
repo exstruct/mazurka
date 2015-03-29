@@ -187,7 +187,6 @@ defmodule Mazurka.Protocols.HTTP.Router do
   end
   defp resolve(:res, :invalidates, [%{"href" => url}], conn, _, _, _) do
     conn = conn |>
-      put_resp_header("link", "<" <> url <> ">; rel=\"invalidates\"") |>
       put_resp_header("x-invalidates", url)
     {:ok, :ok, conn}
   end
