@@ -120,7 +120,7 @@ defmodule Mazurka.Protocols.HTTP.Router do
           put_resp_header("content-type", "application/json") |>
           Plug.Conn.send_resp(conn.status || 200, body)
       {:error, :not_found, _} ->
-        Plug.Conn.send_resp(conn, 404, "{\"error\": {\"message\": \"not found!\"}}")
+        Plug.Conn.send_resp(conn, 404, "{\"error\": {\"message\": \"not found!\", \"status\": 404}}")
     end
   end
 
