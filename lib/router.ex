@@ -146,7 +146,7 @@ defmodule Mazurka.Protocols.HTTP.Router do
     {:ok, conn.remote_ip}
   end
   defp resolve(:__internal, :resolve, ["req", "headers"], conn, _, _, _) do
-    {:ok, conn.headers}
+    {:ok, conn.req_headers}
   end
   defp resolve(:__internal, :resolve, ["req", "scheme"], conn, _, _, _) do
     {:ok, conn.scheme}
