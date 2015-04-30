@@ -1,6 +1,6 @@
 # mazurka
 
-Hypermedia API server
+hypermedia api toolkit
 
 ## Usage
 

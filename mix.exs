@@ -3,31 +3,29 @@ defmodule Mazurka.Mixfile do
 
   def project do
     [app: :mazurka,
-     version: "0.0.1",
+     version: "0.1.0",
      elixir: "~> 1.0",
+     description: "hypermedia api toolkit",
+     package: package,
      deps: deps]
   end
 
-  # Configuration for the OTP application
-  #
-  # Type `mix help compile.app` for more information
   def application do
     [applications: [:logger]]
   end
 
-  # Dependencies can be Hex packages:
-  #
-  #   {:mydep, "~> 0.3.0"}
-  #
-  # Or git/path repositories:
-  #
-  #   {:mydep, git: "https://github.com/elixir-lang/mydep.git", tag: "0.1.0"}
-  #
-  # Type `mix help deps` for more examples and options
   defp deps do
     [{:plug, ">= 0.9.0"},
-     {:expr, git: "https://github.com/camshaft/expr.git"},
-     {:mazurka_dsl, git: "https://github.com/mazurka/mazurka_dsl.git"},
+     {:etude, "~> 0.1.0"},
+     {:mazurka_mediatype, "~> 0.1.0"},
+     {:mazurka_dsl, "~> 0.1.0"},
      {:mimetype_parser, git: "https://github.com/camshaft/mimetype_parser"}]
+  end
+
+  defp package do
+    [files: ["lib", "mix.exs", "README*"],
+     contributors: ["Cameron Bytheway"],
+     licenses: ["MIT"],
+     links: %{"GitHub" => "https://github.com/mazurka/mazurka"}]
   end
 end

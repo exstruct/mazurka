@@ -49,33 +49,10 @@ defmodule Mazurka.Protocols.HTTP.Router do
   defmacro match(path, options, contents \\ []) do
     compile(nil, path, options, contents)
   end
-
-  defmacro get(path, options, contents \\ []) do
-    compile(:get, path, options, contents)
-  end
-
-  defmacro post(path, options, contents \\ []) do
-    compile(:post, path, options, contents)
-  end
-
-  defmacro put(path, options, contents \\ []) do
-    compile(:put, path, options, contents)
-  end
-
-  defmacro patch(path, options, contents \\ []) do
-    compile(:patch, path, options, contents)
-  end
-
-  defmacro delete(path, options, contents \\ []) do
-    compile(:delete, path, options, contents)
-  end
-
-  defmacro options(path, options, contents \\ []) do
-    compile(:options, path, options, contents)
-  end
-
-  defmacro head(path, options, contents \\ []) do
-    compile(:head, path, options, contents)
+  for method <- [:get, :post, :put, :patch, :delete, :options, :head] do
+    defmacro unquote(method)(path, options, contents \\ []) do
+      compile(unquote(method), path, options, contents)
+    end
   end
 
   ## TODO use forward macro from Plug.Router.forward
@@ -111,15 +88,14 @@ defmodule Mazurka.Protocols.HTTP.Router do
   defp format_path(path), do: path
 
   def __handle__(mod, _params, conn) do
-    ## TODO accept multiple formats
-    # accept = Plug.Conn.get_req_header(conn, "accept")
-    #handler = choose_mediatype(accept, apply(mod, :supported_actions, []))
-    case apply(mod, :hyper_json_action, [&resolve/7, conn]) do
-      {:ok, body, conn} ->
+    accepts = Plug.Conn.get_req_header(conn, "accept") |> Mazurka.Protocols.HTTP.AcceptHeader.handle()
+    case apply(mod, :action, [conn, &resolve/7, accepts]) do
+      {:ok, body, conn, content_type} ->
         conn |>
-          put_resp_header("content-type", "application/json") |>
+          put_resp_header("content-type", content_type) |>
           Plug.Conn.send_resp(conn.status || 200, body)
       {:error, :not_found, _} ->
+        ## TODO hand off to the error handler
         Plug.Conn.send_resp(conn, 404, "{\"error\": {\"message\": \"not found!\", \"status\": 404}}")
     end
   end
