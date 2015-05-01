@@ -19,7 +19,7 @@ defmodule Mazurka.Mixfile do
      {:etude, "~> 0.1.0"},
      {:mazurka_mediatype, "~> 0.1.0"},
      {:mazurka_dsl, "~> 0.1.0"},
-     {:mimetype_parser, git: "https://github.com/camshaft/mimetype_parser"}]
+     {:mimetype_parser, "~> 0.1.0"}]
   end
 
   defp package do

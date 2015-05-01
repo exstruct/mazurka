@@ -1,13 +1,13 @@
 defmodule Mazurka.Compiler.Resource do
   alias Mazurka.Compiler.Utils
 
-  def compile(ast, src, opts \\ []) do
+  def compile(ast, src, _opts \\ []) do
     ## TODO set default sections if they don't exist
 
     mod = ast[:name]
     {sections, mediatypes} = Enum.reduce(ast[:children], {%{}, []}, &(gather_sections(mod, &1, src, &2)))
 
-    quoted = Enum.map(sections, &(compile_section(mod, src, &1)))
+    quoted = Enum.map(sections, &compile_section/1)
 
     out = quote do
       defmodule unquote(mod) do
@@ -19,9 +19,9 @@ defmodule Mazurka.Compiler.Resource do
     [{mod, Utils.quoted_to_beam(out, src), :main} | mediatypes]
   end
 
-  defp compile_section(mod, src, {name, section}) do
+  defp compile_section({name, section}) do
     exec = "#{name}_exec" |> String.to_atom
-    {quoted, _} = Enum.map_reduce(section, true, &(compile_mediatype(mod, exec, src, &1, &2)))
+    {quoted, _} = Enum.map_reduce(section, true, &(compile_mediatype(exec, &1, &2)))
 
     quote do
       @doc unquote(compile_docs(name, section))
@@ -54,7 +54,7 @@ defmodule Mazurka.Compiler.Resource do
     end
   end
 
-  defp compile_mediatype(mod, exec, src, {{type, subtype, _params}, conf}, is_first) do
+  defp compile_mediatype(exec, {{type, subtype, _params}, conf}, is_first) do
     exec_module = Keyword.get(conf, :module)
     serialize_module = Keyword.get(conf, :serialize)
     ## TODO append params
