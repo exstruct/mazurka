@@ -89,14 +89,17 @@ defmodule Mazurka.Protocols.HTTP.Router do
 
   def __handle__(mod, _params, conn) do
     accepts = Plug.Conn.get_req_header(conn, "accept") |> Mazurka.Protocols.HTTP.AcceptHeader.handle()
-    case apply(mod, :action, [conn, &resolve/7, accepts]) do
-      {:ok, body, conn, content_type} ->
-        conn |>
-          put_resp_header("content-type", content_type) |>
-          Plug.Conn.send_resp(conn.status || 200, body)
-      {:error, :not_found, _} ->
-        ## TODO hand off to the error handler
-        Plug.Conn.send_resp(conn, 404, "{\"error\": {\"message\": \"not found!\", \"status\": 404}}")
+    try do
+      {:ok, body, conn, content_type} = apply(mod, :action, [conn, &resolve/7, accepts])
+      conn
+      |> put_resp_header("content-type", content_type)
+      |> Plug.Conn.send_resp(conn.status || 200, body)
+    rescue
+      e in CaseClauseError ->
+        case e do
+          %CaseClauseError{term: {:error, :not_found}} ->
+            Plug.Conn.send_resp(conn, 404, ~S({"error":{"message":"not found!","status": 404}}))
+        end
     end
   end
 
