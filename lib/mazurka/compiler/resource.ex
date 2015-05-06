@@ -61,47 +61,47 @@ defmodule Mazurka.Compiler.Resource do
     mediatype = "#{type}/#{subtype}"
     {quote do
       defp unquote(exec)(unquote(type), unquote(subtype), _params, context, resolve) do
-        case unquote(exec_module).exec(context, resolve) do
-          {out, context} ->
-            {:ok, unquote(serialize_module).serialize(out), context, unquote(mediatype)}
-          ## TODO check if there is an error handler for this resource and render that
-          error ->
-            error
-        end
+        unquote(exec(exec_module, serialize_module, mediatype))
       end
       unquote(if is_first do
         quote do
           defp unquote(exec)(unquote(type), "*", _params, context, resolve) do
-            case unquote(exec_module).exec(context, resolve) do
-              {out, context} ->
-                {:ok, unquote(serialize_module).serialize(out), context, unquote(mediatype)}
-              ## TODO check if there is an error handler for this resource and render that
-              error ->
-                error
-            end
+            unquote(exec(exec_module, serialize_module, mediatype))
           end
           defp unquote(exec)("*", "*", _params, context, resolve) do
-            case unquote(exec_module).exec(context, resolve) do
-              {out, context} ->
-                {:ok, unquote(serialize_module).serialize(out), context, unquote(mediatype)}
-              ## TODO check if there is an error handler for this resource and render that
-              error ->
-                error
-            end
+            unquote(exec(exec_module, serialize_module, mediatype))
           end
         end
       end)
     end, false}
   end
 
-  def gather_sections(mod, mediatype, src, acc) do
+  defp exec(exec, serialize, mediatype) do
+    quote do
+      prev = :erlang.get()
+      out = case unquote(exec).exec(context, resolve) do
+        {out, context} ->
+          {:ok, unquote(serialize).serialize(out), context, unquote(mediatype)}
+        ## TODO check if there is an error handler for this resource and render that
+        error ->
+          error
+      end
+      :erlang.erase()
+      for {k, v} <- prev do
+        :erlang.put(k, v)
+      end
+      out
+    end
+  end
+
+  defp gather_sections(mod, mediatype, src, acc) do
     types = mediatype[:types]
     parsed_types = Enum.map(types, &parse_type/1)
     mediatype[:children]
     |> Enum.reduce(acc, &(gather_section(&1, mod, src, types, parsed_types, &2)))
   end
 
-  def gather_section(section, mod, src, types, parsed_types, {confs, mediatypes}) do
+  defp gather_section(section, mod, src, types, parsed_types, {confs, mediatypes}) do
     name = section[:name]
     parser = section[:parser] && [section[:parser]] || []
     parsers = parser ++ types
