@@ -21,7 +21,8 @@ defmodule Mazurka.Compiler.Resource do
 
   defp compile_section({name, section}) do
     exec = "#{name}_exec" |> String.to_atom
-    {quoted, _} = Enum.map_reduce(section, true, &(compile_mediatype(exec, &1, &2)))
+    partial = name |> Mazurka.Mediatype.Utils.partial_name
+    {quoted, _} = Enum.map_reduce(section, true, &(compile_mediatype(exec, partial, &1, &2)))
 
     quote do
       @doc unquote(compile_docs(name, section))
@@ -47,33 +48,50 @@ defmodule Mazurka.Compiler.Resource do
       end
 
       defp unquote(exec)(type, subtype, params, context, resolve)
+      def unquote(partial)(type, subtype, params, context, resolve, req, scope, props)
       unquote_splicing(quoted)
       defp unquote(exec)(_, _, _, _, _) do
         {:error, :unacceptable}
       end
+
+      def unquote(partial)(_type, _subtype, _params, context, _resolve, _req, _scope, _props) do
+        {{:__ETUDE_READY__, :undefined}, context}
+      end
     end
   end
 
-  defp compile_mediatype(exec, {{type, subtype, _params}, conf}, is_first) do
+  defp compile_mediatype(exec, partial, {{type, subtype, _params}, conf}, is_first) do
     exec_module = Keyword.get(conf, :module)
     serialize_module = Keyword.get(conf, :serialize)
     ## TODO append params
     mediatype = "#{type}/#{subtype}"
     {quote do
-      defp unquote(exec)(unquote(type), unquote(subtype), _params, context, resolve) do
+      defp unquote(exec)(unquote(type), unquote(subtype), params, context, resolve) do
+        unquote(put_mediatype(type, subtype))
         unquote(exec(exec_module, serialize_module, mediatype))
+      end
+      def unquote(partial)(unquote(type), unquote(subtype), _params, context, resolve, req, scope, props) do
+        unquote(exec_module).exec_partial(context, resolve, req, scope, props)
       end
       unquote(if is_first do
         quote do
-          defp unquote(exec)(unquote(type), "*", _params, context, resolve) do
+          defp unquote(exec)(unquote(type), "*", params, context, resolve) do
+            unquote(put_mediatype(type, subtype))
             unquote(exec(exec_module, serialize_module, mediatype))
           end
-          defp unquote(exec)("*", "*", _params, context, resolve) do
+          defp unquote(exec)("*", "*", params, context, resolve) do
+            unquote(put_mediatype(type, subtype))
             unquote(exec(exec_module, serialize_module, mediatype))
           end
         end
       end)
     end, false}
+  end
+
+  defp put_mediatype(type, subtype) do
+    quote do
+      context = Mazurka.Mediatype.Utils.put_mediatype(context, {unquote(type), unquote(subtype), params})
+    end
   end
 
   defp exec(exec, serialize, mediatype) do
