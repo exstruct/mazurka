@@ -11,9 +11,10 @@ defmodule Mix.Tasks.Compile.Mazurka do
     options      = project[:mazurka_options] || []
     source_paths = options[:paths] || ["res"]
     compile_path = Mix.Project.compile_path(project)
+    force = opts[:force] || compiler_deps_changed?(manifest)
 
     files = for src <- source_paths do
-      extract_targets(src, compile_path, opts[:force])
+      extract_targets(src, compile_path, force)
     end |> Enum.concat
 
     mapping = for {file, target, _compile, status} <- files do
@@ -52,5 +53,36 @@ defmodule Mix.Tasks.Compile.Mazurka do
         end
       end
     end |> Enum.concat
+  end
+
+  defp compiler_deps_changed?(manifest) do
+    manifest = Path.absname(manifest)
+    check_deps([manifest])
+  end
+
+  defp check_deps(manifest, in_mazurka \\ false) do
+    Enum.any?(Mix.Dep.children([]), fn(dep) ->
+      case to_string(dep.app) do
+        "mazurka" <> _ ->
+          check_dep(dep, manifest)
+        _ when in_mazurka ->
+          check_dep(dep, manifest)
+        _ ->
+          :false
+      end
+    end)
+  end
+
+  defp check_dep(dep, manifest) do
+    try do
+      Mix.Dep.in_dependency(dep, fn(_) ->
+        Mix.Tasks.Compile.manifests
+        |> Mix.Utils.stale?(manifest)
+        || check_deps(manifest, true)
+      end)
+    rescue
+      _ ->
+        false
+    end
   end
 end
