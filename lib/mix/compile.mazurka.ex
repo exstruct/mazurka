@@ -10,6 +10,7 @@ defmodule Mix.Tasks.Compile.Mazurka do
     project      = Mix.Project.config
     options      = project[:mazurka_options] || []
     source_paths = options[:paths] || ["res"]
+    erlc_options = project[:erlc_options] || []
     compile_path = Mix.Project.compile_path(project)
     force = opts[:force] || compiler_deps_changed?(manifest)
 
@@ -22,7 +23,9 @@ defmodule Mix.Tasks.Compile.Mazurka do
     end
 
     compile_opts = [native: Keyword.get(options, :native, Mix.env == :prod),
-                    timeout: Keyword.get(options, :timeout, 5000)]
+                    timeout: Keyword.get(options, :timeout, 5000),
+                    debug: Keyword.get(options, :debug, false),
+                    erlc_options: erlc_options]
 
     Mix.Compilers.Erlang.compile(manifest(), mapping, fn
       input, output ->
