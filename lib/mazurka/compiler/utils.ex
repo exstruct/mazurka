@@ -12,6 +12,20 @@ defmodule Mazurka.Compiler.Utils do
     end
   end
 
+  def is_target_stale?(path, version) when is_binary(path) do
+    path
+    |> String.to_char_list
+    |> is_target_stale?(version)
+  end
+  def is_target_stale?(path, version) do
+    case :beam_lib.version(path) do
+      {:ok, {_, [prev | _]}} ->
+        prev != version
+      _error ->
+        true
+    end
+  end
+
   defp maybe_reload(module) do
     case :code.which(module) do
       atom when is_atom(atom) ->

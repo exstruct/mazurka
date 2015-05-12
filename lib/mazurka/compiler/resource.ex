@@ -9,14 +9,17 @@ defmodule Mazurka.Compiler.Resource do
 
     quoted = Enum.map(sections, &compile_section/1)
 
+    vsn = :erlang.phash2(quoted)
+
     out = quote do
       defmodule unquote(mod) do
         @file unquote(src)
         @moduledoc unquote(ast[:docs])
+        @vsn unquote(vsn)
         unquote_splicing(quoted)
       end
     end
-    [{mod, Utils.quoted_to_beam(out, src), :main} | mediatypes]
+    [{mod, Utils.quoted_to_beam(out, src), lazy_stale_main(vsn), :main} | mediatypes]
   end
 
   defp compile_section({name, section}) do
@@ -139,17 +142,33 @@ defmodule Mazurka.Compiler.Resource do
       Dict.put(acc, name, section)
     end)
 
-    {confs, [{exec_module, lazy_compile(exec_module, ast, src), "#{chosen} #{name}"} | mediatypes]}
+    {confs, [{exec_module, lazy_compile(exec_module, ast, src), lazy_stale(ast, src), "#{chosen} #{name}"} | mediatypes]}
   end
 
   def lazy_compile(exec_module, ast, src) do
     fn(opts) ->
-      case Etude.compile(exec_module, ast, [file: src, function: :exec] ++ opts) do
+      case Etude.compile(exec_module, ast, extend_opts(opts, src)) do
         {:ok, _, _, beam} ->
           {exec_module, beam}
         error ->
           error
       end
+    end
+  end
+
+  def lazy_stale(ast, src) do
+    fn(target, opts) ->
+      Mazurka.Compiler.Utils.is_target_stale?(target, Etude.vsn(ast, extend_opts(opts, src)))
+    end
+  end
+
+  defp extend_opts(opts, src) do
+    [file: src, function: :exec] ++ opts
+  end
+
+  def lazy_stale_main(vsn) do
+    fn(target, _opts) ->
+      Mazurka.Compiler.Utils.is_target_stale?(target, vsn)
     end
   end
 

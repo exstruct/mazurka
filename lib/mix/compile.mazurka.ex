@@ -12,20 +12,20 @@ defmodule Mix.Tasks.Compile.Mazurka do
     source_paths = options[:paths] || ["res"]
     erlc_options = project[:erlc_options] || []
     compile_path = Mix.Project.compile_path(project)
-    force = opts[:force] || compiler_deps_changed?(manifest)
-
-    files = for src <- source_paths do
-      extract_targets(src, compile_path, force)
-    end |> Enum.concat
-
-    mapping = for {file, target, _compile, status} <- files do
-      {status, file, target}
-    end
+    force        = opts[:force]
 
     compile_opts = [native: Keyword.get(options, :native, Mix.env == :prod),
                     timeout: Keyword.get(options, :timeout, 5000),
                     debug: Keyword.get(options, :debug, false),
                     erlc_options: erlc_options]
+
+    files = for src <- source_paths do
+      extract_targets(src, compile_path, force, compile_opts)
+    end |> Enum.concat
+
+    mapping = for {file, target, _compile, status} <- files do
+      {status, file, target}
+    end
 
     Mix.Compilers.Erlang.compile(manifest(), mapping, fn
       input, output ->
@@ -43,49 +43,18 @@ defmodule Mix.Tasks.Compile.Mazurka do
   def manifests, do: [manifest]
   defp manifest, do: Path.join(Mix.Project.manifest_path, @manifest)
 
-  defp extract_targets(src_dir, dest_dir, force) do
+  defp extract_targets(src_dir, dest_dir, force, opts) do
     for file <- Mix.Utils.extract_files([src_dir], ["md"]) do
-      for {module, compile, type} <- Mazurka.Compiler.file(file, []) do
+      for {module, compile, stale?, type} <- Mazurka.Compiler.file(file, []) do
         source = "#{file} (#{type})"
         target = Path.join(dest_dir, "#{module}.beam")
 
-        if force || Mix.Utils.stale?([file], [target]) do
+        if force || stale?.(target, opts) do
           {source, target, compile, :stale}
         else
           {source, target, compile, :ok}
         end
       end
     end |> Enum.concat
-  end
-
-  defp compiler_deps_changed?(manifest) do
-    manifest = Path.absname(manifest)
-    check_deps([manifest])
-  end
-
-  defp check_deps(manifest, in_mazurka \\ false) do
-    Enum.any?(Mix.Dep.children([]), fn(dep) ->
-      case to_string(dep.app) do
-        "mazurka" <> _ ->
-          check_dep(dep, manifest)
-        _ when in_mazurka ->
-          check_dep(dep, manifest)
-        _ ->
-          :false
-      end
-    end)
-  end
-
-  defp check_dep(dep, manifest) do
-    try do
-      Mix.Dep.in_dependency(dep, fn(_) ->
-        Mix.Tasks.Compile.manifests
-        |> Mix.Utils.stale?(manifest)
-        || check_deps(manifest, true)
-      end)
-    rescue
-      _ ->
-        false
-    end
   end
 end
