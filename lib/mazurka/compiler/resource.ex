@@ -9,7 +9,7 @@ defmodule Mazurka.Compiler.Resource do
 
     quoted = Enum.map(sections, &compile_section/1)
 
-    vsn = :erlang.phash2(System.version, quoted)
+    vsn = :erlang.phash2({System.version, quoted})
 
     out = quote do
       defmodule unquote(mod) do
