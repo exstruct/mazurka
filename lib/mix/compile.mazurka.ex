@@ -2,7 +2,6 @@ defmodule Mix.Tasks.Compile.Mazurka do
   use Mix.Task
 
   @recursive true
-  @manifest ".compile.mazurka"
 
   def run(args) do
     {opts, _, _} = OptionParser.parse(args, switches: [force: :boolean])
@@ -19,42 +18,45 @@ defmodule Mix.Tasks.Compile.Mazurka do
                     debug: Keyword.get(options, :debug, false),
                     erlc_options: erlc_options]
 
-    files = for src <- source_paths do
-      extract_targets(src, compile_path, force, compile_opts)
-    end |> Enum.concat
-
-    mapping = for {file, target, _compile, status} <- files do
-      {status, file, target}
+    if opts[:file] do
+      prepare_file(opts[:file], compile_path, force, compile_opts)
+    else
+      extract_targets(source_paths, compile_path, force, compile_opts)
     end
-
-    Mix.Compilers.Erlang.compile(manifest(), mapping, fn
-      input, output ->
-        {_, _, compile, _} = :lists.keyfind(input, 1, files)
-        case compile.(compile_opts) do
-          {name, beam} when is_binary(beam) ->
-            File.write!(output, beam)
-            {:ok, {name, beam}}
-          error ->
-            error
-        end
-    end)
   end
 
-  def manifests, do: [manifest]
-  defp manifest, do: Path.join(Mix.Project.manifest_path, @manifest)
+  def manifests, do: []
 
-  defp extract_targets(src_dir, dest_dir, force, opts) do
-    for file <- Mix.Utils.extract_files([src_dir], ["md"]) do
-      for {module, compile, stale?, type} <- Mazurka.Compiler.file(file, []) do
-        source = "#{file} (#{type})"
-        target = Path.join(dest_dir, "#{module}.beam")
+  defp extract_targets(source_paths, compile_path, force, opts) do
+    Mix.Utils.extract_files(source_paths, ["md"])
+    |> Enum.flat_map(&(prepare_file(&1, compile_path, force, opts)))
+  end
 
-        if force || stale?.(target, opts) do
-          {source, target, compile, :stale}
-        else
-          {source, target, compile, :ok}
-        end
-      end
-    end |> Enum.concat
+  defp prepare_file(file, compile_path, force, opts) do
+    Mazurka.Compiler.file(file, [])
+    |> Enum.map(&(prepare_module(&1, file, compile_path, force, opts)))
+  end
+
+  defp prepare_module({module, generate, type}, file, compile_path, force, opts) do
+    source = "#{file} (#{type})"
+    target = Path.join(compile_path, "#{module}.beam")
+    {vsn, compile} = generate.(opts)
+    if force || is_stale?(target, vsn) do
+      {:ok, _name, _main, beam} = compile.()
+      File.write!(target, beam)
+      Mix.shell.info "Compiled #{source}"
+      :ok
+    else
+      :noop
+    end
+  end
+
+  defp is_stale?(path, version) do
+    case :beam_lib.version(to_char_list(path)) do
+      {:ok, {_, [prev | _]}} ->
+        prev != version
+      _error ->
+        true
+    end
   end
 end

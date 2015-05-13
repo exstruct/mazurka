@@ -19,7 +19,7 @@ defmodule Mazurka.Compiler.Resource do
         unquote_splicing(quoted)
       end
     end
-    [{mod, Utils.quoted_to_beam(out, src), lazy_stale_main(vsn), :main} | mediatypes]
+    [{mod, lazy_compile_main(out, src, vsn), :main} | mediatypes]
   end
 
   defp compile_section({name, section}) do
@@ -142,23 +142,12 @@ defmodule Mazurka.Compiler.Resource do
       Dict.put(acc, name, section)
     end)
 
-    {confs, [{exec_module, lazy_compile(exec_module, ast, src), lazy_stale(ast, src), "#{chosen} #{name}"} | mediatypes]}
+    {confs, [{exec_module, lazy_compile(exec_module, ast, src), "#{chosen} #{name}"} | mediatypes]}
   end
 
   def lazy_compile(exec_module, ast, src) do
     fn(opts) ->
-      case Etude.compile(exec_module, ast, extend_opts(opts, src)) do
-        {:ok, _, _, beam} ->
-          {exec_module, beam}
-        error ->
-          error
-      end
-    end
-  end
-
-  def lazy_stale(ast, src) do
-    fn(target, opts) ->
-      Mazurka.Compiler.Utils.is_target_stale?(target, Etude.vsn(ast, extend_opts(opts, src)))
+      Etude.compile_lazy(exec_module, ast, extend_opts(opts, src))
     end
   end
 
@@ -166,9 +155,16 @@ defmodule Mazurka.Compiler.Resource do
     [file: src, function: :exec] ++ opts
   end
 
-  def lazy_stale_main(vsn) do
-    fn(target, _opts) ->
-      Mazurka.Compiler.Utils.is_target_stale?(target, vsn)
+  def lazy_compile_main(out, src, vsn) do
+    fn(_opts) ->
+      {vsn, fn ->
+        case Utils.quoted_to_beam(out, src) do
+          {mod, bin} when is_binary(bin) ->
+            {:ok, mod, :main, bin}
+          other ->
+            other
+        end
+      end}
     end
   end
 
