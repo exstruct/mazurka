@@ -13,7 +13,7 @@ defmodule Mix.Tasks.Compile.Mazurka do
     compile_path = Mix.Project.compile_path(project)
 
     compile_opts = [native: Keyword.get(options, :native, Mix.env == :prod),
-                    timeout: Keyword.get(options, :timeout, 5000),
+                    timeout: Keyword.get(options, :timeout, 10_000),
                     debug: Keyword.get(options, :debug, false),
                     erlc_options: erlc_options]
 
