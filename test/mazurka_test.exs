@@ -2,6 +2,6 @@ defmodule MazurkaTest do
   use ExUnit.Case
 
   test "the truth" do
-    assert 1 + 1 == 2
+    MazurkaTest.Resources.Root.handle(:foo, :foo)
   end
 end

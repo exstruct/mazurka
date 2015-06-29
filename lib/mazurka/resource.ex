@@ -1,4 +1,6 @@
 defmodule Mazurka.Resource do
+  alias Mazurka.Compiler.Utils
+
   @doc """
   Initialize a module as a mazurka resource
 
@@ -6,72 +8,79 @@ defmodule Mazurka.Resource do
         use Mazurka.Resource
       end
   """
-  defmacro __using__(_opts) do
+  defmacro __using__(opts) do
+    Mazurka.Resource.Utils.save(__CALLER__, :mz_opts, opts)
     quote do
       import Mazurka.Resource
-      import Mazurka.Resource.Action
-      import Mazurka.Resource.Affordance
-      import Mazurka.Resource.Conditions
-      import Mazurka.Resource.Define
+      import Mazurka.Resource.Condition
       import Mazurka.Resource.Error
-      import Mazurka.Resource.Scope
+      import Mazurka.Resource.Let
+      import Mazurka.Resource.Param
+
+      @before_compile {Mazurka.Compiler, :compile}
     end
   end
 
   @doc """
   Define a mediatype handler block
 
-      mediatype do
+      mediatype Mazurka.Mediatype.Hyperjson do
         ...
       end
   """
-  defmacro mediatype(block) do
-    compile_block(block, nil)
-  end
-
-  @doc """
-  Define a mediatype handler block, overriding the default acceptable mediatypes
-
-  ## Single:
-
-      mediatype "hyper+json" do
-        ...
-      end
-
-  ## Multiple
-
-      mediatype ["hyper+json", "json"] do
-        ...
-      end
-  """
-  defmacro mediatype(types, block) do
-    compile_block(block, types)
+  defmacro mediatype(type, block) do
+    compile_block(block, type, __CALLER__)
   end
 
   @doc false
-  defp compile_block([do: block], types) do
-    compile_block(block, types)
+  defp compile_block([do: block], type, caller) do
+    compile_block(block, type, caller)
   end
-  defp compile_block({:__block__, _, block}, types) do
-    compile_block(block, types)
+  defp compile_block({:__block__, _, block}, type, caller) do
+    compile_block(block, type, caller)
   end
-  defp compile_block(block, types) do
-    Enum.map(block, &handle_statement/1)
+  defp compile_block(block, type, caller) when not is_list(block) do
+    compile_block([block], type, caller)
+  end
+  defp compile_block(block, type, caller) do
+    type = Utils.eval(type, caller)
+    Enum.each(block, fn(child) ->
+      child
+      |> handle_statement(caller)
+      |> handle_definition(caller, type)
+    end)
+    Mazurka.Resource.Utils.save(caller, :mz_mediatype, type)
   end
 
   @doc false
-  defp handle_statement({:@, meta, children}) do
-    {:__block__, meta, Enum.map(children, fn({name, meta, expression}) ->
-      {:scope, meta, [name, [do: expression]]}
-    end)}
+  defp handle_statement({:action, _meta, block}, caller) do
+    block
+    |> Macro.expand(caller)
+    |> Mazurka.Resource.Action.handle()
   end
-  defp handle_statement({:def, meta, block}) do
-    {:mz_def, meta, block}
+  defp handle_statement({:affordance, _meta, block}, caller) do
+    block
+    |> Macro.expand(caller)
+    |> Mazurka.Resource.Affordance.handle()
   end
-  defp handle_statement({:defp, meta, block}) do
-    {:mz_defp, meta, block}
+  defp handle_statement({:def, _meta, block}, caller) do
+    block
+    |> Macro.expand(caller)
+    |> Mazurka.Resource.Definition.handle(:def)
   end
-  defp handle_statement(statement) do
-    statement
+  defp handle_statement({:defp, _meta, block}, caller) do
+    block
+    |> Macro.expand(caller)
+    |> Mazurka.Resource.Definition.handle(:defp)
+  end
+  defp handle_statement({:error, _meta, block}, caller) do
+    block
+    |> Macro.expand(caller)
+    |> Mazurka.Resource.Error.handle()
+  end
+
+  @doc false
+  defp handle_definition(definition, caller, type) do
+    Mazurka.Resource.Utils.save(caller, type, definition)
   end
 end
