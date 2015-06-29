@@ -6,13 +6,8 @@ defmodule MazurkaTest.Resources.Users do
 
   param user
 
-  let user do
-    Users.get(Params.user)
-  end
-
-  let is_owner do
-    Params.user == Auth.user_id
-  end
+  let user = Users.get(Params.user)
+  let is_owner = Params.user == Auth.user_id
 
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
