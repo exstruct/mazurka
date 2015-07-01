@@ -9,9 +9,9 @@ defmodule Mazurka.Format.JSON do
 end
 
 defimpl Poison.Encoder, for: Mazurka.Runtime.Affordance do
-  def encode(%{mediatype: mediatype} = affordance, opts) do
+  def encode(%{mediatype: mediatype, props: props} = affordance, opts) do
     affordance
-    |> mediatype.affordance(opts)
+    |> mediatype.affordance(props, opts)
     |> Poison.encode!(opts)
   end
 end

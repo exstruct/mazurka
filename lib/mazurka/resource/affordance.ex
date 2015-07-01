@@ -14,7 +14,7 @@ defimpl Mazurka.Compiler.Lifecycle, for: Mazurka.Resource.Affordance do
     {:affordance, quote do
       unquote_splicing(globals.lets)
       if unquote(globals.conditions) do
-        props = unquote(node.block)
+        props = unquote(block)
         params = unquote(params)
         ^^Mazurka.Runtime.resolve_affordance(unquote(node.resource), unquote(mediatype), params, props)
       end
