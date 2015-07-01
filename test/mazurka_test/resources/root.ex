@@ -10,13 +10,17 @@ defmodule MazurkaTest.Resources.Root do
     Auth.user_id
   end
 
+  let foo = 123
+
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
+      user = user_id &&& %Users{user: user_id}
       %{
-        account: user_id &&& %Users{user: user_id},
-        oauth: %Oauth{},
-        search: %Search{} |> pointer :search,
-        translations: %Translations{}
+        account: user,
+        foo: foo
+        # oauth: %Oauth{},
+        # search: %Search{} |> pointer :search,
+        # translations: %Translations{}
       }
     end
   end

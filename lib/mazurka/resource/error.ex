@@ -15,11 +15,11 @@ defmodule Mazurka.Resource.RuntimeError do
 end
 
 defimpl Mazurka.Compiler.Lifecycle, for: Mazurka.Resource.Error do
-  def format(node, globals) do
-    quote do
+  def format(node, globals, _) do
+    {node.name, quote do
       unquote_splicing(globals.lets)
-      raise %Mazurka.Resource.RuntimeError{message: unquote(node.block),
+      raise %Mazurka.Resource.RuntimeError{message: unquote_splicing(node.block),
                                            name: unquote(node.name)}
-    end
+    end}
   end
 end

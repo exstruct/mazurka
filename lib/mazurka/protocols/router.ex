@@ -25,7 +25,8 @@ defmodule Mazurka.Protocols.HTTP.Router do
         try do
           do_resolve(mod, params)
         rescue
-          _ -> {:error, :not_found}
+          _ ->
+            {:error, :not_found}
         end
       end
 
@@ -47,10 +48,14 @@ defmodule Mazurka.Protocols.HTTP.Router do
   end
 
   defmacro match(path, options, contents \\ []) do
+    options = options |> Mazurka.Compiler.Utils.eval(__CALLER__)
+    contents = contents |> Mazurka.Compiler.Utils.eval(__CALLER__)
     compile(nil, path, options, contents)
   end
   for method <- [:get, :post, :put, :patch, :delete, :options, :head] do
     defmacro unquote(method)(path, options, contents \\ []) do
+      options = options |> Mazurka.Compiler.Utils.eval(__CALLER__)
+      contents = contents |> Mazurka.Compiler.Utils.eval(__CALLER__)
       compile(unquote(method), path, options, contents)
     end
   end
@@ -191,7 +196,7 @@ defmodule Mazurka.Protocols.HTTP.Router do
 
     {path, guards} = extract_path_and_guards(expr)
 
-    quote bind_quoted: [method: method,
+    matches = quote bind_quoted: [method: method,
                         path: path,
                         options: options,
                         guards: Macro.escape(guards, unquote: true),
@@ -209,6 +214,8 @@ defmodule Mazurka.Protocols.HTTP.Router do
         {:ok, unquote(res_method), unquote(res_match)}
       end
     end
+
+    matches
   end
 
   # Convert the verbs given with `:via` into a variable and guard set that can

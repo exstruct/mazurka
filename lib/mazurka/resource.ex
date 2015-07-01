@@ -17,6 +17,8 @@ defmodule Mazurka.Resource do
       import Mazurka.Resource.Let
       import Mazurka.Resource.Param
 
+      require Logger
+
       @before_compile {Mazurka.Compiler, :compile}
     end
   end
@@ -53,15 +55,15 @@ defmodule Mazurka.Resource do
   end
 
   @doc false
-  defp handle_statement({:action, _meta, block}, caller) do
+  defp handle_statement({:action, _meta, [[do: block]]}, caller) do
     block
     |> Macro.expand(caller)
     |> Mazurka.Resource.Action.handle()
   end
-  defp handle_statement({:affordance, _meta, block}, caller) do
+  defp handle_statement({:affordance, _meta, [[do: block]]}, caller) do
     block
     |> Macro.expand(caller)
-    |> Mazurka.Resource.Affordance.handle()
+    |> Mazurka.Resource.Affordance.handle(caller.module)
   end
   defp handle_statement({:def, _meta, block}, caller) do
     block

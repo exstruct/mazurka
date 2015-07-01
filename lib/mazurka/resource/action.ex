@@ -7,15 +7,21 @@ defmodule Mazurka.Resource.Action do
 end
 
 defimpl Mazurka.Compiler.Lifecycle, for: Mazurka.Resource.Action do
-  def format(node, globals) do
-    quote do
+  def format(node, globals, _mediatype) do
+    {:action, quote do
       unquote_splicing(globals.lets)
+      __mazurka_action__ = unquote(node.block)
+      __mazurka_events__ = unquote_splicing(globals.events || [true])
       if unquote(globals.conditions) do
-        case unquote(node.block) do
-          _ ->
-            unquote_splicing(globals.events)
+        ## we're using this if/else for causal tracking
+        if __mazurka_action__ do
+          __mazurka_events__
+          __mazurka_action__
+        else
+          __mazurka_events__
+          __mazurka_action__
         end
       end
-    end
+    end}
   end
 end

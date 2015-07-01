@@ -42,6 +42,10 @@ defmodule MazurkaTest.Resources.Users.Update do
       }
     end
 
+    event do
+
+    end
+
     error permission_error(_err) do
       %{
         error: %{
