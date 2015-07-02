@@ -12,9 +12,15 @@ defmodule MazurkaTest.Resources.Root do
 
   let foo = 123
 
+  event do
+    213
+  end
+
+  condition foo == 45, foo
+
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
-      user = user_id &&& %Users{user: user_id}
+      user = %Users{user: user_id}
       %{
         account: user,
         foo: foo
@@ -22,6 +28,16 @@ defmodule MazurkaTest.Resources.Root do
         # search: %Search{} |> pointer :search,
         # translations: %Translations{}
       }
+    end
+
+    affordance do
+      %{
+        "input": %{}
+      }
+    end
+
+    error foo(err) do
+      %{}
     end
   end
 end

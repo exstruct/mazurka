@@ -1,17 +1,20 @@
 defmodule Mazurka.Resource.Let do
-  def attribute do
-    :mz_let
-  end
-
   defmacro let({:=, _meta, [_name, _block]} = node) do
-    Mazurka.Resource.Utils.save(__CALLER__, attribute, node)
+    store(node)
   end
 
   defmacro let(name, [do: block]) do
-    Mazurka.Resource.Utils.save(__CALLER__, attribute, format(name, block))
+    {:=, [], [name, block]}
+    |> store
   end
 
-  defp format(name, block) do
-    {:=, [], [name, block]}
+  defp store(block) do
+    Mazurka.Compiler.Utils.register(__MODULE__, block)
+  end
+
+  def compile(lets) do
+    Enum.map(lets, fn({ast, _meta}) ->
+      ast
+    end)
   end
 end

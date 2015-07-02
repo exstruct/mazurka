@@ -1,25 +1,13 @@
 defmodule Mazurka.Resource.Error do
-  defstruct args: [],
-            block: nil,
-            name: nil
-
-  def handle([{name, _meta, args}, [do: block]]) do
-    %__MODULE__{args: args,
-                block: block,
-                name: name}
+  defmacro error(mediatype, name, [do: block]) do
+    Mazurka.Compiler.Utils.register(mediatype, __MODULE__, block, name)
   end
-end
 
-defmodule Mazurka.Resource.RuntimeError do
-  defexception [:message, :name]
-end
-
-defimpl Mazurka.Compiler.Lifecycle, for: Mazurka.Resource.Error do
-  def format(node, globals, _) do
-    {node.name, quote do
-      unquote_splicing(globals.lets)
-      raise %Mazurka.Resource.RuntimeError{message: unquote_splicing(node.block),
-                                           name: unquote(node.name)}
-    end}
+  def compile(mediatype, block, globals, meta) do
+    quote do
+      unquote_splicing(globals[:let] || [])
+      response = unquote(block)
+      unquote(mediatype).handle_error(response)
+    end
   end
 end

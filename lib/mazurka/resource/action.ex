@@ -1,27 +1,31 @@
 defmodule Mazurka.Resource.Action do
-  defstruct block: nil
-
-  def handle(block) do
-    %__MODULE__{block: block}
+  defmacro action(mediatype, [do: block]) do
+    Mazurka.Compiler.Utils.register(mediatype, __MODULE__, block, nil)
   end
-end
 
-defimpl Mazurka.Compiler.Lifecycle, for: Mazurka.Resource.Action do
-  def format(node, globals, _mediatype) do
-    {:action, quote do
-      unquote_splicing(globals.lets)
-      __mazurka_action__ = unquote(node.block)
-      __mazurka_events__ = unquote_splicing(globals.events || [true])
-      if unquote(globals.conditions) do
-        ## we're using this if/else for causal tracking
-        if __mazurka_action__ do
-          __mazurka_events__
-          __mazurka_action__
-        else
-          __mazurka_events__
-          __mazurka_action__
-        end
+  def compile(mediatype, block, globals, meta) do
+    quote do
+      unquote_splicing(globals[:let] || [])
+      action = unquote(block)
+      events = unquote_splicing(globals[:event] || [true])
+
+      # this may seem redundant but it's used for tracking causality
+      # between the event and action
+      response = if action do
+        events
+        action
+      else
+        events
+        action
       end
-    end}
+
+      failure = unquote(globals[:condition])
+
+      if failure do
+        failure
+      else
+        unquote(mediatype).handle_action(response)
+      end
+    end
   end
 end

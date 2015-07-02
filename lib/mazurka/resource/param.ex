@@ -1,9 +1,10 @@
 defmodule Mazurka.Resource.Param do
-  def attribute do
-    :mz_param
+  defmacro param(name, opts \\ []) do
+    Mazurka.Compiler.Utils.register(__MODULE__, name, opts)
   end
 
-  defmacro param(name, opts \\ []) do
-    Mazurka.Resource.Utils.save(__CALLER__, attribute, {name, opts})
+  def compile(params) do
+    IO.inspect {:params, params}
+    []
   end
 end

@@ -1,4 +1,4 @@
-defmodule Mazurka.Protocols.HTTP.Router do
+defmodule Mazurka.Protocol.HTTP.Router do
   @moduledoc """
   A DSL for mazurka resources
   """
@@ -6,8 +6,8 @@ defmodule Mazurka.Protocols.HTTP.Router do
   @doc false
   defmacro __using__(_) do
     quote location: :keep do
-      import Mazurka.Protocols.HTTP.Router
-      @before_compile Mazurka.Protocols.HTTP.Router
+      import Mazurka.Protocol.HTTP.Router
+      @before_compile Mazurka.Protocol.HTTP.Router
 
       use Plug.Builder
 
@@ -33,7 +33,7 @@ defmodule Mazurka.Protocols.HTTP.Router do
       defp dispatch(%Plug.Conn{assigns: assigns} = conn, _opts) do
         route = Map.get(conn.private, :mazurka_route)
         params = Map.get(conn.private, :mazurka_params)
-        Mazurka.Protocols.HTTP.Router.__handle__(route, params, conn)
+        Mazurka.Protocol.HTTP.Router.__handle__(route, params, conn)
       end
 
       defoverridable [match: 2, dispatch: 2]
@@ -43,7 +43,7 @@ defmodule Mazurka.Protocols.HTTP.Router do
   @doc false
   defmacro __before_compile__(_env) do
     quote do
-      import Mazurka.Protocols.HTTP.Router, only: []
+      import Mazurka.Protocol.HTTP.Router, only: []
     end
   end
 
@@ -93,7 +93,7 @@ defmodule Mazurka.Protocols.HTTP.Router do
   defp format_path(path), do: path
 
   def __handle__(mod, _params, conn) do
-    accepts = Plug.Conn.get_req_header(conn, "accept") |> Mazurka.Protocols.HTTP.AcceptHeader.handle()
+    accepts = Plug.Conn.get_req_header(conn, "accept") |> Mazurka.Protocol.HTTP.AcceptHeader.handle()
     try do
       {:ok, body, conn, content_type} = apply(mod, :action, [conn, &resolve/7, accepts])
       conn
@@ -201,8 +201,8 @@ defmodule Mazurka.Protocols.HTTP.Router do
                         options: options,
                         guards: Macro.escape(guards, unquote: true),
                         mod: mod] do
-      {method, match, map_params, list_params, host, guards} = Mazurka.Protocols.HTTP.Router.__route__(method, path, guards, options)
-      {res_method, res_match, res_host} = Mazurka.Protocols.HTTP.Router.__resolve__(method, match, host)
+      {method, match, map_params, list_params, host, guards} = Mazurka.Protocol.HTTP.Router.__route__(method, path, guards, options)
+      {res_method, res_match, res_host} = Mazurka.Protocol.HTTP.Router.__resolve__(method, match, host)
       defp do_match(unquote(method), unquote(match), unquote(host)) when unquote(guards) do
         {unquote(mod), unquote(map_params)}
       end

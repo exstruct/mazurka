@@ -5,10 +5,92 @@ defmodule Mazurka.Compiler do
   Compile a resource with the environment attributes
   """
   defmacro compile(env) do
-    globals = compile_globals(env)
-    mediatypes = compile_mediatypes(globals, env)
-    struct = compile_struct(globals, env)
-    body(env.module, mediatypes, struct)
+    {mediatypes, globals} = Utils.get(env)
+    |> partition({%{}, %{}})
+
+    globals = globals
+    |> Enum.map(&prepare_global/1)
+    |> :maps.from_list
+
+    mediatypes = Enum.flat_map(mediatypes, &(prepare_mediatype(&1, globals, env)))
+
+    body(env.module, mediatypes, [])
+  end
+
+  defp partition([], acc) do
+    acc
+  end
+  defp partition([{nil, name, ast, meta} | rest], {mediatypes, globals}) do
+    globals = put_acc(globals, name, ast, meta)
+    partition(rest, {mediatypes, globals})
+  end
+  defp partition([{mediatype, name, ast, meta} | rest], {mediatypes, globals}) do
+    mt = mediatypes
+    |> Dict.get(mediatype, %{})
+    |> put_acc(name, ast, meta)
+
+    mediatypes = Dict.put(mediatypes, mediatype, mt)
+    partition(rest, {mediatypes, globals})
+  end
+
+  defp put_acc(map, name, ast, meta) do
+    acc = Dict.get(map, name, [])
+    acc = [{ast, meta} | acc]
+    Dict.put(map, name, acc)
+  end
+
+  defp prepare_global({global, definitions}) do
+    key = format_name(global)
+    {key, global.compile(definitions)}
+  end
+
+  defp prepare_mediatype({mediatype, definitions}, globals, env) do
+    definitions = Enum.flat_map(definitions, &(prepare_definition(&1, mediatype, globals)))
+
+    module = env.module
+    etude_module = Module.concat([module, Etude])
+
+    beam = definitions
+    |> Utils.expand(env)
+    |> Mazurka.Compiler.Etude.elixir_to_etude(etude_module)
+    |> compile(etude_module)
+
+    content_types = mediatype.content_types()
+    for {type, subtype, params} <- content_types do
+      params = Macro.escape(params)
+      quote do
+        defp handle(unquote(type) = type, unquote(subtype) = subtype, unquote(params) = params, context, resolve) do
+          context = Mazurka.Runtime.put_mediatype(context, {type, subtype, params})
+          Logger.debug("handling request with #{type}/#{subtype} in #{unquote(module)}")
+          unquote(etude_module).action(context, resolve)
+        end
+
+        defp affordance(unquote(type), unquote(subtype), unquote(params), context, resolve, req, scope, props) do
+          unquote(etude_module).affordance_partial(context, resolve, req, scope, props)
+        end
+      end
+    end
+  end
+
+  defp prepare_definition({handler, [{ast, meta}]}, mediatype, globals) do
+    fn_name = format_name(handler)
+    [{fn_name, handler.compile(mediatype, ast, globals, meta)}]
+  end
+  defp prepare_definition({handler, definitions}, mediatype, globals) do
+    fn_name = format_name(handler)
+    for {ast, meta} <- definitions do
+      {fn_name, handler.compile(mediatype, ast, globals, meta)}
+    end
+  end
+
+  defp format_name(handler) do
+    handler |> Module.split |> List.last |> String.downcase |> String.to_atom
+  end
+
+  defp compile(etude_ast, etude_module) do
+    {:ok, _, _, beam} = Etude.compile(etude_module, etude_ast)
+    "#{Mix.Project.compile_path}/#{etude_module}.beam"
+    |> File.write!(beam)
   end
 
   @doc false
@@ -67,70 +149,10 @@ defmodule Mazurka.Compiler do
         {{:__ETUDE_READY__, :undefined}, context}
       end
 
-      def __struct__() do
+      def __struct__ do
         unquote(Macro.escape(struct))
       end
     end
   end
 
-  defp compile_mediatypes(globals, env) do
-    Module.get_attribute(env.module, :mz_mediatype)
-    |> Utils.eval(env)
-    |> compile_mediatypes(globals, env, [])
-  end
-
-  defp compile_mediatypes([], globals, _, acc) do
-    :lists.reverse(acc)
-  end
-  defp compile_mediatypes([mediatype | rest], globals, env, []) do
-    opts = %{first: true}
-    compiled = Mazurka.Compiler.Mediatype.compile(mediatype, globals, env, opts)
-    compile_mediatypes(rest, globals, env, compiled)
-  end
-  defp compile_mediatypes([mediatype | rest], globals, env, acc) do
-    opts = %{}
-    compiled = Mazurka.Compiler.Mediatype.compile(mediatype, globals, env, opts)
-    compile_mediatypes(rest, globals, env, compiled ++ acc)
-  end
-
-  defp compile_struct(globals, env) do
-    params = Enum.map(globals.params || [], fn
-      ({{name, _, _}, _}) ->
-        {name, nil}
-    end)
-    [{:__struct__, Mazurka.Mediatype.Affordance} | params]
-    |> :maps.from_list
-  end
-
-  defp compile_globals(env) do
-    %{
-      conditions: Mazurka.Resource.Condition.attribute,
-      events: Mazurka.Resource.Event.attribute,
-      lets: Mazurka.Resource.Let.attribute,
-      params: Mazurka.Resource.Param.attribute,
-    }
-    |> Enum.reduce(%{}, fn({key, name}, acc) ->
-      values = Module.get_attribute(env.module, name) |> format_global(key, env)
-      Dict.put(acc, key, values)
-    end)
-  end
-
-  def format_global(nil, :conditions, _env) do
-    true
-  end
-  def format_global([clause], :conditions, _env) do
-    clause
-  end
-  def format_global([clause | rest], :conditions, _env) do
-    {:&&, [], [clause, format_global(rest, :conditions, _env)]}
-  end
-  def format_global(nil, :lets, _env) do
-    []
-  end
-  def format_global(nil, :params, _env) do
-    []
-  end
-  def format_global(global, _, _env) do
-    global
-  end
 end

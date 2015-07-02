@@ -1,4 +1,4 @@
-defmodule Mazurka.Protocols.HTTP.AcceptHeader do
+defmodule Mazurka.Protocol.HTTP.AcceptHeader do
   def handle([]) do
     []
   end

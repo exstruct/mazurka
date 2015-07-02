@@ -4,6 +4,8 @@ defmodule MazurkaTest.Resources.Users do
   alias Resources.Users.Update
   alias Resources.Users.UpdateImage
 
+  # test = "this is a test"
+
   param user
 
   # let user = Users.get(Params.user)
@@ -11,7 +13,9 @@ defmodule MazurkaTest.Resources.Users do
 
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
-      true
+      123
+      "this is a test"
+      # unquote(test)
       # %{
       #   id: Params.user,
       #   is_user: true,
@@ -26,9 +30,7 @@ defmodule MazurkaTest.Resources.Users do
 
     affordance do
       %{
-        input: %{
-
-        }
+        foo: 456
       }
     end
 
@@ -53,3 +55,10 @@ defmodule MazurkaTest.Resources.Users do
   #   end
   # end
 end
+
+# response = Api.Http.Router.request do
+#   method :post
+#   path "/"
+#   header "x-orig-proto", "example.com"
+#   auth 123
+# end

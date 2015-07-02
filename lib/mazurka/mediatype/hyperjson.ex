@@ -1,5 +1,7 @@
 defmodule Mazurka.Mediatype.Hyperjson do
-  def content_types(_) do
+  use Mazurka.Mediatype
+
+  def content_types do
     [{"application", "hyper+json", %{}},
      {"application", "hyper+msgpack", %{}},
      {"application", "json", %{}}]

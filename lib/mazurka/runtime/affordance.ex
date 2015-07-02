@@ -1,4 +1,9 @@
 defmodule Mazurka.Runtime.Affordance do
+  @moduledoc """
+  Represents an affordance in a response. This is used by mediatypes to serialize the link in the appropriate
+  format. It's broken into its separate parts (method, host, path, etc.) for easy manipulation.  
+  """
+
   defstruct mediatype: nil,
             props: nil,
             method: nil,

@@ -1,9 +1,11 @@
 defmodule Mazurka.Resource.Event do
-  def attribute do
-    :mz_event
+  defmacro event([do: block]) do
+    Mazurka.Compiler.Utils.register(__MODULE__, block)
   end
 
-  defmacro event(block) do
-    Mazurka.Resource.Utils.save(__CALLER__, attribute, block)
+  def compile(events) do
+    Enum.map(events, fn({ast, _meta}) ->
+      ast
+    end)
   end
 end

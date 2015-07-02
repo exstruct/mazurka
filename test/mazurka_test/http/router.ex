@@ -1,5 +1,5 @@
 defmodule MazurkaTest.Router do
-  use Mazurka.Protocols.HTTP.Router
+  use Mazurka.Protocol.HTTP.Router
   alias MazurkaTest.Resources
 
   plug :match
