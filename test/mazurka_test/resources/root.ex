@@ -2,9 +2,9 @@ defmodule MazurkaTest.Resources.Root do
   use Mazurka.Resource
   alias MazurkaTest.Resources
   alias Resources.Users
-  alias Resources.Oauth
-  alias Resources.Search
-  alias Resources.Translations
+  # alias Resources.Oauth
+  # alias Resources.Search
+  # alias Resources.Translations
 
   let user_id do
     Auth.user_id

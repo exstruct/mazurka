@@ -1,8 +1,8 @@
 defmodule MazurkaTest.Resources.Users do
   use Mazurka.Resource
-  alias MazurkaTest.Resources
-  alias Resources.Users.Update
-  alias Resources.Users.UpdateImage
+  # alias MazurkaTest.Resources
+  # alias Resources.Users.Update
+  # alias Resources.Users.UpdateImage
 
   # test = "this is a test"
 
@@ -59,10 +59,10 @@ defmodule MazurkaTest.Resources.Users do
 
   test "it should respond with a root link" do
     conn = request do
-      params %{user: "123"}
+      params %{"user" => "123"}
       accept "hyper+json"
     end
 
-    asset conn.status == 200
+    assert conn.status == 200
   end
 end

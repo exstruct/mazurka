@@ -7,14 +7,27 @@ defmodule Mazurka.Resource.Test do
     Mazurka.Compiler.Utils.register(__MODULE__, {name, block}, meta)
   end
 
+  defmacro request([do: block]) do
+    quote do
+      require Mazurka.Protocol.Request
+      conn = Mazurka.Protocol.Request.request __MODULE__ do
+        import Mazurka.Protocol.Request
+        unquote(block)
+      end
+      var!(__router__).request_call(conn, [])
+    end
+  end
+
   def compile(tests, env) do
     module = env.module
 
-    definitions = Enum.map(tests, fn({{name, _block}, _meta}) ->
+    definitions = Enum.map(tests, fn({{name, block}, _meta}) ->
       quote do
-        def unquote(:"test #{name}")({_, router}, _) do
-          # TODO
-          # unquote(block)
+        def unquote(:"test #{name}")({_, var!(__router__)}, _) do
+          import Kernel
+          import Mazurka.Resource.Test
+          import ExUnit.Assertions
+          unquote(block)
         end
       end
     end)

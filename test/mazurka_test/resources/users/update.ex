@@ -1,7 +1,7 @@
 defmodule MazurkaTest.Resources.Users.Update do
   use Mazurka.Resource
-  alias MazurkaTest.Resources
-  alias MazurkaTest.Resources.Users
+  # alias MazurkaTest.Resources
+  # alias MazurkaTest.Resources.Users
 
   # param user
 

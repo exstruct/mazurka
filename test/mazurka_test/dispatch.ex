@@ -1,7 +1,7 @@
 defmodule MazurkaTest.Dispatch do
   use Mazurka.Dispatch
   alias MazurkaTest.Services
-  alias Mazurka.Middleware
+  # alias Mazurka.Middleware
 
   service Foo.bar/0
 
