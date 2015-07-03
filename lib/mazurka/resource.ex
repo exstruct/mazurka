@@ -14,6 +14,7 @@ defmodule Mazurka.Resource do
       import Mazurka.Resource.Let
       import Mazurka.Resource.Mediatype
       import Mazurka.Resource.Param
+      import Mazurka.Resource.Test
 
       require Mazurka.Compiler.Utils
       require Logger

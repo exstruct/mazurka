@@ -1,6 +1,10 @@
 defmodule Mazurka.Mediatype.Hyperjson do
   use Mazurka.Mediatype
 
+  def name do
+    Hyperjson
+  end
+
   def content_types do
     [{"application", "hyper+json", %{}, Mazurka.Format.JSON},
      {"application", "hyper+x-erlang-binary", %{}, Mazurka.Format.ERLANG_TERM},

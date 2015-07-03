@@ -3,7 +3,7 @@ defmodule Mazurka.Resource.Event do
     Mazurka.Compiler.Utils.register(__MODULE__, block)
   end
 
-  def compile(events) do
+  def compile(events, _env) do
     Enum.map(events, fn({ast, _meta}) ->
       ast
     end)

@@ -1,6 +1,6 @@
 defmodule Mazurka.Mediatype.Hyperjson.Hyperpath.Test do
   use ExUnit.Case, async: true
-  import MazurkaTest.Router
+  import MazurkaTest.HTTP.Router
 
   test "hyperpath works" do
     # IO.inspect hyperpath _.account.display_name

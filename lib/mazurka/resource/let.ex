@@ -12,7 +12,7 @@ defmodule Mazurka.Resource.Let do
     Mazurka.Compiler.Utils.register(__MODULE__, block)
   end
 
-  def compile(lets) do
+  def compile(lets, _env) do
     Enum.map(lets, fn({ast, _meta}) ->
       ast
     end)

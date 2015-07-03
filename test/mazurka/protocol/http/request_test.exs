@@ -1,10 +1,10 @@
 defmodule Mazurka.Protocol.Http.Request.Test do
   use ExUnit.Case, async: true
 
-  require MazurkaTest.Router
+  require MazurkaTest.HTTP.Router
 
   test "it makes a request to the router" do
-    conn = MazurkaTest.Router.request do
+    conn = MazurkaTest.HTTP.Router.request do
       get "/"
       accept "hyper+json"
     end

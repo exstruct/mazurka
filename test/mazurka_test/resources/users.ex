@@ -56,11 +56,13 @@ defmodule MazurkaTest.Resources.Users do
   #     end
   #   end
   # end
-end
 
-# response = Api.Http.Router.request do
-#   method :post
-#   path "/"
-#   header "x-orig-proto", "example.com"
-#   auth 123
-# end
+  test "it should respond with a root link" do
+    conn = request do
+      params %{user: "123"}
+      accept "hyper+json"
+    end
+
+    asset conn.status == 200
+  end
+end

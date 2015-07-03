@@ -1,4 +1,4 @@
-defmodule MazurkaTest.Router do
+defmodule MazurkaTest.HTTP.Router do
   use Mazurka.Protocol.HTTP.Router
   use Mazurka.Mediatype.Hyperjson.Hyperpath
   use MazurkaTest.Dispatch

@@ -3,7 +3,7 @@ defmodule Mazurka.Resource.Condition do
     Mazurka.Compiler.Utils.register(__MODULE__, block, error_handler)
   end
 
-  def compile(conditions) do
+  def compile(conditions, _env) do
     IO.inspect {:CONDITIONS, conditions}
     false
   end

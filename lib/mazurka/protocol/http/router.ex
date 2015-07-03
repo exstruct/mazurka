@@ -42,9 +42,24 @@ defmodule Mazurka.Protocol.HTTP.Router do
   end
 
   @doc false
-  defmacro __before_compile__(_env) do
+  defmacro __before_compile__(env) do
+    tests = Mazurka.Resource.Test.get_tests(env.module)
     quote do
       import Mazurka.Protocol.HTTP.Router, only: []
+
+      defmodule Tests do
+        tests = unquote(Macro.escape(tests))
+        defmacro __using__(_) do
+          tests = unquote(Macro.escape(tests))
+          quote do
+            import ExUnit.Callbacks
+            import ExUnit.Assertions
+            import ExUnit.Case
+            import ExUnit.DocTest
+            unquote(tests)
+          end
+        end
+      end
     end
   end
 
@@ -95,8 +110,9 @@ defmodule Mazurka.Protocol.HTTP.Router do
 
   def __handle__(mod, _params, conn) do
     accepts = Plug.Conn.get_req_header(conn, "accept") |> Mazurka.Protocol.HTTP.AcceptHeader.handle()
+    dispatch = conn.private[:mazurka_dispatch]
     try do
-      {:ok, body, conn, content_type} = apply(mod, :action, [conn, &resolve/7, accepts])
+      {:ok, body, conn, content_type} = apply(mod, :action, [conn, &dispatch.resolve/7, accepts])
       conn
       |> put_resp_header("content-type", content_type)
       |> Plug.Conn.send_resp(conn.status || 200, body)
@@ -215,7 +231,12 @@ defmodule Mazurka.Protocol.HTTP.Router do
       end
     end
 
-    matches
+    tests = quote do
+      require unquote(mod)
+      :erlang.function_exported(unquote(mod), :tests, 1) and unquote(mod).tests(__MODULE__)
+    end
+
+    [matches, tests]
   end
 
   # Convert the verbs given with `:via` into a variable and guard set that can

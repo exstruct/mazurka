@@ -5,32 +5,44 @@ defmodule Mazurka.Compiler do
   Compile a resource with the environment attributes
   """
   defmacro compile(env) do
-    {mediatypes, globals} = Utils.get(env)
-    |> partition({%{}, %{}})
+    {mediatypes, includes, globals} = Utils.get(env)
+    |> partition({%{}, %{}, %{}})
 
-    globals = globals
-    |> Enum.map(&prepare_global/1)
+    includes = includes
+    |> Enum.map(&(prepare_include(&1, env)))
     |> :maps.from_list
 
-    mediatypes = Enum.flat_map(mediatypes, &(prepare_mediatype(&1, globals, env)))
+    globals = globals
+    |> Dict.put_new(Mazurka.Resource.Test, [])
+    |> Enum.map(&(prepare_global(&1, env)))
 
-    body(env.module, mediatypes, [])
+    etude_modules = Enum.map(mediatypes, &(prepare_etude_module(&1, includes, env)))
+    clauses = Enum.flat_map(etude_modules, &(prepare_clauses(&1, env)))
+
+    body(env.module, clauses, globals, [])
   end
 
   defp partition(list, acc) when list == [] or list == nil do
     acc
   end
-  defp partition([{nil, name, ast, meta} | rest], {mediatypes, globals}) do
-    globals = put_acc(globals, name, ast, meta)
-    partition(rest, {mediatypes, globals})
+  defp partition([{nil, name, ast, meta} | rest], {mediatypes, includes, globals}) do
+    name.module_info()
+    is_global = :erlang.function_exported(name, :global?, 0) and name.global?
+    if is_global do
+      globals = put_acc(globals, name, ast, meta)
+      partition(rest, {mediatypes, includes, globals})
+    else
+      includes = put_acc(includes, name, ast, meta)
+      partition(rest, {mediatypes, includes, globals})
+    end
   end
-  defp partition([{mediatype, name, ast, meta} | rest], {mediatypes, globals}) do
+  defp partition([{mediatype, name, ast, meta} | rest], {mediatypes, includes, globals}) do
     mt = mediatypes
     |> Dict.get(mediatype, %{__default__: Dict.size(mediatypes) == 0})
     |> put_acc(name, ast, meta)
 
     mediatypes = Dict.put(mediatypes, mediatype, mt)
-    partition(rest, {mediatypes, globals})
+    partition(rest, {mediatypes, includes, globals})
   end
 
   defp put_acc(map, name, ast, meta) do
@@ -39,29 +51,32 @@ defmodule Mazurka.Compiler do
     Dict.put(map, name, acc)
   end
 
-  defp prepare_global({global, definitions}) do
-    key = format_name(global)
-    {key, global.compile(definitions)}
+  defp prepare_include({include, definitions}, env) do
+    key = format_name(include)
+    {key, include.compile(definitions, env)}
   end
 
-  defp prepare_mediatype({mediatype, definitions}, globals, env) do
-    # default = if Dict.get(definitions, :__default__) do
-    #   [{"*", "*", %{}}]
-    # else
-    #   []
-    # end
+  defp prepare_global({global, definitions}, env) do
+    global.compile(definitions, env)
+  end
 
+  defp prepare_etude_module({mediatype, definitions}, includes, env) do
+    is_default = Dict.get(definitions, :__default__)
     definitions = Dict.delete(definitions, :__default__)
-    definitions = Enum.flat_map(definitions, &(prepare_definition(&1, mediatype, globals)))
+    definitions = Enum.flat_map(definitions, &(prepare_definition(&1, mediatype, includes)))
 
     module = env.module
-    etude_module = Module.concat([module, Etude])
+    etude_module = Module.concat([module, mediatype.name])
 
-    beam = definitions
+    definitions
     |> Utils.expand(env)
     |> Mazurka.Compiler.Etude.elixir_to_etude(etude_module)
     |> compile(etude_module, env)
+    {mediatype, etude_module, is_default}
+  end
 
+  defp prepare_clauses({mediatype, etude_module, _is_default}, env) do
+    module = env.module
     for {type, subtype, params, content_type} <- mediatype.content_types() do
       params = Macro.escape(params)
       # TODO send params as well
@@ -108,7 +123,7 @@ defmodule Mazurka.Compiler do
   end
 
   @doc false
-  defp body(module, mediatypes, struct) do
+  defp body(module, mediatypes, globals, struct) do
     quote do
       @doc """
       Handle a given request
@@ -166,6 +181,8 @@ defmodule Mazurka.Compiler do
       def __struct__ do
         unquote(Macro.escape(struct))
       end
+
+      unquote_splicing(globals)
     end
   end
 

@@ -1,14 +1,13 @@
-defmodule MazurkaTest do
-  use ExUnit.Case
+"test/mazurka_test/services/**/*.ex"
+|> Path.wildcard()
+|> Enum.map(&Code.require_file/1)
 
-  require MazurkaTest.Router
+"test/mazurka_test/resources/**/*.ex"
+|> Path.wildcard()
+|> Enum.map(&Code.require_file/1)
 
-  test "the truth" do
-    conn = MazurkaTest.Router.request do
-      get "/"
-      accept "hyper+x-erlang-binary"
-    end
+Code.require_file "test/mazurka_test/dispatch.ex"
 
-    IO.inspect conn.resp_body |> Mazurka.Format.ERLANG_TERM.decode
-  end
-end
+"test/mazurka_test/http/**/*.ex"
+|> Path.wildcard()
+|> Enum.map(&Code.require_file/1)
