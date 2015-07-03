@@ -1,10 +1,12 @@
 defmodule Mazurka.Format.JSON do
-  def encode(content, opts) do
-    Poison.encode!(content, opts)
+  def encode(content, opts \\ []) do
+    Poison.encode_to_iodata!(content, opts)
   end
 
-  def decode(content, opts) do
-    Poison.decode!(content, opts)
+  def decode(content, opts \\ []) do
+    content
+    |> to_string
+    |> Poison.decode!(opts)
   end
 end
 

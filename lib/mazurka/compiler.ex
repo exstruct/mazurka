@@ -17,7 +17,7 @@ defmodule Mazurka.Compiler do
     body(env.module, mediatypes, [])
   end
 
-  defp partition([], acc) do
+  defp partition(list, acc) when list == [] or list == nil do
     acc
   end
   defp partition([{nil, name, ast, meta} | rest], {mediatypes, globals}) do
@@ -26,7 +26,7 @@ defmodule Mazurka.Compiler do
   end
   defp partition([{mediatype, name, ast, meta} | rest], {mediatypes, globals}) do
     mt = mediatypes
-    |> Dict.get(mediatype, %{})
+    |> Dict.get(mediatype, %{__default__: Dict.size(mediatypes) == 0})
     |> put_acc(name, ast, meta)
 
     mediatypes = Dict.put(mediatypes, mediatype, mt)
@@ -45,6 +45,13 @@ defmodule Mazurka.Compiler do
   end
 
   defp prepare_mediatype({mediatype, definitions}, globals, env) do
+    # default = if Dict.get(definitions, :__default__) do
+    #   [{"*", "*", %{}}]
+    # else
+    #   []
+    # end
+
+    definitions = Dict.delete(definitions, :__default__)
     definitions = Enum.flat_map(definitions, &(prepare_definition(&1, mediatype, globals)))
 
     module = env.module
@@ -53,16 +60,23 @@ defmodule Mazurka.Compiler do
     beam = definitions
     |> Utils.expand(env)
     |> Mazurka.Compiler.Etude.elixir_to_etude(etude_module)
-    |> compile(etude_module)
+    |> compile(etude_module, env)
 
-    content_types = mediatype.content_types()
-    for {type, subtype, params} <- content_types do
+    for {type, subtype, params, content_type} <- mediatype.content_types() do
       params = Macro.escape(params)
+      # TODO send params as well
+      resp_type = "#{type}/#{subtype}; charset=utf-8"
       quote do
         defp handle(unquote(type) = type, unquote(subtype) = subtype, unquote(params) = params, context, resolve) do
           context = Mazurka.Runtime.put_mediatype(context, {type, subtype, params})
           Logger.debug("handling request with #{type}/#{subtype} in #{unquote(module)}")
-          unquote(etude_module).action(context, resolve)
+          prev = :erlang.get()
+          {out, context} = unquote(etude_module).action(context, resolve)
+          :erlang.erase()
+          for {k, v} <- prev do
+            :erlang.put(k, v)
+          end
+          {:ok, unquote(content_type).encode(out), context, unquote(resp_type)}
         end
 
         defp affordance(unquote(type), unquote(subtype), unquote(params), context, resolve, req, scope, props) do
@@ -87,8 +101,8 @@ defmodule Mazurka.Compiler do
     handler |> Module.split |> List.last |> String.downcase |> String.to_atom
   end
 
-  defp compile(etude_ast, etude_module) do
-    {:ok, _, _, beam} = Etude.compile(etude_module, etude_ast)
+  defp compile(etude_ast, etude_module, env) do
+    {:ok, _, _, beam} = Etude.compile(etude_module, etude_ast, [file: env.file])
     "#{Mix.Project.compile_path}/#{etude_module}.beam"
     |> File.write!(beam)
   end

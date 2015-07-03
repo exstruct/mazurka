@@ -9,6 +9,7 @@ defmodule Mazurka.Protocol.HTTP.Router do
       import Mazurka.Protocol.HTTP.Router
       @before_compile Mazurka.Protocol.HTTP.Router
 
+      use Mazurka.Protocol.Http.Request
       use Plug.Builder
 
       defp match(conn, _opts) do
@@ -97,7 +98,7 @@ defmodule Mazurka.Protocol.HTTP.Router do
     try do
       {:ok, body, conn, content_type} = apply(mod, :action, [conn, &resolve/7, accepts])
       conn
-      |> put_resp_header("content-type", content_type <> "; charset=utf-8")
+      |> put_resp_header("content-type", content_type)
       |> Plug.Conn.send_resp(conn.status || 200, body)
     rescue
       e in CaseClauseError ->
@@ -174,9 +175,8 @@ defmodule Mazurka.Protocol.HTTP.Router do
       put_resp_header("x-invalidates", url)
     {:ok, :ok, conn}
   end
-  defp resolve(mod, fun, args, conn, sender, ref, attrs) do
-    ## TODO pull from config
-    Api.Fns.resolve(mod, fun, args, conn, sender, ref, attrs)
+  defp resolve(mod, fun, args, conn = %{private: %{mazurka_dispatch: dispatch}}, sender, ref, attrs) do
+    dispatch.resolve(mod, fun, args, conn, sender, ref, attrs)
   end
 
   defp put_resp_header(%Plug.Conn{resp_headers: headers} = conn, key, value) do

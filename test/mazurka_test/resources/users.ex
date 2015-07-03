@@ -14,7 +14,9 @@ defmodule MazurkaTest.Resources.Users do
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
       123
-      "this is a test"
+      %{
+        root: %{href: "/"}
+      }
       # unquote(test)
       # %{
       #   id: Params.user,

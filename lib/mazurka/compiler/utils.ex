@@ -15,6 +15,10 @@ defmodule Mazurka.Compiler.Utils do
           meta
         end
         Macro.expand({type, meta, children}, env)
+      ([{:do, _} | _] = doblock) ->
+        Enum.map(doblock, fn({key, children}) ->
+          {key, expand(children, env)}
+        end)
       (other) ->
         Macro.expand(other, env)
     end)

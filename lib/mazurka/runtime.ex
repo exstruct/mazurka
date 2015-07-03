@@ -12,7 +12,6 @@ defmodule Mazurka.Runtime do
   end
 
   def resolve_affordance([module, mediatype_module, params, props], %{private: %{mazurka_router: router}} = context, _parent, _ref, _attrs) do
-    IO.inspect {:resolve, module, params}
     mediatype = get_mediatype(context)
     case router.resolve(module, params) do
       {:ok, method, scheme, host, path} ->

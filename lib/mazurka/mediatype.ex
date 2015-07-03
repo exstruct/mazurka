@@ -1,4 +1,11 @@
 defmodule Mazurka.Mediatype do
+  use Behaviour
+
+  @type ast :: Macro.t
+  defmacrocallback handle_action(ast) :: any
+  defmacrocallback handle_affordance(ast) :: any
+  defmacrocallback handle_error(ast) :: any
+
   @doc """
   Create a mediatype with default macros for action, affordance, error, and partial
 
@@ -8,6 +15,8 @@ defmodule Mazurka.Mediatype do
   """
   defmacro __using__(_) do
     quote [bind_quoted: []] do
+      @behaviour Mazurka.Mediatype
+
       defmacro action(block) do
         mediatype = __MODULE__
         quote do
@@ -29,6 +38,14 @@ defmodule Mazurka.Mediatype do
         quote do
           require Mazurka.Resource.Error
           Mazurka.Resource.Error.error(unquote(mediatype), unquote(name), unquote(block))
+        end
+      end
+
+      defmacro partial(name, block) do
+        mediatype = __MODULE__
+        quote do
+          require Mazurka.Resource.Partial
+          Mazurka.Resource.Partial.partial(unquote(mediatype), unquote(name), unquote(block))
         end
       end
     end

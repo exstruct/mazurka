@@ -1,13 +1,14 @@
 defmodule MazurkaTest do
   use ExUnit.Case
 
+  require MazurkaTest.Router
+
   test "the truth" do
-    conn = %{private: %{mazurka_router: MazurkaTest.Router}}
-    {out, state} = MazurkaTest.Resources.Root.action(conn, fn(mod, fun, args, _, _, _, _) ->
-      IO.inspect {mod, fun, args}
-      {:ok, "123"}
-    end)
-    Poison.encode!(out)
-    |> IO.puts
+    conn = MazurkaTest.Router.request do
+      get "/"
+      accept "hyper+x-erlang-binary"
+    end
+
+    IO.inspect conn.resp_body |> Mazurka.Format.ERLANG_TERM.decode
   end
 end
