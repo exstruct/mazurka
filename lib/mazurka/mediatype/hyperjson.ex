@@ -63,9 +63,14 @@ defmodule Mazurka.Mediatype.Hyperjson do
 
   defmacro handle_error(block) do
     quote do
-      response = unquote(block)
+      response = unquote(block) || %{}
+
       if ^:erlang.is_map(response) do
-        ^Dict.put(response, "href", Rels.self)
+        response
+        |> ^Dict.put("href", Rels.self)
+        |> ^Dict.put_new("error", %{
+          "message" => "Internal server error"
+        })
       else
         response
       end

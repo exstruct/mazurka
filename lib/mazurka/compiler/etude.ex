@@ -69,8 +69,6 @@ defmodule Mazurka.Compiler.Etude do
     handle_node({:etude_cond, meta, [expression, [arm1, arm2]]}, acc)
   end
   defp handle_node({:etude_cond, meta, [expression, [arm1, arm2]]}, acc) do
-    {arm1, acc} = handle_node(arm1, acc)
-    {arm2, acc} = handle_node(arm2, acc)
     {%Node.Cond{expression: expression,
                 arms: [arm1, arm2],
                 line: meta[:line]}, acc}
@@ -132,6 +130,9 @@ defmodule Mazurka.Compiler.Etude do
   # map
   defp handle_node({:%{}, _, kvs}, acc) do
     {:maps.from_list(kvs), acc}
+  end
+  defp handle_node(%{}, acc) do
+    {%{}, acc}
   end
   # map key
   defp handle_node({:&&&, meta, [lhs, rhs]}, acc) do

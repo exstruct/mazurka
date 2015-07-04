@@ -9,10 +9,18 @@ defmodule Mazurka.Resource.Mediatype do
 
   defp wrap({:__block__, children}, module) do
     req = {:import, [], [module]}
-    {:__block__, [req | children]}
+    {:__block__, [req, default_error | children]}
   end
   defp wrap(child, module) do
     req = {:import, [], [module]}
-    {:__block__, [req, child]}
+    {:__block__, [req, default_error, child]}
+  end
+
+  def default_error do
+    quote do
+      error error(_) do
+        nil
+      end
+    end
   end
 end

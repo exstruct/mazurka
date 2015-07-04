@@ -18,6 +18,20 @@ defmodule Mazurka.Compiler.Kernel do
     end
   end
 
+  defmacro left |> right do
+    [{h, _}|t] = Macro.unpipe({:|>, [], [left, right]})
+    :lists.foldl(fn
+      ({{:^, meta, [x]}, pos}, acc) ->
+        {:^, meta, [Macro.pipe(acc, x, pos)]}
+      ({x, pos}, acc) ->
+        Macro.pipe(acc, x, pos)
+    end, h, t)
+  end
+
+  defmacro lhs || rhs do
+    {:etude_cond, [], [lhs, [do: lhs, else: rhs]]}
+  end
+
   defmacro left or right do
     {:etude_cond, [], [left, [do: left, else: right]]}
   end
