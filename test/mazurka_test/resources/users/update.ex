@@ -7,9 +7,7 @@ defmodule MazurkaTest.Resources.Users.Update do
 
   # condition Params.user == Auth.user_id, permission_error
 
-  # let user do
-  #   Users.get(Params.user)
-  # end
+  # let user = Users.get(Params.user)
 
   # mediatype Mazurka.Mediatype.Hyperjson do
   #   action do
@@ -42,10 +40,6 @@ defmodule MazurkaTest.Resources.Users.Update do
   #     }
   #   end
 
-  #   event do
-
-  #   end
-
   #   error permission_error(_err) do
   #     %{
   #       error: %{
@@ -53,5 +47,18 @@ defmodule MazurkaTest.Resources.Users.Update do
   #       }
   #     }
   #   end
+  # end
+
+  # event do
+  #   IO.puts "user updated"
+  # end
+
+  # test "should fail if the user is not authenticated" do
+  #   conn = request do
+  #     params %{"user" => "6"}
+  #     accept "hyper+json"
+  #   end
+
+  #   IO.inspect conn
   # end
 end

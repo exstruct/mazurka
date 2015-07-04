@@ -1,4 +1,8 @@
 defmodule MazurkaTest.Resources.Root do
+  @moduledoc """
+  Root resource, here.
+  """
+
   use Mazurka.Resource
   alias MazurkaTest.Resources
   alias Resources.Users
@@ -10,6 +14,9 @@ defmodule MazurkaTest.Resources.Root do
     Auth.user_id
   end
 
+  @doc """
+  This is a foo
+  """
   let foo = 123
 
   event do
@@ -20,6 +27,9 @@ defmodule MazurkaTest.Resources.Root do
     :ok
   end
 
+  @doc """
+  This is a mediatype
+  """
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
       user = %Users{user: user_id}

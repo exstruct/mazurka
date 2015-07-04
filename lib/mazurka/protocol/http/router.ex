@@ -44,22 +44,26 @@ defmodule Mazurka.Protocol.HTTP.Router do
   @doc false
   defmacro __before_compile__(env) do
     tests = Mazurka.Resource.Test.get_tests(env.module)
-    quote do
-      import Mazurka.Protocol.HTTP.Router, only: []
-
-      defmodule Tests do
-        tests = unquote(Macro.escape(tests))
-        defmacro __using__(_) do
+    test_mod = if Mix.env == :test do
+      quote do
+        defmodule Tests do
           tests = unquote(Macro.escape(tests))
-          quote do
-            import ExUnit.Callbacks
-            import ExUnit.Assertions
-            import ExUnit.Case
-            import ExUnit.DocTest
-            unquote(tests)
+          defmacro __using__(_) do
+            tests = unquote(Macro.escape(tests))
+            quote do
+              import ExUnit.Callbacks
+              import ExUnit.Assertions
+              import ExUnit.Case
+              import ExUnit.DocTest
+              unquote(tests)
+            end
           end
         end
       end
+    end
+    quote do
+      import Mazurka.Protocol.HTTP.Router, only: []
+      unquote(test_mod)
     end
   end
 

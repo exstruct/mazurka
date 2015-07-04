@@ -8,17 +8,30 @@ defmodule Mazurka.Resource.Test do
   end
 
   defmacro request([do: block]) do
-    quote do
-      require Mazurka.Protocol.Request
-      conn = Mazurka.Protocol.Request.request __MODULE__ do
-        import Mazurka.Protocol.Request
-        unquote(block)
+    if Mix.env == :test do
+      quote do
+        require Mazurka.Protocol.Request
+        conn = Mazurka.Protocol.Request.request __MODULE__ do
+          import Mazurka.Protocol.Request
+          unquote(block)
+        end
+        var!(__router__).request_call(conn, [])
       end
-      var!(__router__).request_call(conn, [])
     end
   end
 
   def compile(tests, env) do
+    do_compile(tests, env, Mix.env)
+  end
+
+  defp do_compile(test, env, :dev) do
+    quote do
+      defmacro tests(_) do
+        nil
+      end
+    end
+  end
+  defp do_compile(tests, env, _) do
     module = env.module
 
     definitions = Enum.map(tests, fn({{name, block}, _meta}) ->

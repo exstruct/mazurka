@@ -96,6 +96,13 @@ defmodule Mazurka.Compiler.Etude do
                  line: meta[:line]}, acc}
   end
   # call
+  defp handle_node({:., meta, [%Node.Var{} = var, property]}, acc) do
+    {%Node.Call{module: Dict,
+                function: :get,
+                arguments: [var, property],
+                attrs: %{native: true},
+                line: meta[:line]}, acc}
+  end
   defp handle_node({:., meta, [module, fun]}, acc) do
     {%Node.Call{module: module,
                 function: fun,

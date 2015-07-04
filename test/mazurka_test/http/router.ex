@@ -10,6 +10,7 @@ defmodule MazurkaTest.HTTP.Router do
 
   get     "/",                          Resources.Root
   get     "/users/:user",               Resources.Users
+  post    "/users/:user",               Resources.Users.Update
 
   match   _,                            Resources.Errors.NotFound
 end
