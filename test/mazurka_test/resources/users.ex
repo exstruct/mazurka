@@ -15,7 +15,7 @@ defmodule MazurkaTest.Resources.Users do
     action do
       123
       %{
-        root: %{href: "/"}
+        "root" => %{"href" => "/"}
       }
       # unquote(test)
       # %{
@@ -32,11 +32,11 @@ defmodule MazurkaTest.Resources.Users do
 
     affordance do
       %{
-        foo: 456
+        "foo" => 456
       }
     end
 
-    # defp image() do
+    # partial image() do
     #   ^IO.inspect :foo
     #   Hyper.image_form(%{
     #     affordance: %UpdateImage{user: Params.user},
@@ -57,9 +57,9 @@ defmodule MazurkaTest.Resources.Users do
   #   end
   # end
 
-  test "it should respond with a root link" do
+  test "it should response with a 200" do
     conn = request do
-      params %{"user" => "123"}
+      params %{"user" => "6"}
       accept "hyper+json"
     end
 

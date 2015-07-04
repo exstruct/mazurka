@@ -3,6 +3,10 @@ defmodule Mazurka.Runtime do
 
   @mediatype_key :mazurka_mediatype
 
+  def raise([exception], _conn, _parent, _ref, _attrs) do
+    {:error, exception}
+  end
+
   def struct([module, props], _context, _parent, _ref, _attrs) do
     if :erlang.function_exported(module, :affordance_partial, 5) do
       {:partial, {module, :affordance_partial, props}}
@@ -12,7 +16,7 @@ defmodule Mazurka.Runtime do
   end
 
   def resolve_affordance([module, mediatype_module, params, props], %{private: %{mazurka_router: router}} = context, _parent, _ref, _attrs) do
-    mediatype = get_mediatype(context)
+    _mediatype = get_mediatype(context)
     case router.resolve(module, params) do
       {:ok, method, scheme, host, path} ->
         {:ok, %Affordance{mediatype: mediatype_module,

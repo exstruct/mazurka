@@ -13,17 +13,19 @@ defmodule MazurkaTest.Resources.Root do
   let foo = 123
 
   event do
-    213
+    :ok
   end
 
-  condition foo == 45, foo
+  event do
+    :ok
+  end
 
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
       user = %Users{user: user_id}
       %{
-        account: user,
-        foo: foo
+        "account" => user,
+        "foo" => foo
         # oauth: %Oauth{},
         # search: %Search{} |> pointer :search,
         # translations: %Translations{}
@@ -35,9 +37,13 @@ defmodule MazurkaTest.Resources.Root do
         "input": %{}
       }
     end
+  end
 
-    error foo(err) do
-      %{}
+  test "should response with a 200" do
+    conn = request do
+      accept "hyper+json"
     end
+
+    assert conn.status == 200
   end
 end

@@ -1,10 +1,10 @@
-defmodule Mazurka.Protocol.Http.Request do
+defmodule Mazurka.Protocol.HTTP.Request do
   defmacro __using__(_) do
     quote do
       defmacro request(block) do
         quote do
           require Mazurka.Protocol.Request
-          import Mazurka.Protocol.Http.Request
+          import Mazurka.Protocol.HTTP.Request
           import unquote(__MODULE__)
           conn = Mazurka.Protocol.Request.request(nil, unquote(block))
           unquote(__MODULE__).request_call(conn, [])
@@ -12,7 +12,7 @@ defmodule Mazurka.Protocol.Http.Request do
       end
 
       def request_call(conn, opts) do
-        conn = %{conn | adapter: {Mazurka.Protocol.Http.Request, %{}},
+        conn = %{conn | adapter: {Mazurka.Protocol.HTTP.Request, %{}},
                         scheme: "http"}
         case conn.private do
           %{mazurka_route: route} when route != nil ->

@@ -9,7 +9,7 @@ defmodule Mazurka.Protocol.HTTP.Router do
       import Mazurka.Protocol.HTTP.Router
       @before_compile Mazurka.Protocol.HTTP.Router
 
-      use Mazurka.Protocol.Http.Request
+      use Mazurka.Protocol.HTTP.Request
       use Plug.Builder
 
       defp match(conn, _opts) do
@@ -115,7 +115,7 @@ defmodule Mazurka.Protocol.HTTP.Router do
       {:ok, body, conn, content_type} = apply(mod, :action, [conn, &dispatch.resolve/7, accepts])
       conn
       |> put_resp_header("content-type", content_type)
-      |> Plug.Conn.send_resp(conn.status || 200, body)
+      |> Plug.Conn.send_resp(choose_status(conn), body)
     rescue
       e in CaseClauseError ->
         case e do
@@ -125,74 +125,11 @@ defmodule Mazurka.Protocol.HTTP.Router do
     end
   end
 
-  defp resolve(:__internal, :resolve, ["params", param], conn, _, _, _) do
-    params = Map.get(conn.private, :mazurka_params)
-    val = Map.get(params, param)
-    normalized = if val == nil, do: :undefined, else: URI.decode(val)
-    {:ok, normalized}
+  defp choose_status(%Plug.Conn{private: %{mazurka_error: true}, status: status}) do
+    status || 500
   end
-  defp resolve(:__internal, :resolve, ["req", "host"], conn, _, _, _) do
-    {:ok, conn.host}
-  end
-  defp resolve(:__internal, :resolve, ["req", "method"], conn, _, _, _) do
-    {:ok, conn.method}
-  end
-  defp resolve(:__internal, :resolve, ["req", "port"], conn, _, _, _) do
-    {:ok, conn.port}
-  end
-  defp resolve(:__internal, :resolve, ["req", "peer"], conn, _, _, _) do
-    {:ok, conn.peer}
-  end
-  defp resolve(:__internal, :resolve, ["req", "remote_ip"], conn, _, _, _) do
-    {:ok, conn.remote_ip}
-  end
-  defp resolve(:__internal, :resolve, ["req", "headers"], conn, _, _, _) do
-    {:ok, conn.req_headers}
-  end
-  defp resolve(:__internal, :resolve, ["req", "scheme"], conn, _, _, _) do
-    {:ok, conn.scheme}
-  end
-  defp resolve(:__internal, :resolve, ["req", "query_string"], conn, _, _, _) do
-    {:ok, conn.query_string}
-  end
-  defp resolve(:res, :status, [code], conn, _, _, _) do
-    {:ok, :ok, Plug.Conn.put_status(conn, code)}
-  end
-  defp resolve(:res, :set, [key, value], conn, _, _, _) do
-    {:ok, :ok, put_resp_header(conn, key, value)}
-    # TODO open a pull request to plug to allow setting more than one header
-    # {:ok, :ok, Plug.Conn.put_resp_header(conn, key, value)}
-  end
-  defp resolve(:res, :cache, [params], conn, _, _, _) when is_map(params) do
-    value = Enum.map_join(params, ", ", fn
-      ({k, v}) when is_boolean(v) ->
-        k
-      ({_k, v}) when v == nil or v == :undefined ->
-        ""
-      ({k, v}) ->
-        [k, "=", to_string(v)]
-    end)
-    {:ok, true, put_resp_header(conn, "cache-control", value)}
-  end
-  defp resolve(:res, :cache, [params], conn, _, _, _) when is_binary(params) do
-    {:ok, true, put_resp_header(conn, "cache-control", params)}
-  end
-  defp resolve(:res, :redirect, [%{"href" => url} | rest], conn, _, _, _) do
-    code = case rest do
-      [] -> 302
-      [status] -> status
-    end
-    conn = put_resp_header(conn, "location", url)
-           |> Plug.Conn.put_status(code)
-    {:ok, :ok, conn}
-  end
-  defp resolve(:res, :invalidates, [%{"href" => url}], conn, _, _, _) do
-    conn = conn |>
-      put_resp_header("x-invalidates", url)
-    {:ok, :ok, conn}
-  end
-  defp resolve(mod, fun, args, conn = %{private: %{mazurka_dispatch: dispatch}}, sender, ref, attrs) do
-    dispatch.resolve(mod, fun, args, conn, sender, ref, attrs)
+  defp choose_status(%Plug.Conn{status: status}) do
+    status || 200
   end
 
   defp put_resp_header(%Plug.Conn{resp_headers: headers} = conn, key, value) do

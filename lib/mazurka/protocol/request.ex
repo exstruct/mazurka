@@ -73,7 +73,7 @@ defmodule Mazurka.Protocol.Request do
     end
   end
 
-  defmacro body(content) do
+  defmacro body(_content) do
     # TODO
     quote do
       # var!(conn) = %{var!(conn) | }

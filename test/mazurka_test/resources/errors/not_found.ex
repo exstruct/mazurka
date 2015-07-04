@@ -4,8 +4,8 @@ defmodule MazurkaTest.Resources.Errors.NotFound do
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
       %{
-        error: %{
-          message: "Not found"
+        "error" => %{
+          "message" => "Not found"
         }
       }
     end

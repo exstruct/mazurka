@@ -32,7 +32,7 @@ defmodule Mazurka.Dispatch do
     end
   end
 
-  defmacro env(env, [do: block]) do
+  defmacro env(_env, [do: _block]) do
     nil
   end
 
@@ -49,7 +49,7 @@ defmodule Mazurka.Dispatch do
         quote do
           service unquote(definition), unquote(module).unquote(function)(unquote_splicing(args)), unquote(do_block)
         end
-      module ->
+      _ ->
         quote do
           service unquote(definition), unquote(definition), unquote(do_block)
         end
@@ -62,7 +62,7 @@ defmodule Mazurka.Dispatch do
     end
   end
 
-  defmacro service(source, target, [do: middleware]) do
+  defmacro service(source, target, [do: _middleware]) do
     case {unescape(source, __CALLER__), unescape(target, __CALLER__)} do
       {{s_module, s_function, s_arity}, {t_module, t_function, t_args}} ->
         s_args = gen_args(s_arity)
@@ -100,7 +100,7 @@ defmodule Mazurka.Dispatch do
   defp unescape({:__aliases__, _, _} = module, caller) do
     Utils.eval(module, caller)
   end
-  defp unescape({{:., meta, [module, function]}, _, args}, caller) do
+  defp unescape({{:., _meta, [module, function]}, _, args}, caller) do
     module = Utils.eval(module, caller)
     function = Utils.eval(function, caller)
     args = Enum.map(args, fn

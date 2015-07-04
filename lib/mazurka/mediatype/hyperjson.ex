@@ -60,4 +60,15 @@ defmodule Mazurka.Mediatype.Hyperjson do
       end
     end
   end
+
+  defmacro handle_error(block) do
+    quote do
+      response = unquote(block)
+      if ^:erlang.is_map(response) do
+        ^Dict.put(response, "href", Rels.self)
+      else
+        response
+      end
+    end
+  end
 end

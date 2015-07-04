@@ -19,7 +19,9 @@ defmodule Mazurka.Mixfile do
      {:poison, ">= 1.4.0"},
      {:etude, path: "../../camshaft/etude"},
      {:parse_trans, github: "uwiger/parse_trans", optional: true},
-     {:mimetype_parser, "~> 0.1.0"}]
+     {:mimetype_parser, "~> 0.1.0"},
+     {:earmark, "~> 0.1", only: :dev},
+     {:ex_doc, "~> 0.7", only: :dev}]
   end
 
   defp package do

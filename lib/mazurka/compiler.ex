@@ -69,7 +69,7 @@ defmodule Mazurka.Compiler do
     etude_module = Module.concat([module, mediatype.name])
 
     definitions
-    |> Utils.expand(env)
+    |> Utils.expand(%{env | module: etude_module})
     |> Mazurka.Compiler.Etude.elixir_to_etude(etude_module)
     |> compile(etude_module, env)
     {mediatype, etude_module, is_default}
@@ -86,7 +86,14 @@ defmodule Mazurka.Compiler do
           context = Mazurka.Runtime.put_mediatype(context, {type, subtype, params})
           Logger.debug("handling request with #{type}/#{subtype} in #{unquote(module)}")
           prev = :erlang.get()
-          {out, context} = unquote(etude_module).action(context, resolve)
+          {out, context} = try do
+            unquote(etude_module).action(context, resolve)
+          catch
+            {%Mazurka.Resource.Error{message: out}, context} ->
+              {out, context}
+            e ->
+              throw e
+          end
           :erlang.erase()
           for {k, v} <- prev do
             :erlang.put(k, v)
@@ -102,24 +109,36 @@ defmodule Mazurka.Compiler do
   end
 
   defp prepare_definition({handler, [{ast, meta}]}, mediatype, globals) do
-    fn_name = format_name(handler)
+    fn_name = format_name(handler, meta)
     [{fn_name, handler.compile(mediatype, ast, globals, meta)}]
   end
   defp prepare_definition({handler, definitions}, mediatype, globals) do
-    fn_name = format_name(handler)
     for {ast, meta} <- definitions do
+      fn_name = format_name(handler, meta)
       {fn_name, handler.compile(mediatype, ast, globals, meta)}
     end
   end
 
-  defp format_name(handler) do
+  defp format_name(handler, meta \\ nil)
+  defp format_name(handler, nil) do
     handler |> Module.split |> List.last |> String.downcase |> String.to_atom
+  end
+  defp format_name(handler, meta) do
+    handler.module_info()
+    if :erlang.function_exported(handler, :format_name, 1) do
+      handler.format_name(meta)
+    else
+      format_name(handler, nil)
+    end
   end
 
   defp compile(etude_ast, etude_module, env) do
+    ## TODO read the existing beam file and verify it has changed before compiling
     {:ok, _, _, beam} = Etude.compile(etude_module, etude_ast, [file: env.file])
     "#{Mix.Project.compile_path}/#{etude_module}.beam"
     |> File.write!(beam)
+
+    :code.load_binary(etude_module, env.file |> to_char_list, beam)
   end
 
   @doc false

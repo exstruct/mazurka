@@ -3,7 +3,7 @@ defmodule Mazurka.Resource.Affordance do
     Mazurka.Compiler.Utils.register(mediatype, __MODULE__, block, nil)
   end
 
-  def compile(mediatype, block, globals, meta) do
+  def compile(mediatype, block, globals, _meta) do
     quote do
       unquote_splicing(globals[:let] || [])
       affordance = unquote(block)
@@ -13,7 +13,7 @@ defmodule Mazurka.Resource.Affordance do
       if failure do
         :undefined
       else
-        :TODO
+        unquote(mediatype).handle_action(affordance)
       end
     end
   end

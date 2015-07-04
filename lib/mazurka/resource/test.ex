@@ -39,7 +39,7 @@ defmodule Mazurka.Resource.Test do
     quote do
       defmacro tests(router) do
         router = Mazurka.Compiler.Utils.eval(router, __CALLER__)
-        Mazurka.Resource.Test.register_tests(router, unquote(module), unquote(Macro.escape(tests)), __CALLER__)
+        Mazurka.Resource.Test.register_tests(router, unquote(module), unquote(Macro.escape(tests)))
       end
 
       unquote_splicing(definitions)
@@ -50,7 +50,7 @@ defmodule Mazurka.Resource.Test do
     end
   end
 
-  def register_tests(router, module, tests, caller) do
+  def register_tests(router, module, tests) do
     cases = Enum.map(tests, fn({name, meta}) ->
       meta = Macro.escape(meta)
       quote bind_quoted: [module: module, router: router, name: name, meta: meta] do

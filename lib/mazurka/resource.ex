@@ -6,7 +6,7 @@ defmodule Mazurka.Resource do
         use Mazurka.Resource
       end
   """
-  defmacro __using__(opts) do
+  defmacro __using__(_opts) do
     # Mazurka.Compiler.Utils.put(__CALLER__, nil, __MODULE__, opts)
     quote do
       import Mazurka.Resource.Condition

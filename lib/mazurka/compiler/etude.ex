@@ -1,5 +1,4 @@
 defmodule Mazurka.Compiler.Etude do
-  alias Mazurka.Compiler.Utils
   alias Etude.Node
 
   def elixir_to_etude(ast, module) do
@@ -31,6 +30,13 @@ defmodule Mazurka.Compiler.Etude do
     {%Node.Call{module: Kernel,
                 function: :==,
                 arguments: [lhs, rhs],
+                attrs: %{native: true},
+                line: meta[:line]}, acc}
+  end
+  defp handle_node({:!, meta, [value]}, acc) do
+    {%Node.Call{module: :erlang,
+                function: :not,
+                arguments: [value],
                 attrs: %{native: true},
                 line: meta[:line]}, acc}
   end

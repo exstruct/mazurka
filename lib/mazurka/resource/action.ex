@@ -3,11 +3,11 @@ defmodule Mazurka.Resource.Action do
     Mazurka.Compiler.Utils.register(mediatype, __MODULE__, block, nil)
   end
 
-  def compile(mediatype, block, globals, meta) do
+  def compile(mediatype, block, globals, _meta) do
     quote do
       unquote_splicing(globals[:let] || [])
       action = unquote(block)
-      events = unquote_splicing(globals[:event] || [true])
+      events = unquote(globals[:event] || [true])
 
       # this may seem redundant but it's used for tracking causality
       # between the event and action
@@ -22,7 +22,7 @@ defmodule Mazurka.Resource.Action do
       failure = unquote(globals[:condition])
 
       if failure do
-        failure
+        raise failure
       else
         unquote(mediatype).handle_action(response)
       end

@@ -15,7 +15,7 @@ defmodule Mazurka.Mediatype.Hyperjson.Hyperpath do
       case Dict.get(parent, unquote(rhs)) do
         nil when is_binary(href) ->
           conn = request do
-            import Mazurka.Protocol.Http.Request
+            import Mazurka.Protocol.HTTP.Request
             get href
             accept "hyper+json"
           end

@@ -3,8 +3,8 @@ defmodule Mazurka.Mediatype.Hyperjson.Hyperpath.Test do
   import MazurkaTest.HTTP.Router
 
   test "hyperpath works" do
-    # IO.inspect hyperpath _.account.display_name
     user = %{"href" => "/users/1"}
-    IO.inspect hyperpath user.root
+    root = hyperpath user.root
+    assert root["href"]
   end
 end

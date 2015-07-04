@@ -1,6 +1,4 @@
 defmodule Mazurka.Compiler.Kernel do
-  alias Etude.Node
-
   def wrap(block) do
     {:__block__, [],
      [{:import, [],
@@ -12,6 +10,12 @@ defmodule Mazurka.Compiler.Kernel do
 
   defmacro if(expression, arms) do
     {:etude_cond, [], [expression, arms]}
+  end
+
+  defmacro raise(expression) do
+    quote do
+      ^^Mazurka.Runtime.raise(unquote(expression))
+    end
   end
 
   defmacro left or right do

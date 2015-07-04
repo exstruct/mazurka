@@ -19,6 +19,8 @@ defmodule Mazurka.Compiler.Utils do
         Enum.map(doblock, fn({key, children}) ->
           {key, expand(children, env)}
         end)
+      ({name, children}) when is_atom(name) ->
+        {name, expand(children, env)}
       (other) ->
         Macro.expand(other, env)
     end)
