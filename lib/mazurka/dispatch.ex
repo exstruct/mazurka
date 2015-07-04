@@ -10,7 +10,9 @@ defmodule Mazurka.Dispatch do
         dispatch = __MODULE__
         quote do
           def call(conn, opts) do
-            conn = Plug.Conn.put_private(conn, :mazurka_dispatch, unquote(dispatch))
+            conn = conn
+            |> Plug.Conn.put_private(:mazurka_dispatch, unquote(dispatch))
+            |> Plug.Conn.put_private(:mazurka_router, __MODULE__)
             super(conn, opts)
           end
         end

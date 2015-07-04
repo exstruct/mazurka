@@ -73,6 +73,10 @@ defmodule Mazurka.Compiler.Etude do
                 arms: [arm1, arm2],
                 line: meta[:line]}, acc}
   end
+  defp handle_node({:etude_prop, meta, [name]}, acc) do
+    {%Node.Prop{name: name,
+                line: meta[:line]}, acc}
+  end
   defp handle_node({:&&, meta, [expression, arm1]}, acc) do
     {%Node.Cond{expression: expression,
                 arms: [arm1, nil],

@@ -38,6 +38,13 @@ defmodule Mazurka.Protocol.HTTP.Router do
       end
 
       defoverridable [match: 2, dispatch: 2]
+
+      ## Build a graph of the resources and their links
+      Mazurka.Protocol.HTTP.Router.get "/__graph__", Mazurka.Protocol.HTTP.Graph
+      Module.delete_attribute __MODULE__, :mazurka_nodes
+      Module.delete_attribute __MODULE__, :mazurka_links
+      Module.register_attribute __MODULE__, :mazurka_nodes, accumulate: true
+      Module.register_attribute __MODULE__, :mazurka_links, accumulate: true
     end
   end
 
@@ -64,6 +71,16 @@ defmodule Mazurka.Protocol.HTTP.Router do
     quote do
       import Mazurka.Protocol.HTTP.Router, only: []
       unquote(test_mod)
+
+      @doc """
+      Get a graph object of all of the resources and their links
+      """
+      def graph() do
+        %{
+          "nodes" => @mazurka_nodes,
+          "links" => @mazurka_links
+        }
+      end
     end
   end
 
@@ -172,12 +189,20 @@ defmodule Mazurka.Protocol.HTTP.Router do
       end
     end
 
-    tests = quote do
+    info = quote do
       require unquote(mod)
+
+      ## Auto include resource tests
       :erlang.function_exported(unquote(mod), :tests, 1) and unquote(mod).tests(__MODULE__)
+
+      Module.put_attribute __MODULE__, :mazurka_nodes, %{
+        "name" => unquote(mod) |> Module.split |> Enum.join("."),
+        "path" => unquote(path)
+      }
+      ## TODO put_attribute on :mazurka_links
     end
 
-    [matches, tests]
+    [matches, info]
   end
 
   # Convert the verbs given with `:via` into a variable and guard set that can

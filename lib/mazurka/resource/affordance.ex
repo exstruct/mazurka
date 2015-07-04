@@ -16,6 +16,7 @@ defmodule Mazurka.Resource.Affordance do
         unquote(mediatype).handle_action(affordance)
       end
     end
+    |> Mazurka.Resource.Param.format
   end
 end
 

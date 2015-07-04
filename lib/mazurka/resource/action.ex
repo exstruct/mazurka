@@ -27,5 +27,6 @@ defmodule Mazurka.Resource.Action do
         unquote(mediatype).handle_action(response)
       end
     end
+    |> Mazurka.Resource.Param.format(:conn)
   end
 end
