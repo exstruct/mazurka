@@ -135,9 +135,18 @@ defmodule Mazurka.Compiler do
   defp compile(etude_ast, etude_module, env) do
     ## TODO read the existing beam file and verify it has changed before compiling
     {:ok, _, _, beam} = Etude.compile(etude_module, etude_ast, [file: env.file])
-    "#{Mix.Project.compile_path}/#{etude_module}.beam"
-    |> File.write!(beam)
 
+    # Make ex_doc happy
+    chunk_data = :erlang.term_to_binary({:elixir_docs_v1, [
+      docs: [],
+      moduledoc: {0, false},
+      behaviour_docs: []
+    ]})
+    beam = :elixir_module.add_beam_chunk(beam, 'ExDc', chunk_data)
+
+    path = "#{Mix.Project.compile_path}/#{etude_module}.beam"
+
+    File.write!(path, beam)
     :code.load_binary(etude_module, env.file |> to_char_list, beam)
   end
 
@@ -174,15 +183,12 @@ defmodule Mazurka.Compiler do
         end
       end
 
-      @doc """
-      Render an affordance partial
-      """
+      @doc false
       def affordance_partial(context, resolve, req, scope, props) do
         {type, subtype, params} = Mazurka.Runtime.get_mediatype(context)
         affordance(type, subtype, params, context, resolve, req, scope, props)
       end
 
-      @doc false
       defp handle(type, subtype, params, request, resolve)
       defp affordance(type, subtype, params, context, resolve, req, scope, props)
       unquote_splicing(mediatypes)

@@ -24,8 +24,9 @@ defmodule Mazurka.Resource.Test do
     do_compile(tests, env, Mix.env)
   end
 
-  defp do_compile(test, env, :dev) do
+  defp do_compile(_tests, _env, :dev) do
     quote do
+      @doc false
       defmacro tests(_) do
         nil
       end
@@ -50,6 +51,7 @@ defmodule Mazurka.Resource.Test do
     end)
 
     quote do
+      @doc false
       defmacro tests(router) do
         router = Mazurka.Compiler.Utils.eval(router, __CALLER__)
         Mazurka.Resource.Test.register_tests(router, unquote(module), unquote(Macro.escape(tests)))
@@ -57,6 +59,7 @@ defmodule Mazurka.Resource.Test do
 
       unquote_splicing(definitions)
 
+      @doc false
       def __ex_unit__(router, pass, context) do
         {:ok, context}
       end

@@ -1,6 +1,15 @@
 defmodule Mazurka.Protocol.HTTP.Request do
   defmacro __using__(_) do
     quote do
+      @doc """
+      Make a request to the router
+
+          conn = request do
+            get "/"
+            accept "hyper+json"
+            header "x-orig-host", "example.com"
+          end
+      """
       defmacro request(block) do
         quote do
           require Mazurka.Protocol.Request
@@ -11,6 +20,7 @@ defmodule Mazurka.Protocol.HTTP.Request do
         end
       end
 
+      @doc false
       def request_call(conn, opts) do
         conn = %{conn | adapter: {Mazurka.Protocol.HTTP.Request, %{}},
                         scheme: "http"}
