@@ -14,21 +14,13 @@ defmodule Mazurka.Protocol.HTTP.Router do
 
       defp match(conn, _opts) do
         {mod, params} = do_match(conn.method, conn.path_info, conn.host)
-        Plug.Conn.put_private(conn, :mazurka_route, mod)
-         |> Plug.Conn.put_private(:mazurka_params, params)
+        conn
+        |> Plug.Conn.put_private(:mazurka_route, mod)
+        |> Plug.Conn.put_private(:mazurka_params, params)
       end
 
       def resolve(mod) do
         resolve(mod, %{})
-      end
-
-      def resolve(mod, params) do
-        try do
-          do_resolve(mod, params)
-        rescue
-          _ ->
-            {:error, :not_found}
-        end
       end
 
       defp dispatch(%Plug.Conn{assigns: assigns} = conn, _opts) do
@@ -80,6 +72,10 @@ defmodule Mazurka.Protocol.HTTP.Router do
           "nodes" => @mazurka_nodes,
           "links" => @mazurka_links
         }
+      end
+
+      def resolve(_, _) do
+        {:error, :not_found}
       end
     end
   end
@@ -181,16 +177,37 @@ defmodule Mazurka.Protocol.HTTP.Router do
         {unquote(mod), unquote(map_params)}
       end
 
-      defp do_resolve(unquote(mod), unquote(map_params)) do
-        {:ok, unquote(res_method), unquote(res_match)}
+      def resolve(unquote(mod), unquote(map_params) = params) do
+        has_values = Enum.all?(params, fn
+          ({_, nil}) -> false
+          ({_, :undefined}) -> false
+          ({_, _}) -> true
+        end)
+        if has_values do
+          {:ok, unquote(res_method), unquote(res_match)}
+        else
+          {:error, :not_found}
+        end
       end
-      defp do_resolve(unquote(mod), unquote(list_params)) do
-        {:ok, unquote(res_method), unquote(res_match)}
+      def resolve(unquote(mod), unquote(list_params) = params) do
+        has_values = Enum.all?(params, fn
+          (nil) -> false
+          (:undefined) -> false
+          (_) -> true
+        end)
+        if has_values do
+          {:ok, unquote(res_method), unquote(res_match)}
+        else
+          {:error, :not_found}
+        end
       end
     end
 
     info = quote do
       require unquote(mod)
+
+      ## TODO Include valid params from the mod
+      ## TODO Include linked resources from the mod
 
       ## Auto include resource tests
       :erlang.function_exported(unquote(mod), :tests, 1) and unquote(mod).tests(__MODULE__)
@@ -199,7 +216,6 @@ defmodule Mazurka.Protocol.HTTP.Router do
         "name" => unquote(mod) |> Module.split |> Enum.join("."),
         "path" => unquote(path)
       }
-      ## TODO put_attribute on :mazurka_links
     end
 
     [matches, info]

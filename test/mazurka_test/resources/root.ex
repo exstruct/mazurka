@@ -4,35 +4,20 @@ defmodule MazurkaTest.Resources.Root do
   """
 
   use Mazurka.Resource
-  alias MazurkaTest.Resources
-  alias Resources.Users
-  # alias Resources.Oauth
-  # alias Resources.Search
-  # alias Resources.Translations
 
-  let user_id do
-    Auth.user_id
-  end
+  let user_id = Auth.user_id
 
   @doc """
   This is a foo
   """
   let foo = 123
 
-  event do
-    :ok
-  end
-
-  event do
-    :ok
-  end
-
   @doc """
   This is a mediatype
   """
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
-      user = %Users{user: user_id}
+      user = link_to MazurkaTest.Resources.Users, %{user: user_id}
       %{
         "account" => user,
         "foo" => foo
@@ -47,6 +32,14 @@ defmodule MazurkaTest.Resources.Root do
         "input": %{}
       }
     end
+  end
+
+  event do
+    :ok
+  end
+
+  event do
+    :ok
   end
 
   test "should response with a 200" do

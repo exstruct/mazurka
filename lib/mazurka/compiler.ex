@@ -13,13 +13,14 @@ defmodule Mazurka.Compiler do
     |> :maps.from_list
 
     globals = globals
+    |> Dict.put_new(Mazurka.Resource.Param, [])
     |> Dict.put_new(Mazurka.Resource.Test, [])
     |> Enum.map(&(prepare_global(&1, env)))
 
     etude_modules = Enum.map(mediatypes, &(prepare_etude_module(&1, includes, env)))
     clauses = Enum.flat_map(etude_modules, &(prepare_clauses(&1, env)))
 
-    body(env.module, clauses, globals, [])
+    body(env.module, clauses, globals)
   end
 
   defp partition(list, acc) when list == [] or list == nil do
@@ -83,7 +84,7 @@ defmodule Mazurka.Compiler do
       resp_type = "#{type}/#{subtype}; charset=utf-8"
       quote do
         defp handle(unquote(type) = type, unquote(subtype) = subtype, unquote(params) = params, context, resolve) do
-          context = Mazurka.Runtime.put_mediatype(context, {type, subtype, params})
+          context = Mazurka.Runtime.put_mediatype(context, unquote(mediatype), {type, subtype, params})
           Logger.debug("handling request with #{type}/#{subtype} in #{unquote(module)}")
           prev = :erlang.get()
           {out, context} = try do
@@ -151,7 +152,7 @@ defmodule Mazurka.Compiler do
   end
 
   @doc false
-  defp body(module, mediatypes, globals, struct) do
+  defp body(module, mediatypes, globals) do
     quote do
       @doc """
       Handle a given request
@@ -201,10 +202,6 @@ defmodule Mazurka.Compiler do
         ##      for now we fail silently.
         Logger.info("no acceptable affordance was found for #{type}/#{subtype} in #{unquote(module)}")
         {{:__ETUDE_READY__, :undefined}, context}
-      end
-
-      def __struct__ do
-        unquote(Macro.escape(struct))
       end
 
       unquote_splicing(globals)

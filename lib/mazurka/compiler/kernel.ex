@@ -8,6 +8,26 @@ defmodule Mazurka.Compiler.Kernel do
       block]}
   end
 
+
+  defmacro link_to(resource, params \\ nil, qs \\ nil, fragment \\ nil) do
+    link(__CALLER__, :link_to, resource, params, qs, fragment)
+  end
+
+  defmacro transition_to(resource, params \\ nil, qs \\ nil, fragment \\ nil) do
+    link(__CALLER__, :transition_to, resource, params, qs, fragment)
+  end
+
+  defp link(caller, function, resource, params, qs, fragment) do
+    [parent_module] = caller.context_modules
+    parent = %{caller | module: parent_module}
+    resource_name = Macro.expand(resource, parent)
+    Mazurka.Compiler.Utils.put(parent, nil, Mazurka.Resource.Link, resource_name, params)
+    params = Mazurka.Resource.Link.format_params(params)
+    quote do
+      ^^Mazurka.Resource.Link.unquote(function)(unquote(resource), unquote(params), unquote(qs), unquote(fragment))
+    end
+  end
+
   defmacro if(expression, arms) do
     {:etude_cond, [], [expression, arms]}
   end

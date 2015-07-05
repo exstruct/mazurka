@@ -20,7 +20,7 @@ defmodule MazurkaTest.Dispatch do
     end
   end
 
-  service Users.update/2, MazurkaTest.Services.Users.get(&1, &2, env) do
+  service Users.update/2, MazurkaTest.Services.Users.update(&1, &2, env) do
     env :prod do
       Middleware.LRU.delete(Users, &1)
     end

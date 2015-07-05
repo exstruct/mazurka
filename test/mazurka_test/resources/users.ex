@@ -1,33 +1,27 @@
 defmodule MazurkaTest.Resources.Users do
   use Mazurka.Resource
-  # alias MazurkaTest.Resources
-  # alias Resources.Users.Update
+  alias MazurkaTest.Resources
+  alias Resources.Root
   # alias Resources.Users.UpdateImage
-
-  # test = "this is a test"
 
   param user
 
   # let user = Users.get(Params.user)
-  # let is_owner = Params.user == Auth.user_id
+  let is_owner = Params.user == Auth.user_id
 
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
-      123
       %{
-        "root" => %{"href" => "/"}
-      }
-      # unquote(test)
-      # %{
-      #   id: Params.user,
-      #   is_user: true,
+        "id" => Params.user,
+        "root" => link_to(Root),
+        "is_user" => true,
       #   created_at: user.created_at,
       #   display_name: user.display_name,
-      #   email: is_owner &&& user.email,
+        "email" => is_owner &&& user.email,
       #   nickname: user.nickname,
       #   image: image(),
       #   update: %Update{user: Params.user}
-      # }
+      }
     end
 
     affordance do

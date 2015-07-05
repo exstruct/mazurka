@@ -10,7 +10,7 @@ defmodule Mazurka.Format.JSON do
   end
 end
 
-defimpl Poison.Encoder, for: Mazurka.Runtime.Affordance do
+defimpl Poison.Encoder, for: Mazurka.Resource.Link do
   def encode(%{mediatype: mediatype, props: props} = affordance, opts) do
     affordance
     |> mediatype.affordance(props, opts)

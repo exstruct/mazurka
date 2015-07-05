@@ -16,7 +16,8 @@ defmodule Mazurka.Protocol.HTTP.Request do
           import Mazurka.Protocol.HTTP.Request
           import unquote(__MODULE__)
           conn = Mazurka.Protocol.Request.request(nil, unquote(block))
-          unquote(__MODULE__).request_call(conn, [])
+          conn = unquote(__MODULE__).request_call(conn, [])
+          conn
         end
       end
 

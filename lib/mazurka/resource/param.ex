@@ -1,12 +1,25 @@
 defmodule Mazurka.Resource.Param do
+  def global?, do: true
+
   defmacro param(name, opts \\ []) do
     Mazurka.Compiler.Utils.register(__MODULE__, name, opts)
   end
 
   @doc false
   def compile(params, _env) do
-    IO.inspect {:params, params}
-    []
+    params = params
+    |> Enum.map(&compile_param/1)
+
+    quote do
+      defstruct unquote(params)
+    end
+  end
+
+  defp compile_param({{name, _, _}, opts}) when is_atom(name) do
+    compile_param({name, opts})
+  end
+  defp compile_param({name, _opts}) when is_atom(name) do
+    {name, nil}
   end
 
   @doc false

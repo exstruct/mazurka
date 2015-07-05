@@ -168,10 +168,10 @@ defmodule Mazurka.Compiler.Etude do
   end
   # struct
   defp handle_node({:%, meta, [module, props]}, acc) do
-    {%Node.Call{module: Mazurka.Runtime,
+    {%Node.Call{module: Kernel,
                 function: :struct,
                 arguments: [module, props],
-                attrs: %{native: :hybrid},
+                attrs: %{native: true},
                 line: meta[:line]}, acc}
   end
   # variable

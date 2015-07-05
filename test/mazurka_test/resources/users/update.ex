@@ -1,7 +1,5 @@
 defmodule MazurkaTest.Resources.Users.Update do
   use Mazurka.Resource
-  # alias MazurkaTest.Resources
-  # alias MazurkaTest.Resources.Users
 
   param user
 
@@ -12,13 +10,14 @@ defmodule MazurkaTest.Resources.Users.Update do
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
       Users.update(Params.user, %{
-        email: Input.email,
-        full_name: Input.full_name,
-        nickname: Input.nickname,
-        password: Input.password,
-        password_confirm: Input.password_confirm
+        # email: Input.email,
+        # full_name: Input.full_name,
+        # nickname: Input.nickname,
+        # password: Input.password,
+        # password_confirm: Input.password_confirm
       })
-      Res.redirect(%Users{user: Params.user})
+
+      transition_to MazurkaTest.Resources.Users, %{user: Params.user}
     end
 
     affordance do
@@ -48,10 +47,6 @@ defmodule MazurkaTest.Resources.Users.Update do
       }
     end
   end
-
-  # event do
-  #   IO.puts "user updated"
-  # end
 
   test "should fail if the user is not authenticated" do
     conn = request do
