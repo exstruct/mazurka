@@ -13,7 +13,7 @@ defmodule MazurkaTest.Dispatch do
     service Auth
   end
 
-  service Users.get/1, MazurkaTest.Services.Users.get(&1) do
+  service Users.get/1, MazurkaTest.Services.Users.get(&1, env) do
     Middleware.PubSub.subscribe(Users, &1)
     env :prod do
       Middleware.LRU.get(Users, &1)

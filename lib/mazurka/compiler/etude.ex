@@ -33,8 +33,9 @@ defmodule Mazurka.Compiler.Etude do
                 attrs: %{native: true},
                 line: meta[:line]}, acc}
   end
+  ## TODO not false, :undefined and nil
   defp handle_node({:!, meta, [value]}, acc) do
-    {%Node.Call{module: :erlang,
+    {%Node.Call{module: Mazurka.Runtime,
                 function: :not,
                 arguments: [value],
                 attrs: %{native: true},
@@ -101,8 +102,8 @@ defmodule Mazurka.Compiler.Etude do
   end
   # call
   defp handle_node({:., meta, [%Node.Var{} = var, property]}, acc) do
-    {%Node.Call{module: Dict,
-                function: :get,
+    {%Node.Call{module: :erlang,
+                function: :apply,
                 arguments: [var, property],
                 attrs: %{native: true},
                 line: meta[:line]}, acc}
@@ -111,6 +112,9 @@ defmodule Mazurka.Compiler.Etude do
     {%Node.Call{module: module,
                 function: fun,
                 line: meta[:line]}, acc}
+  end
+  defp handle_node({%Node.Call{} = call, _, []}, acc) do
+    {call, acc}
   end
   defp handle_node({%Node.Call{} = call, _, args}, acc) do
     {%{call | arguments: args}, acc}
@@ -145,12 +149,6 @@ defmodule Mazurka.Compiler.Etude do
   defp handle_node(%{}, acc) do
     {%{}, acc}
   end
-  # map key
-  defp handle_node({:&&&, meta, [lhs, rhs]}, acc) do
-    {%Node.Cond{expression: lhs,
-                arms: [rhs],
-                line: meta[:line]}, acc}
-  end
   # map key/value
   defp handle_node({k, v}, acc) do
     {{k, v}, acc}
@@ -180,7 +178,12 @@ defmodule Mazurka.Compiler.Etude do
                line: meta[:line]}, acc}
   end
   defp handle_node({name, meta, module}, acc) when is_atom(name) and is_atom(module) do
-    name = "#{name} (#{module})" |> String.to_atom
+    count = if meta[:counter] do
+      " ##{meta[:counter]}"
+    else
+      ""
+    end
+    name = "#{name}#{count} (#{module})" |> String.to_atom
     {%Node.Var{name: name,
                line: meta[:line]}, acc}
   end

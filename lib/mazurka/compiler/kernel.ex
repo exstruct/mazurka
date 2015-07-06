@@ -8,6 +8,9 @@ defmodule Mazurka.Compiler.Kernel do
       block]}
   end
 
+  defmacro prop(name) when is_atom(name) do
+    {:etude_prop, [], [name]}
+  end
 
   defmacro link_to(resource, params \\ nil, qs \\ nil, fragment \\ nil) do
     link(__CALLER__, :link_to, resource, params, qs, fragment)
@@ -24,7 +27,7 @@ defmodule Mazurka.Compiler.Kernel do
     Mazurka.Compiler.Utils.put(parent, nil, Mazurka.Resource.Link, resource_name, params)
     params = Mazurka.Resource.Link.format_params(params)
     quote do
-      ^^Mazurka.Resource.Link.unquote(function)(unquote(resource), unquote(params), unquote(qs), unquote(fragment))
+      ^^Mazurka.Resource.Link.unquote(function)(unquote(resource_name), unquote(params), unquote(qs), unquote(fragment))
     end
   end
 
@@ -57,7 +60,11 @@ defmodule Mazurka.Compiler.Kernel do
   end
 
   defmacro left and right do
-    {:etude_cond, [], [left, [do: false, else: right]]}
+    {:etude_cond, [], [left, [do: right, else: false]]}
+  end
+
+  defmacro left &&& right do
+    {:etude_cond, [], [left, [do: right, else: :undefined]]}
   end
 
   ## TODO implement the rest of these

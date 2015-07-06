@@ -4,6 +4,7 @@ defmodule MazurkaTest.Resources.Root do
   """
 
   use Mazurka.Resource
+  alias MazurkaTest.Resources
 
   let user_id = Auth.user_id
 
@@ -17,19 +18,13 @@ defmodule MazurkaTest.Resources.Root do
   """
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
-      user = link_to MazurkaTest.Resources.Users, %{user: user_id}
+      user = link_to Resources.Users, %{user: user_id}
       %{
         "account" => user,
         "foo" => foo
         # oauth: %Oauth{},
         # search: %Search{} |> pointer :search,
         # translations: %Translations{}
-      }
-    end
-
-    affordance do
-      %{
-        "input": %{}
       }
     end
   end

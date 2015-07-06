@@ -19,7 +19,11 @@ defmodule Mazurka.Mediatype.Hyperjson.Hyperpath do
             get href
             accept "hyper+json"
           end
-          Dict.get(Mazurka.Format.JSON.decode(conn.resp_body), unquote(rhs))
+          if conn.status == 200 do
+            Dict.get(Mazurka.Format.JSON.decode(conn.resp_body), unquote(rhs))
+          else
+            raise conn
+          end
         nil ->
           nil
         other ->

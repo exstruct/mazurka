@@ -13,8 +13,7 @@ defmodule Mazurka.Resource.Link do
             qs: nil,
             fragment: nil
 
-  def compile(opts, _env) do
-    IO.inspect opts
+  def compile(_opts, _env) do
     nil
   end
 
@@ -27,8 +26,8 @@ defmodule Mazurka.Resource.Link do
     end)}
   end
 
-  def link_to(args, conn, parent, ref, attrs) do
-    resolve(args, conn, parent, ref, attrs)
+  def link_to([module, params, qs, fragment], _conn, _parent, _ref, _attrs) do
+    {:partial, {module, :affordance_partial, %{params: params, qs: qs, fragment: fragment}}}
   end
 
   def transition_to(args, %{private: private} = conn, parent, ref, attrs) do
@@ -55,7 +54,7 @@ defmodule Mazurka.Resource.Link do
     end) |> Enum.join("&")
   end
 
-  defp resolve([module, params, qs, fragment], %{private: private}, _parent, _ref, _attrs) do
+  def resolve([module, params, qs, fragment], %{private: private}, _parent, _ref, _attrs) do
     %{mazurka_router: router, mazurka_mediatype_handler: mediatype_module} = private
     case router.resolve(module, params) do
       {:ok, method, scheme, host, path} ->

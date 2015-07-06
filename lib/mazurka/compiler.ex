@@ -62,17 +62,20 @@ defmodule Mazurka.Compiler do
   end
 
   defp prepare_etude_module({mediatype, definitions}, includes, env) do
-    is_default = Dict.get(definitions, :__default__)
-    definitions = Dict.delete(definitions, :__default__)
-    definitions = Enum.flat_map(definitions, &(prepare_definition(&1, mediatype, includes)))
-
     module = env.module
     etude_module = Module.concat([module, mediatype.name])
 
+    is_default = Dict.get(definitions, :__default__)
+
     definitions
+    |> Dict.delete(:__default__)
+    |> Dict.put_new(Mazurka.Resource.Action, [Mazurka.Resource.Action.default(module)])
+    |> Dict.put_new(Mazurka.Resource.Affordance, [Mazurka.Resource.Affordance.default(module)])
+    |> Enum.flat_map(&(prepare_definition(&1, mediatype, includes)))
     |> Utils.expand(%{env | module: etude_module})
     |> Mazurka.Compiler.Etude.elixir_to_etude(etude_module)
     |> compile(etude_module, env)
+
     {mediatype, etude_module, is_default}
   end
 

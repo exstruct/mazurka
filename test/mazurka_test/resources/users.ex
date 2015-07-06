@@ -1,26 +1,24 @@
 defmodule MazurkaTest.Resources.Users do
   use Mazurka.Resource
   alias MazurkaTest.Resources
-  alias Resources.Root
-  # alias Resources.Users.UpdateImage
 
   param user
 
-  # let user = Users.get(Params.user)
+  let user = Users.get(Params.user)
   let is_owner = Params.user == Auth.user_id
 
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
       %{
         "id" => Params.user,
-        "root" => link_to(Root),
+        "root" => link_to(Resources.Root),
         "is_user" => true,
       #   created_at: user.created_at,
       #   display_name: user.display_name,
-        "email" => is_owner &&& user.email,
+        "email" => is_owner &&& ^Dict.get(user, "email"),
       #   nickname: user.nickname,
       #   image: image(),
-      #   update: %Update{user: Params.user}
+        "update" => link_to(Resources.Users.Update, %{user: Params.user})
       }
     end
 
@@ -58,5 +56,11 @@ defmodule MazurkaTest.Resources.Users do
     end
 
     assert conn.status == 200
+    assert conn.resp_body
+
+    resp_body = Mazurka.Format.JSON.decode(conn.resp_body)
+
+    assert resp_body["id"]
+    assert !resp_body["update"]
   end
 end

@@ -2,8 +2,9 @@ defmodule Mazurka.Mediatype do
   use Behaviour
 
   @type ast :: Macro.t
+  @type props :: Map.t
   defmacrocallback handle_action(ast) :: any
-  defmacrocallback handle_affordance(ast) :: any
+  defmacrocallback handle_affordance(ast, props) :: any
   defmacrocallback handle_error(ast) :: any
 
   @doc """

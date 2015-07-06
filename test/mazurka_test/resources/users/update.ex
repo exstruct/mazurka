@@ -1,5 +1,6 @@
 defmodule MazurkaTest.Resources.Users.Update do
   use Mazurka.Resource
+  alias MazurkaTest.Resources
 
   param user
 
@@ -17,24 +18,26 @@ defmodule MazurkaTest.Resources.Users.Update do
         # password_confirm: Input.password_confirm
       })
 
-      transition_to MazurkaTest.Resources.Users, %{user: Params.user}
+      transition_to Resources.Users, %{user: Params.user}
     end
 
     affordance do
       %{
-        full_name: %{
-          type: "text",
-          value: user.full_name
-        },
-        email: %{
-          type: "email",
-          value: user.email
-        },
-        password: %{
-          type: "password"
-        },
-        password_confirm: %{
-          type: "password"
+        "input" => %{
+          "full_name" => %{
+            "type" => "text",
+            # "value" => user.full_name
+          },
+          "email" => %{
+            "type" => "email",
+            # "value" => user.email
+          },
+          "password" => %{
+            "type" => "password"
+          },
+          "password_confirm" => %{
+            "type" => "password"
+          }
         }
       }
     end

@@ -18,20 +18,20 @@ defmodule Mazurka.Mediatype.Hyperjson do
      {"application", "msgpack", %{}, Mazurka.Format.MSGPACK}]
   end
 
-  def affordance(affordance, props = %{input: _input}, _) do
+  def format_affordance(affordance, props = %{"input" => _input}) do
     %{
       "method" => affordance.method,
       "action" => to_string(affordance)
     }
     |> Dict.merge(props)
   end
-  def affordance(%{method: "GET"} = affordance, props, _) do
+  def format_affordance(%{method: "GET"} = affordance, props) do
     %{
       "href" => to_string(affordance)
     }
     |> Dict.merge(props || %{})
   end
-  def affordance(affordance, props, _) do
+  def format_affordance(affordance, props) do
     %{
       "method" => affordance.method,
       "action" => to_string(affordance)
@@ -50,13 +50,13 @@ defmodule Mazurka.Mediatype.Hyperjson do
     end
   end
 
-  defmacro handle_affordance(block) do
+  defmacro handle_affordance(affordance, props) do
     quote do
-      response = unquote(block)
-      if ^:erlang.is_map(response) do
-        ^Dict.put(response, "href", Rels.self)
+      affordance = unquote(affordance)
+      if affordance do
+        ^Mazurka.Mediatype.Hyperjson.format_affordance(affordance, unquote(props))
       else
-        response
+        affordance
       end
     end
   end

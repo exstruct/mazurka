@@ -25,12 +25,14 @@ defmodule Mazurka.Resource.Param do
   @doc false
   def format(ast, type \\ :prop) do
     Macro.postwalk(ast, fn
-      ({{:., meta, [{:__aliases__, _, [:Params]}, param]}, _, []}) when is_atom(param) ->
+      ({{:., _, [{:__aliases__, _, [:Params]}, param]}, _, []}) when is_atom(param) ->
+        param = param |> to_string
         case type do
           :prop ->
-            {:etude_prop, meta, [param]}
+            quote do
+              ^Dict.get(prop(:params), unquote(param))
+            end
           :conn ->
-            param = param |> to_string
             quote do
               ^^Mazurka.Resource.Param.get_param(unquote(param))
             end

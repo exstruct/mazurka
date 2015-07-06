@@ -5,9 +5,10 @@ defmodule Mazurka.Resource.Error do
     Mazurka.Compiler.Utils.register(mediatype, __MODULE__, block, name)
   end
 
-  def compile(mediatype, block, globals, _meta) do
+  def compile(mediatype, block, globals, {_, _, [arg]}) do
     quote do
       unquote_splicing(globals[:let] || [])
+      unquote(arg) = prop(:error)
       error = unquote(mediatype).handle_error(unquote(block))
       ^^Mazurka.Resource.Error.set_error(error)
     end

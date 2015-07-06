@@ -9,21 +9,27 @@ defmodule Mazurka.Compiler.Utils do
   def expand(quoted, env) do
     Macro.postwalk(quoted, fn
       ({type, meta, children}) ->
-        meta = if meta[:import] == Kernel do
-          Keyword.put(meta, :import, Mazurka.Compiler.Kernel)
-        else
-          meta
-        end
+        meta = replace_kernel(meta)
         Macro.expand({type, meta, children}, env)
       ([{:do, _} | _] = doblock) ->
         Enum.map(doblock, fn({key, children}) ->
-          {key, expand(children, env)}
+          children = expand(children, env)
+          {key, children}
         end)
       ({name, children}) when is_atom(name) ->
-        {name, expand(children, env)}
+        children = expand(children, env)
+        {name, children}
       (other) ->
         Macro.expand(other, env)
     end)
+  end
+
+  defp replace_kernel(meta) do
+    if meta[:import] == Kernel do
+      Keyword.put(meta, :import, Mazurka.Compiler.Kernel)
+    else
+      meta
+    end
   end
 
   def register(name, block) do

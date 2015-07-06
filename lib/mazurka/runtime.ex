@@ -4,6 +4,11 @@ defmodule Mazurka.Runtime do
     {:error, exception}
   end
 
+  def not(:undefined), do: true
+  def not(nil), do: true
+  def not(false), do: true
+  def not(_), do: false
+
   def get_mediatype(context) do
     Dict.get(context.private, :mazurka_mediatype, {nil, nil, nil})
   end
