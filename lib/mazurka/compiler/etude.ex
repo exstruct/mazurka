@@ -49,6 +49,17 @@ defmodule Mazurka.Compiler.Etude do
     attrs = Dict.put(attrs, :native, true)
     {%{call | attrs: attrs}, acc}
   end
+  ## comprehensions
+  defp handle_node({:<-, meta, [%Node.Var{name: value, line: value_line}, collection]}, acc) do
+    {%Node.Comprehension{collection: collection,
+                         value: %Node.Assign{name: value, line: value_line},
+                         type: :list,
+                         line: meta[:line]}, acc}
+  end
+  defp handle_node({:for, _, [%Node.Comprehension{} = comprehension, expression]}, acc) do
+    comprehension = %{comprehension | expression: expression}
+    {comprehension, acc}
+  end
   defp handle_node({:_, meta, _}, acc) do
     {%Node.Var{name: :_,
                line: meta[:line]}, acc}

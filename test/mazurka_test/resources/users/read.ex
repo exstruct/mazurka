@@ -1,4 +1,4 @@
-defmodule MazurkaTest.Resources.Users do
+defmodule MazurkaTest.Resources.Users.Read do
   use Mazurka.Resource
   alias MazurkaTest.Resources
 

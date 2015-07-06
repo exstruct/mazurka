@@ -13,19 +13,21 @@ defmodule MazurkaTest.Dispatch do
     service Auth
   end
 
-  service Users.get/1, MazurkaTest.Services.Users.get(&1, env) do
+  service Users.list/0, Services.Users.list(env)
+
+  service Users.get/1, Services.Users.get(&1, env) do
     Middleware.PubSub.subscribe(Users, &1)
     env :prod do
       Middleware.LRU.get(Users, &1)
     end
   end
 
-  service Users.update/2, MazurkaTest.Services.Users.update(&1, &2, env) do
+  service Users.update/2, Services.Users.update(&1, &2, env) do
     env :prod do
       Middleware.LRU.delete(Users, &1)
     end
     Middleware.PubSub.publish(Users, &1)
   end
 
-  service Users, MazurkaTest.Services.Users
+  service Users, Services.Users
 end

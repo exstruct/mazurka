@@ -9,7 +9,8 @@ defmodule MazurkaTest.HTTP.Router do
   plug :dispatch
 
   get     "/",                          Resources.Root
-  get     "/users/:user",               Resources.Users
+  get     "/users",                     Resources.Users.List
+  get     "/users/:user",               Resources.Users.Read
   post    "/users/:user",               Resources.Users.Update
 
   match   _,                            Resources.Errors.NotFound
