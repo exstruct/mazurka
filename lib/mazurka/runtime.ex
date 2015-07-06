@@ -9,6 +9,9 @@ defmodule Mazurka.Runtime do
   def not(false), do: true
   def not(_), do: false
 
+  def apply(falsy, _, _) when falsy == nil or falsy == :undefined do
+    falsy
+  end
   def apply(map, prop, []) when is_map(map) do
     Dict.get(map, prop)
   end
