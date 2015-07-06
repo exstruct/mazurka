@@ -27,7 +27,6 @@ defmodule Mazurka.Resource.Link do
   end
 
   def link_to([module, params, qs, fragment], _conn, _parent, _ref, _attrs) do
-    IO.inspect {module, params, qs, fragment}
     props = %{params: params, qs: qs, fragment: fragment}
     ## FOR BACKWARDS COMPATIBILITY
     |> Dict.merge(params)
