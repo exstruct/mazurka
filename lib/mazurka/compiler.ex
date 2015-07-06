@@ -177,7 +177,10 @@ defmodule Mazurka.Compiler do
       Handle a given request, passing a list of acceptable mediatypes
       """
       def action(request, resolve, []) do
-        {:error, :unacceptable}
+        handle("*", "*", %{}, request, resolve)
+      end
+      def action(request, resolve, [{_, {type, subtype, params}}]) do
+        handle(type, subtype, params, request, resolve)
       end
       def action(request, resolve, [{_, {type, subtype, params}} | accepts]) do
         case handle(type, subtype, params, request, resolve) do
