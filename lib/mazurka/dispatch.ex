@@ -21,14 +21,14 @@ defmodule Mazurka.Dispatch do
       use Mazurka.Dispatch.BuiltIn
 
       def resolve(module, function, arguments, conn, parent, ref, attrs) do
-        do_resolve(module, function, arguments, conn, parent, ref, attrs)
+        exec(module, function, arguments, conn, parent, ref, attrs)
       end
     end
   end
 
   defmacro __before_compile__(_) do
     quote do
-      defp do_resolve(module, function, args, _conn, _parent, _ref, _attrs) do
+      defp exec(module, function, args, _conn, _parent, _ref, _attrs) do
         raise %UndefinedFunctionError{module: module, function: function, arity: length(args)}
       end
     end
@@ -69,13 +69,13 @@ defmodule Mazurka.Dispatch do
       {{s_module, s_function, s_arity}, {t_module, t_function, t_args}} ->
         s_args = gen_args(s_arity)
         quote do
-          defp do_resolve(unquote(s_module), unquote(s_function), unquote(s_args), var!(_conn), var!(_parent), var!(_ref), var!(_attrs)) do
+          defp exec(unquote(s_module), unquote(s_function), unquote(s_args), var!(_conn), var!(_parent), var!(_ref), var!(_attrs)) do
             unquote(t_module).unquote(t_function)(unquote_splicing(t_args))
           end
         end
       {s_module, t_module} ->
         quote do
-          defp do_resolve(unquote(s_module), function, args, var!(_conn), var!(_parent), var!(_ref), var!(_attrs)) do
+          defp exec(unquote(s_module), function, args, var!(_conn), var!(_parent), var!(_ref), var!(_attrs)) do
             apply(unquote(t_module), function, args)
           end
         end

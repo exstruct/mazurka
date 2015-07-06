@@ -27,7 +27,12 @@ defmodule Mazurka.Resource.Link do
   end
 
   def link_to([module, params, qs, fragment], _conn, _parent, _ref, _attrs) do
-    {:partial, {module, :affordance_partial, %{params: params, qs: qs, fragment: fragment}}}
+    IO.inspect {module, params, qs, fragment}
+    props = %{params: params, qs: qs, fragment: fragment}
+    ## FOR BACKWARDS COMPATIBILITY
+    |> Dict.merge(params)
+
+    {:partial, {module, :affordance_partial, props}}
   end
 
   def transition_to(args, %{private: private} = conn, parent, ref, attrs) do
@@ -98,5 +103,6 @@ defimpl String.Chars, for: Mazurka.Resource.Link do
   defp format_qs(qs), do: "?#{qs}"
 
   defp format_fragment(nil), do: ""
+  defp format_fragment(fragment) when is_list(fragment), do: "#/#{Enum.join(fragment, "/")}"
   defp format_fragment(fragment), do: "##{fragment}"
 end

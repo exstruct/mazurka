@@ -24,7 +24,7 @@ defmodule MazurkaTest.Resources.Users do
 
     affordance do
       %{
-        # "name" => user.display_name
+        "name" => user.display_name
       }
     end
 

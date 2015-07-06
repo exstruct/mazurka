@@ -203,19 +203,23 @@ defmodule Mazurka.Protocol.HTTP.Router do
       end
     end
 
-    info = quote do
-      require unquote(mod)
+    is_elixir_module = mod |> to_string |> String.downcase |> String.to_atom != mod
 
-      ## TODO Include valid params from the mod
-      ## TODO Include linked resources from the mod
+    info = if is_elixir_module do
+      quote do
+        require unquote(mod)
 
-      ## Auto include resource tests
-      :erlang.function_exported(unquote(mod), :tests, 1) and unquote(mod).tests(__MODULE__)
+        ## TODO Include valid params from the mod
+        ## TODO Include linked resources from the mod
 
-      Module.put_attribute __MODULE__, :mazurka_nodes, %{
-        "name" => unquote(mod) |> Module.split |> Enum.join("."),
-        "path" => unquote(path)
-      }
+        ## Auto include resource tests
+        :erlang.function_exported(unquote(mod), :tests, 1) and unquote(mod).tests(__MODULE__)
+
+        Module.put_attribute __MODULE__, :mazurka_nodes, %{
+          "name" => unquote(mod) |> Module.split |> Enum.join("."),
+          "path" => unquote(path)
+        }
+      end
     end
 
     [matches, info]

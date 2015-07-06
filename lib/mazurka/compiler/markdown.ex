@@ -1,11 +1,9 @@
-defmodule Mazurka.Compiler.Resource do
-  alias Mazurka.Compiler.Utils
-
+defmodule Mazurka.Compiler.Markdown do
   def compile(ast, src, _opts \\ []) do
     ## TODO set default sections if they don't exist
 
     mod = ast[:name]
-    {sections, mediatypes} = Enum.reduce(ast[:children], {%{}, []}, &(gather_sections(mod, &1, src, &2)))
+    {sections, mediatypes, has_affordance} = Enum.reduce(ast[:children], {%{}, [], false}, &(gather_sections(mod, &1, src, &2)))
 
     quoted = Enum.map(sections, &compile_section/1)
 
@@ -17,6 +15,13 @@ defmodule Mazurka.Compiler.Resource do
         @moduledoc unquote(ast[:docs])
         @vsn unquote(vsn)
         unquote_splicing(quoted)
+        unquote(if !has_affordance do
+          quote do
+            def affordance_partial(context, _, _, _, _) do
+              {{:__ETUDE_READY__, :undefined}, context}
+            end
+          end
+        end)
       end
     end
     [{mod, lazy_compile_main(out, src, vsn), :main} | mediatypes]
@@ -24,11 +29,10 @@ defmodule Mazurka.Compiler.Resource do
 
   defp compile_section({name, section}) do
     exec = "#{name}_exec" |> String.to_atom
-    partial = name |> Mazurka.Mediatype.Utils.partial_name
+    partial = name |> Mazurka.Mediatype.Parser.Utils.partial_name
     {quoted, _} = Enum.map_reduce(section, true, &(compile_mediatype(exec, partial, &1, &2)))
 
     quote do
-      @doc unquote(compile_docs(name, section))
       def unquote(name)(context, resolve, accepts \\ [])
       def unquote(name)(context, resolve, []) do
         unquote(exec)("*", "*", %{}, context, resolve)
@@ -49,15 +53,19 @@ defmodule Mazurka.Compiler.Resource do
             res
         end
       end
+      def unquote(partial)(context, resolve, req, scope, props) do
+        {type, subtype, params} = Mazurka.Runtime.get_mediatype(context)
+        unquote(partial)(type, subtype, params, context, resolve, req, scope, props)
+      end
 
       defp unquote(exec)(type, subtype, params, context, resolve)
-      def unquote(partial)(type, subtype, params, context, resolve, req, scope, props)
+      defp unquote(partial)(type, subtype, params, context, resolve, req, scope, props)
       unquote_splicing(quoted)
       defp unquote(exec)(_, _, _, _, _) do
         {:error, :unacceptable}
       end
 
-      def unquote(partial)(_type, _subtype, _params, context, _resolve, _req, _scope, _props) do
+      defp unquote(partial)(_type, _subtype, _params, context, _resolve, _req, _scope, _props) do
         {{:__ETUDE_READY__, :undefined}, context}
       end
     end
@@ -70,20 +78,20 @@ defmodule Mazurka.Compiler.Resource do
     mediatype = "#{type}/#{subtype}"
     {quote do
       defp unquote(exec)(unquote(type), unquote(subtype), params, context, resolve) do
-        unquote(put_mediatype(type, subtype))
+        unquote(put_mediatype(serialize_module, type, subtype))
         unquote(exec(exec_module, serialize_module, mediatype))
       end
-      def unquote(partial)(unquote(type), unquote(subtype), _params, context, resolve, req, scope, props) do
+      defp unquote(partial)(unquote(type), unquote(subtype), _params, context, resolve, req, scope, props) do
         unquote(exec_module).exec_partial(context, resolve, req, scope, props)
       end
       unquote(if is_first do
         quote do
           defp unquote(exec)(unquote(type), "*", params, context, resolve) do
-            unquote(put_mediatype(type, subtype))
+            unquote(put_mediatype(serialize_module, type, subtype))
             unquote(exec(exec_module, serialize_module, mediatype))
           end
           defp unquote(exec)("*", "*", params, context, resolve) do
-            unquote(put_mediatype(type, subtype))
+            unquote(put_mediatype(serialize_module, type, subtype))
             unquote(exec(exec_module, serialize_module, mediatype))
           end
         end
@@ -91,9 +99,9 @@ defmodule Mazurka.Compiler.Resource do
     end, false}
   end
 
-  defp put_mediatype(type, subtype) do
+  defp put_mediatype(mediatype, type, subtype) do
     quote do
-      context = Mazurka.Mediatype.Utils.put_mediatype(context, {unquote(type), unquote(subtype), params})
+      context = Mazurka.Runtime.put_mediatype(context, unquote(mediatype), {unquote(type), unquote(subtype), params})
     end
   end
 
@@ -122,12 +130,12 @@ defmodule Mazurka.Compiler.Resource do
     |> Enum.reduce(acc, &(gather_section(&1, mod, src, types, parsed_types, &2)))
   end
 
-  defp gather_section(section, mod, src, types, parsed_types, {confs, mediatypes}) do
+  defp gather_section(section, mod, src, types, parsed_types, {confs, mediatypes, has_affordance}) do
     name = section[:name]
     parser = section[:parser] && [section[:parser]] || []
     parsers = parser ++ types
     line = Dict.get(section, :line, 1)
-    {:ok, ast, serialize_module} = Mazurka.Mediatype.parse(line, src, section[:code], parsers)
+    {:ok, ast, serialize_module} = Mazurka.Mediatype.Parser.parse(line, src, section[:code], parsers)
 
     [chosen | _] = parsers
     ## TODO replace unsafe characters here
@@ -142,12 +150,14 @@ defmodule Mazurka.Compiler.Resource do
       Dict.put(acc, name, section)
     end)
 
-    {confs, [{exec_module, lazy_compile(exec_module, ast, src), "#{chosen} #{name}"} | mediatypes]}
+    has_affordance = has_affordance || name == :affordance
+
+    {confs, [{exec_module, lazy_compile(exec_module, ast, src), "#{chosen} #{name}"} | mediatypes], has_affordance}
   end
 
   def lazy_compile(exec_module, ast, src) do
     fn(opts) ->
-      Etude.compile_lazy(exec_module, ast, extend_opts(opts, src))
+      Etude.compile_lazy(exec_module, [exec: ast], extend_opts(opts, src))
     end
   end
 
@@ -158,7 +168,7 @@ defmodule Mazurka.Compiler.Resource do
   def lazy_compile_main(out, src, vsn) do
     fn(_opts) ->
       {vsn, fn ->
-        case Utils.quoted_to_beam(out, src) do
+        case quoted_to_beam(out, src) do
           {mod, bin} when is_binary(bin) ->
             {:ok, mod, :main, bin}
           other ->
@@ -168,44 +178,32 @@ defmodule Mazurka.Compiler.Resource do
     end
   end
 
-  def compile_docs(name, section) do
-    type_docs = section
-    |> Enum.map(fn({type, section}) ->
-      """
-      ### #{format_type(type)}
-
-      * [IANA](http://www.iana.org/assignments/media-types/#{format_type(type, false)})
-
-      #{section[:docs]}
-      """
-    end)
-    |> Enum.join("\n")
-
-    """
-    #{name} handler
-
-    ## Provided Media Types
-
-    #{type_docs}
-    """
-  end
-
   defp parse_type(type) do
     {:ok, [out]} = :mimetype_parser.parse(type)
     out
   end
 
-  defp format_type(type_tuple, include_params \\ true)
-
-  defp format_type({type, subtype, params}, include_params) when params == %{} or not include_params do
-    "#{type}/#{subtype}"
+  # this is a pretty nasty hack since elixir can't just compile something without loading it
+  defp quoted_to_beam(ast, src) do
+    before = Code.compiler_options
+    updated = Keyword.put(before, :ignore_module_conflict, :true)
+    Code.compiler_options(updated)
+    [{name, bin}] = Code.compile_quoted(ast, src)
+    Code.compiler_options(before)
+    maybe_reload(name)
+    {name, bin}
   end
-  defp format_type({type, subtype, params}, _) do
-    p = params
-    |> Enum.map(fn({key, value}) ->
-      "#{key}=#{value}"
-    end)
-    |> Enum.join(", ")
-    "#{type}/#{subtype};#{p}"
+
+  defp maybe_reload(module) do
+    case :code.which(module) do
+      atom when is_atom(atom) ->
+        # Module is likely in memory, we purge as an attempt to reload it
+        :code.purge(module)
+        :code.delete(module)
+        Code.ensure_loaded?(module)
+        :ok
+      _file ->
+        :ok
+    end
   end
 end
