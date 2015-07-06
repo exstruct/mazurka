@@ -113,6 +113,9 @@ defmodule Mazurka.Compiler.Etude do
                 function: fun,
                 line: meta[:line]}, acc}
   end
+  defp handle_node({%Node.Call{module: Mazurka.Runtime.Input, function: :get} = call, _, args}, acc) do
+    {%{call | arguments: args, attrs: %{native: :hybrid}}, acc}
+  end
   defp handle_node({%Node.Call{} = call, _, []}, acc) do
     {call, acc}
   end

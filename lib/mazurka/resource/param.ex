@@ -25,8 +25,18 @@ defmodule Mazurka.Resource.Param do
   @doc false
   def format(ast, type \\ :prop) do
     Macro.postwalk(ast, fn
-      ({{:., _, [{:__aliases__, _, [:Params]}, param]}, _, []}) when is_atom(param) ->
-        param = param |> to_string
+      ({{:., _, [{:__aliases__, _, [:Params]}, :get]}, _, []}) ->
+        case type do
+          :prop ->
+            quote do
+              prop(:params)
+            end
+          :conn ->
+            quote do
+              ^^Mazurka.Resource.Param.get()
+            end
+        end
+      ({{:., _, [{:__aliases__, _, [:Params]}, :get]}, _, [param]}) ->
         case type do
           :prop ->
             quote do
@@ -34,7 +44,7 @@ defmodule Mazurka.Resource.Param do
             end
           :conn ->
             quote do
-              ^^Mazurka.Resource.Param.get_param(unquote(param))
+              ^^Mazurka.Resource.Param.get(unquote(param))
             end
         end
       (node) ->
@@ -43,7 +53,11 @@ defmodule Mazurka.Resource.Param do
   end
 
   @doc false
-  def get_param([name], conn, _parent, _ref, _attrs) do
+  def get([], conn, _parent, _ref, _attrs) do
+    params = Map.get(conn.private, :mazurka_params)
+    {:ok, params}
+  end
+  def get([name], conn, _parent, _ref, _attrs) do
     params = Map.get(conn.private, :mazurka_params)
     val = Map.get(params, name)
     normalized = if val == nil, do: :undefined, else: URI.decode(val)

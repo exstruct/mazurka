@@ -5,18 +5,18 @@ defmodule MazurkaTest.Resources.Users.UpdateImage do
 
   # param user
 
-  # condition Params.user == Auth.user_id
+  # condition Params.get("user") == Auth.user_id
 
   # let user do
-  #   Users.get(Params.user)
+  #   Users.get(Params.get("user"))
   # end
 
   # mediatype Mazurka.Mediatype.Hyperjson do
   #   action do
-  #     Users.update(Params.user, %{
+  #     Users.update(Params.get("user"), %{
   #       image_url: Input.value
   #     })
-  #     Res.redirect(%Users{user: Params.user})
+  #     Res.redirect(%Users{user: Params.get("user")})
   #   end
 
   #   affordance do

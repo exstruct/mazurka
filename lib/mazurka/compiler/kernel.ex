@@ -1,10 +1,12 @@
 defmodule Mazurka.Compiler.Kernel do
   def wrap(block) do
+    input = {:__aliases__, [alias: false], [:Mazurka, :Runtime, :Input]}
     {:__block__, [],
      [{:import, [],
        [{:__aliases__, [alias: false], [:Kernel]}, [only: [], warn: false]]},
       {:import, [],
        [{:__aliases__, [alias: false], [:Mazurka, :Compiler, :Kernel]}, [warn: false]]},
+      {:alias, [], [input, [warn: false]]},
       block]}
   end
 

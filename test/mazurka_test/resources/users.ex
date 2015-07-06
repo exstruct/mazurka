@@ -4,13 +4,13 @@ defmodule MazurkaTest.Resources.Users do
 
   param user
 
-  let user = Users.get(Params.user)
-  let is_owner = Params.user == Auth.user_id
+  let user = Users.get(Params.get("user"))
+  let is_owner = Params.get("user") == Auth.user_id
 
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
       %{
-        "id" => Params.user,
+        "id" => Params.get("user"),
         "root" => link_to(Resources.Root),
         "is_user" => true,
         "created_at" => user.created_at,
@@ -18,7 +18,7 @@ defmodule MazurkaTest.Resources.Users do
         "email" => is_owner &&& ^Dict.get(user, "email"),
         "nickname" => user.nickname,
       #   image: image(),
-        "update" => link_to(Resources.Users.Update, %{user: Params.user})
+        "update" => link_to(Resources.Users.Update, %{user: Params.get("user")})
       }
     end
 
@@ -31,7 +31,7 @@ defmodule MazurkaTest.Resources.Users do
     # partial image() do
     #   ^IO.inspect :foo
     #   Hyper.image_form(%{
-    #     affordance: %UpdateImage{user: Params.user},
+    #     affordance: %UpdateImage{user: Params.get("user")},
     #     value: user.image_url
     #   })
     # end

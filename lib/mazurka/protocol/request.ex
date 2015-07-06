@@ -8,6 +8,7 @@ defmodule Mazurka.Protocol.Request do
                               port: 80,
                               peer: {{127, 0, 0, 1}, 111317},
                               remote_ip: {127, 0, 0, 1},
+                              params: %{},
                               query_params: %{},
                               private: %{mazurka_route: unquote(resource)}}
       unquote(block)
