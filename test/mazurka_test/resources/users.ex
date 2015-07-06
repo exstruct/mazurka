@@ -13,10 +13,10 @@ defmodule MazurkaTest.Resources.Users do
         "id" => Params.user,
         "root" => link_to(Resources.Root),
         "is_user" => true,
-      #   created_at: user.created_at,
-      #   display_name: user.display_name,
+        "created_at" => user.created_at,
+        "display_name" => user.display_name,
         "email" => is_owner &&& ^Dict.get(user, "email"),
-      #   nickname: user.nickname,
+        "nickname" => user.nickname,
       #   image: image(),
         "update" => link_to(Resources.Users.Update, %{user: Params.user})
       }
@@ -24,7 +24,7 @@ defmodule MazurkaTest.Resources.Users do
 
     affordance do
       %{
-        "foo" => 456
+        # "name" => user.display_name
       }
     end
 

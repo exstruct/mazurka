@@ -102,9 +102,9 @@ defmodule Mazurka.Compiler.Etude do
   end
   # call
   defp handle_node({:., meta, [%Node.Var{} = var, property]}, acc) do
-    {%Node.Call{module: :erlang,
+    {%Node.Call{module: Mazurka.Runtime,
                 function: :apply,
-                arguments: [var, property],
+                arguments: [var, property, []],
                 attrs: %{native: true},
                 line: meta[:line]}, acc}
   end
@@ -115,6 +115,9 @@ defmodule Mazurka.Compiler.Etude do
   end
   defp handle_node({%Node.Call{} = call, _, []}, acc) do
     {call, acc}
+  end
+  defp handle_node({%Node.Call{module: Mazurka.Runtime, function: :apply, arguments: [var, property, _]} = call, _, args}, acc) do
+    {%{call | arguments: [var, property, args]}, acc}
   end
   defp handle_node({%Node.Call{} = call, _, args}, acc) do
     {%{call | arguments: args}, acc}

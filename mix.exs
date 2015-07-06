@@ -27,6 +27,7 @@ defmodule Mazurka.Mixfile do
      {:etude, path: "../../camshaft/etude"},
      {:parse_trans, github: "uwiger/parse_trans", optional: true},
      {:mimetype_parser, "~> 0.1.0"},
+     {:cowboy, "~> 1.0.0", only: :dev},
      {:earmark, "~> 0.1", only: :dev},
      {:ex_doc, "~> 0.7", only: :dev}]
   end

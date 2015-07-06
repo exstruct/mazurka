@@ -9,6 +9,13 @@ defmodule Mazurka.Runtime do
   def not(false), do: true
   def not(_), do: false
 
+  def apply(map, prop, []) when is_map(map) do
+    Dict.get(map, prop)
+  end
+  def apply(module, prop, args) when is_atom(module) do
+    :erlang.apply(module, prop, args)
+  end
+
   def get_mediatype(context) do
     Dict.get(context.private, :mazurka_mediatype, {nil, nil, nil})
   end

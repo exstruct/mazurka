@@ -79,9 +79,10 @@ defmodule Mazurka.Compiler do
     {mediatype, etude_module, is_default}
   end
 
-  defp prepare_clauses({mediatype, etude_module, _is_default}, env) do
+  defp prepare_clauses({mediatype, etude_module, is_default}, env) do
     module = env.module
-    for {type, subtype, params, content_type} <- mediatype.content_types() do
+    [{default_type, default_subtype, default_params, _} | _] = content_types = mediatype.content_types()
+    for {type, subtype, params, content_type} <- content_types do
       params = Macro.escape(params)
       # TODO send params as well
       resp_type = "#{type}/#{subtype}; charset=utf-8"
@@ -109,6 +110,14 @@ defmodule Mazurka.Compiler do
           unquote(etude_module).affordance_partial(context, resolve, req, scope, props)
         end
       end
+    end ++ if is_default do
+      [quote do
+        defp handle("*", "*", _, context, resolve) do
+          handle(unquote(default_type), unquote(default_subtype), unquote(Macro.escape(default_params)), context, resolve)
+        end
+      end]
+    else
+      []
     end
   end
 
