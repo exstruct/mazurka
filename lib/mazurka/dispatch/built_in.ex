@@ -8,20 +8,9 @@ defmodule Mazurka.Dispatch.BuiltIn do
   end
 
   def self(conn) do
-    ## TODO make this pluggable
-    # base = Plug.Base.resolve(conn, conn.path_info)
-    base = Enum.join(conn.path_info, "/")
-    {:ok, "/#{base}#{append_qs(conn)}"}
-  end
-
-  defp append_qs(conn) do
-    case conn.query_string do
-      "" -> ""
-      qs ->
-        case to_string(qs) do
-          "" -> ""
-          other -> "?#{other}"
-        end
-    end
+    self = conn
+    |> Mazurka.Resource.Link.from_conn
+    |> to_string
+    {:ok, self}
   end
 end

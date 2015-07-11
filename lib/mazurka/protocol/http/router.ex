@@ -131,7 +131,7 @@ defmodule Mazurka.Protocol.HTTP.Router do
     try do
       {:ok, body, conn, content_type} = apply(mod, :action, [conn, &dispatch.resolve/7, accepts])
       conn
-      |> put_resp_header("content-type", content_type)
+      |> put_resp_content_type(content_type)
       |> Plug.Conn.send_resp(choose_status(conn), body)
     rescue
       e in CaseClauseError ->

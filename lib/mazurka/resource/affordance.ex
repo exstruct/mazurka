@@ -10,7 +10,7 @@ defmodule Mazurka.Resource.Affordance do
   def compile(mediatype, block, globals, module) do
     quote do
       unquote_splicing(globals[:let] || [])
-      affordance = ^^Mazurka.Resource.Link.resolve(unquote(module), prop(:params), prop(:qs), prop(:fragment))
+      affordance = ^^Mazurka.Resource.Link.resolve(unquote(module), prop(:params), prop(:query), prop(:fragment))
       affordance_props = unquote(block)
       failure = unquote(globals[:condition] |> Mazurka.Resource.Condition.compile_silent())
 

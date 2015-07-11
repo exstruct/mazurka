@@ -84,8 +84,8 @@ defmodule Mazurka.Compiler do
     [{default_type, default_subtype, default_params, _} | _] = content_types = mediatype.content_types()
     for {type, subtype, params, content_type} <- content_types do
       params = Macro.escape(params)
-      # TODO send params as well
-      resp_type = "#{type}/#{subtype}; charset=utf-8"
+      # TODO format params as well
+      resp_type = "#{type}/#{subtype}"
       quote do
         defp handle(unquote(type) = type, unquote(subtype) = subtype, unquote(params) = params, context, resolve) do
           context = Mazurka.Runtime.put_mediatype(context, unquote(mediatype), {type, subtype, params})

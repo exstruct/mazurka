@@ -5,7 +5,6 @@ defmodule Mazurka.Runtime.Affordance do
   """
 
   defstruct mediatype: nil,
-            props: nil,
             method: nil,
             scheme: nil,
             host: nil,
@@ -15,11 +14,13 @@ defmodule Mazurka.Runtime.Affordance do
 end
 
 defimpl String.Chars, for: Mazurka.Runtime.Affordance do
-  def to_string(affordance) do
-    "#{format_host(affordance.scheme, affordance.host)}#{
-       format_path(affordance.path)}#{
-       format_qs(affordance.qs)}#{
-       format_fragment(affordance.fragment)}"
+  def to_string(%{fragment: fragment, host: host, path: path, port: port, query: query, scheme: scheme}) do
+    %URI{fragment: format_fragment(fragment),
+         host: host,
+         path: path,
+         port: port,
+         query: query,
+         scheme: scheme}
   end
 
   defp format_host(_, nil), do: ""
@@ -34,5 +35,6 @@ defimpl String.Chars, for: Mazurka.Runtime.Affordance do
   defp format_qs(qs), do: "?#{qs}"
 
   defp format_fragment(nil), do: ""
-  defp format_fragment(fragment), do: "##{fragment}"
+  defp format_fragment(fragment) when is_list(fragment), do: "/#{Enum.join(fragment, "/")}"
+  defp format_fragment(fragment), do: fragment
 end

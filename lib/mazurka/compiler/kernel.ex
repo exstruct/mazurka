@@ -14,22 +14,22 @@ defmodule Mazurka.Compiler.Kernel do
     {:etude_prop, [], [name]}
   end
 
-  defmacro link_to(resource, params \\ nil, qs \\ nil, fragment \\ nil) do
-    link(__CALLER__, :link_to, resource, params, qs, fragment)
+  defmacro link_to(resource, params \\ nil, query \\ nil, fragment \\ nil) do
+    link(__CALLER__, :link_to, resource, params, query, fragment)
   end
 
-  defmacro transition_to(resource, params \\ nil, qs \\ nil, fragment \\ nil) do
-    link(__CALLER__, :transition_to, resource, params, qs, fragment)
+  defmacro transition_to(resource, params \\ nil, query \\ nil, fragment \\ nil) do
+    link(__CALLER__, :transition_to, resource, params, query, fragment)
   end
 
-  defp link(caller, function, resource, params, qs, fragment) do
+  defp link(caller, function, resource, params, query, fragment) do
     [parent_module] = caller.context_modules
     parent = %{caller | module: parent_module}
     resource_name = Macro.expand(resource, parent)
     Mazurka.Compiler.Utils.put(parent, nil, Mazurka.Resource.Link, resource_name, params)
     params = Mazurka.Resource.Link.format_params(params)
     quote do
-      ^^Mazurka.Resource.Link.unquote(function)(unquote(resource_name), unquote(params), unquote(qs), unquote(fragment))
+      ^^Mazurka.Resource.Link.unquote(function)(unquote(resource_name), unquote(params), unquote(query), unquote(fragment))
     end
   end
 

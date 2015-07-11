@@ -6,10 +6,10 @@ defmodule Mazurka.Mediatype.Hyperjson do
   end
 
   def content_types do
-    [{"application", "hyper+json", %{}, Mazurka.Format.JSON},
+    [{"application", "json", %{}, Mazurka.Format.JSON},
+     {"application", "hyper+json", %{}, Mazurka.Format.JSON},
      {"application", "hyper+x-erlang-binary", %{}, Mazurka.Format.ERLANG_TERM},
-     {"application", "hyper+msgpack", %{}, Mazurka.Format.MSGPACK},
-     {"application", "json", %{}, Mazurka.Format.JSON}]
+     {"application", "hyper+msgpack", %{}, Mazurka.Format.MSGPACK}]
   end
 
   def optional_types do

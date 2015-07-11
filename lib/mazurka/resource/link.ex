@@ -5,12 +5,12 @@ defmodule Mazurka.Resource.Link do
   """
 
   defstruct mediatype: nil,
-            props: nil,
             method: nil,
             scheme: nil,
             host: nil,
+            port: nil,
             path: nil,
-            qs: nil,
+            query: nil,
             fragment: nil
 
   def compile(_opts, _env) do
@@ -26,8 +26,8 @@ defmodule Mazurka.Resource.Link do
     end)}
   end
 
-  def link_to([module, params, qs, fragment], _conn, _parent, _ref, _attrs) do
-    props = %{params: params, qs: qs, fragment: fragment}
+  def link_to([module, params, query, fragment], _conn, _parent, _ref, _attrs) do
+    props = %{params: params, query: query, fragment: fragment}
     ## FOR BACKWARDS COMPATIBILITY
     |> Dict.merge(params)
 
@@ -45,7 +45,7 @@ defmodule Mazurka.Resource.Link do
   end
 
   def encode_qs(params) do
-    Enum.filter_map(params, fn({_k, v}) ->
+    out = Enum.filter_map(params, fn({_k, v}) ->
       case v do
         nil -> false
         :undefined -> false
@@ -55,53 +55,84 @@ defmodule Mazurka.Resource.Link do
       end
     end, fn({k, v}) ->
       [k, "=", URI.encode_www_form(v)]
-    end) |> Enum.join("&")
+    end)
+    |> Enum.join("&")
+
+    if out == "" do
+      nil
+    else
+      out
+    end
   end
 
-  def resolve([module, params, qs, fragment], %{private: private}, _parent, _ref, _attrs) do
+  def resolve([module, params, query, fragment], %{private: private} = conn, _parent, _ref, _attrs) do
     %{mazurka_router: router, mazurka_mediatype_handler: mediatype_module} = private
     case router.resolve(module, params) do
       {:ok, method, scheme, host, path} ->
+        full_path_conn = %{conn | path_info: path}
         {:ok, %__MODULE__{mediatype: mediatype_module,
                           method: method,
                           scheme: scheme,
                           host: host,
-                          path: path,
-                          qs: qs,
+                          port: conn.port,
+                          path: Plug.Conn.full_path(full_path_conn),
+                          query: query,
                           fragment: fragment}}
       {:ok, method, path} ->
+        full_path_conn = %{conn | path_info: path}
         {:ok, %__MODULE__{mediatype: mediatype_module,
                           method: method,
-                          path: path,
-                          qs: qs,
+                          scheme: conn.scheme,
+                          host: conn.host,
+                          port: conn.port,
+                          path: Plug.Conn.full_path(full_path_conn),
+                          query: query,
                           fragment: fragment}}
       {:error, :not_found} ->
         {:ok, :undefined}
     end
   end
+
+  def from_conn(%{private: %{mazurka_mediatype_handler: mediatype_module}} = conn) do
+    %__MODULE__{mediatype: mediatype_module,
+                method: conn.method,
+                scheme: conn.scheme,
+                host: conn.host,
+                port: conn.port,
+                path: Plug.Conn.full_path(conn),
+                query: conn.query_string}
+  end
+  def from_conn(conn, path_info) do
+    from_conn(%{conn | path_info: path_info})
+  end
 end
 
 defimpl String.Chars, for: Mazurka.Resource.Link do
-  def to_string(affordance) do
-    "#{format_host(affordance.scheme, affordance.host)}#{
-       format_path(affordance.path)}#{
-       format_qs(affordance.qs)}#{
-       format_fragment(affordance.fragment)}"
+  def to_string(%{fragment: fragment, host: host, path: path, port: port, query: query, scheme: scheme}) do
+    %URI{fragment: format_fragment(fragment),
+         host: host,
+         path: format_path(path),
+         port: port,
+         query: format_query(query),
+         scheme: Kernel.to_string(scheme)}
+    |> Kernel.to_string
   end
 
-  defp format_host(_, nil), do: ""
-  defp format_host(nil, host), do: "://#{host}"
-  defp format_host(scheme, host), do: "#{scheme}://#{host}"
+  defp format_path(nil), do: nil
+  defp format_path(""), do: nil
+  defp format_path([]), do: nil
+  defp format_path("/"), do: nil
+  defp format_path(path) when is_list(path), do: "/" <> Enum.join(path, "/")
+  defp format_path(path), do: Kernel.to_string(path)
 
-  defp format_path(nil), do: "/"
-  defp format_path([]), do: "/"
-  defp format_path(path), do: "/" <> Enum.join(path, "/")
+  defp format_query(nil), do: nil
+  defp format_query(""), do: nil
+  defp format_query(%{__struct__: _} = qs), do: Kernel.to_string(qs)
+  defp format_query(qs) when is_map(qs), do: Mazurka.Resource.Link.encode_qs(qs)
+  defp format_query(qs), do: Kernel.to_string(qs)
 
-  defp format_qs(nil), do: ""
-  defp format_qs(qs) when is_map(qs), do: "?#{Mazurka.Resource.Link.encode_qs(qs)}"
-  defp format_qs(qs), do: "?#{qs}"
-
-  defp format_fragment(nil), do: ""
-  defp format_fragment(fragment) when is_list(fragment), do: "#/#{Enum.join(fragment, "/")}"
-  defp format_fragment(fragment), do: "##{fragment}"
+  defp format_fragment(nil), do: nil
+  defp format_fragment([]), do: nil
+  defp format_fragment(fragment) when is_list(fragment), do: "/" <> Enum.join(fragment, "/")
+  defp format_fragment(fragment), do: Kernel.to_string(fragment)
 end
