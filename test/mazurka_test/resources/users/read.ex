@@ -28,13 +28,13 @@ defmodule MazurkaTest.Resources.Users.Read do
       }
     end
 
-    # partial image() do
-    #   ^IO.inspect :foo
-    #   Hyper.image_form(%{
-    #     affordance: %UpdateImage{user: Params.get("user")},
-    #     value: user.image_url
-    #   })
-    # end
+    partial image(var) do
+      ^IO.inspect {:var, var}
+      Hyper.image_form(%{
+        affordance: %UpdateImage{user: user.id},
+        value: user.image_url
+      })
+    end
   end
 
   # mediatype Mazurka.Mediatype.Html do

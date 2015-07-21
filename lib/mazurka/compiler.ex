@@ -121,10 +121,6 @@ defmodule Mazurka.Compiler do
     end
   end
 
-  defp prepare_definition({handler, [{ast, meta}]}, mediatype, globals) do
-    fn_name = format_name(handler, meta)
-    [{fn_name, handler.compile(mediatype, ast, globals, meta)}]
-  end
   defp prepare_definition({handler, definitions}, mediatype, globals) do
     for {ast, meta} <- definitions do
       fn_name = format_name(handler, meta)

@@ -1,2 +1,2 @@
-import MazurkaTest.HTTP.Router
-MazurkaTest.start()
+# import MazurkaTest.HTTP.Router
+# MazurkaTest.start()

@@ -103,10 +103,6 @@ defmodule Mazurka.Compiler.Etude do
     {binary, acc}
   end
   # block
-  defp handle_node({:__block__, meta, [block]}, acc) do
-    {%Node.Block{children: block,
-                 line: meta[:line]}, acc}
-  end
   defp handle_node({:__block__, meta, block}, acc) do
     {%Node.Block{children: block,
                  line: meta[:line]}, acc}
