@@ -10,12 +10,12 @@ defmodule Mazurka.Protocol.HTTP.Request do
             header "x-orig-host", "example.com"
           end
       """
-      defmacro request(block) do
+      defmacro request(resource \\ nil, block) do
         quote do
           require Mazurka.Protocol.Request
           import Mazurka.Protocol.HTTP.Request
           import unquote(__MODULE__)
-          conn = Mazurka.Protocol.Request.request(nil, unquote(block))
+          conn = Mazurka.Protocol.Request.request(unquote(resource), unquote(block))
           conn = unquote(__MODULE__).request_call(conn, [])
           conn
         end
