@@ -20,6 +20,6 @@ defmodule Mazurka.Resource.Partial do
       unquote(block)
     end
     |> Mazurka.Resource.Param.format
-    |> IO.inspect
+    # |> IO.inspect
   end
 end
