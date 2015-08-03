@@ -14,6 +14,14 @@ defmodule Mazurka.Runtime do
   end
   def apply(map, prop, []) when is_map(map) do
     Dict.get(map, prop)
+  rescue
+    e in UndefinedFunctionError ->
+      case e do
+        %{arity: 3, function: :get} ->
+          Map.get(map, prop)
+        _ ->
+          raise e
+      end
   end
   def apply(module, prop, args) when is_atom(module) do
     :erlang.apply(module, prop, args)
