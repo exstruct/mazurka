@@ -9,7 +9,14 @@ defmodule MazurkaTest.Resources.Users.Read do
   let is_owner = Params.get("user") == Auth.user_id
   # let is_owner = user.id == Auth.user_id
 
-  let other = 123
+  let is_admin = case Params.get("user") do
+    "1" ->
+      true
+    "3" ->
+      true
+    _ ->
+      false
+  end
 
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
@@ -21,6 +28,7 @@ defmodule MazurkaTest.Resources.Users.Read do
         "display_name" => user.display_name,
         "email" => is_owner &&& user.email,
         "nickname" => user.nickname,
+        "is_admin" => is_admin,
       #   image: image(),
         "update" => link_to(Resources.Users.Update, %{user: Params.get("user")})
       }

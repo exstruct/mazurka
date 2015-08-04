@@ -3,8 +3,12 @@ defmodule Mazurka.Resource.Let do
     store(node)
   end
 
-  defmacro let(name, [do: block]) do
-    {:=, [], [name, block]}
+  defmacro let({:=, meta, [name, {call, call_meta, call_args}]}, clauses) do
+    {:=, meta, [name, {call, call_meta, call_args ++ [clauses]}]}
+    |> store
+  end
+  defmacro let(name, [do: body]) do
+    {:=, [], [name, body]}
     |> store
   end
 

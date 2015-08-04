@@ -26,21 +26,6 @@ defmodule Mazurka.Compiler.Etude do
                   expression: rhs,
                   line: meta[:line]}, acc}
   end
-  defp handle_node({:==, meta, [lhs, rhs]}, acc) do
-    {%Node.Call{module: Kernel,
-                function: :==,
-                arguments: [lhs, rhs],
-                attrs: %{native: true},
-                line: meta[:line]}, acc}
-  end
-  ## TODO not false, :undefined and nil
-  defp handle_node({:!, meta, [value]}, acc) do
-    {%Node.Call{module: Mazurka.Runtime,
-                function: :not,
-                arguments: [value],
-                attrs: %{native: true},
-                line: meta[:line]}, acc}
-  end
   defp handle_node({:^, _, [%Node.Call{attrs: %{native: true} = attrs} = call]}, acc) do
     attrs = Dict.put(attrs, :native, :hybrid)
     {%{call | attrs: attrs}, acc}
@@ -61,16 +46,8 @@ defmodule Mazurka.Compiler.Etude do
     {comprehension, acc}
   end
   defp handle_node({:_, meta, _}, acc) do
-    {%Node.Var{name: :_,
-               line: meta[:line]}, acc}
+    {%Node.Var.Wildcard{line: meta[:line]}, acc}
   end
-  # TODO add support in etude
-  # defp handle_node({:->, meta, [[lhs], rhs]}, acc) do
-  #   {{Clause, lhs, rhs}, acc}
-  # end
-  # defp handle_node({:case, meta, [expression, body]}, acc) do
-  #   {{Case, expression, body}, acc}
-  # end
   defp handle_node({:etude_cond, meta, [expression, arm]}, acc) when not is_list(arm) do
     handle_node({:etude_cond, meta, [expression, [arm, nil]]}, acc)
   end
@@ -87,11 +64,6 @@ defmodule Mazurka.Compiler.Etude do
   end
   defp handle_node({:etude_prop, meta, [name]}, acc) do
     {%Node.Prop{name: name,
-                line: meta[:line]}, acc}
-  end
-  defp handle_node({:&&, meta, [expression, arm1]}, acc) do
-    {%Node.Cond{expression: expression,
-                arms: [arm1, nil],
                 line: meta[:line]}, acc}
   end
   # atom
@@ -199,6 +171,20 @@ defmodule Mazurka.Compiler.Etude do
     name = "#{name}#{count} (#{module})" |> String.to_atom
     {%Node.Var{name: name,
                line: meta[:line]}, acc}
+  end
+  # case
+  defp handle_node({:case, meta, [expression, %Etude.Node.Block{children: clauses}]}, acc) do
+    {%Node.Case{expression: expression,
+                clauses: clauses,
+                line: meta[:line]}, acc}
+  end
+  defp handle_node({:case, meta, [expression | clauses]}, acc) do
+    {%Node.Case{expression: expression,
+                clauses: clauses,
+                line: meta[:line]}, acc}
+  end
+  defp handle_node({:->, _meta, [[match], body]}, acc) do
+    {{match, nil, body}, acc}
   end
 
   defp handle_node({:::, meta, parts}, acc) do
