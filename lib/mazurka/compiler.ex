@@ -28,14 +28,13 @@ defmodule Mazurka.Compiler do
   end
   defp partition([{nil, name, ast, meta} | rest], {mediatypes, includes, globals}) do
     name.module_info()
-    is_global = :erlang.function_exported(name, :global?, 0) and name.global?
-    if is_global do
-      globals = put_acc(globals, name, ast, meta)
-      partition(rest, {mediatypes, includes, globals})
+    globals = if :erlang.function_exported(name, :compile_global, 2) do
+      put_acc(globals, name, ast, meta)
     else
-      includes = put_acc(includes, name, ast, meta)
-      partition(rest, {mediatypes, includes, globals})
+      globals
     end
+    includes = put_acc(includes, name, ast, meta)
+    partition(rest, {mediatypes, includes, globals})
   end
   defp partition([{mediatype, name, ast, meta} | rest], {mediatypes, includes, globals}) do
     mt = mediatypes
@@ -58,7 +57,7 @@ defmodule Mazurka.Compiler do
   end
 
   defp prepare_global({global, definitions}, env) do
-    global.compile(definitions, env)
+    global.compile_global(definitions, env)
   end
 
   defp prepare_etude_module({mediatype, definitions}, includes, env) do

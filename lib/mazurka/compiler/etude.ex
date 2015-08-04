@@ -201,6 +201,23 @@ defmodule Mazurka.Compiler.Etude do
                line: meta[:line]}, acc}
   end
 
+  defp handle_node({:::, meta, parts}, acc) do
+    parts = for part <- parts do
+      case part do
+        %{module: String.Chars,
+          function: :to_string,
+          attrs: attrs} ->
+          %{part | attrs: Map.put(attrs, :native, true)}
+        other ->
+          other
+      end
+    end
+    {{:::, meta, parts}, acc}
+  end
+  defp handle_node({:<<>>, _meta, _parts}, _acc) do
+    throw "String concatentation not implemented yet"
+  end
+
   # local call (needs to be last)
   defp handle_node({name, meta, args}, acc) when is_atom(name) and is_list(args) do
     IO.inspect {name, meta, args}

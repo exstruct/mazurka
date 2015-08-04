@@ -1,7 +1,7 @@
 defmodule Mazurka.Runtime.Affordance do
   @moduledoc """
   Represents an affordance in a response. This is used by mediatypes to serialize the link in the appropriate
-  format. It's broken into its separate parts (method, host, path, etc.) for easy manipulation.  
+  format. It's broken into its separate parts (method, host, path, etc.) for easy manipulation.
   """
 
   defstruct mediatype: nil,
@@ -22,17 +22,6 @@ defimpl String.Chars, for: Mazurka.Runtime.Affordance do
          query: query,
          scheme: scheme}
   end
-
-  defp format_host(_, nil), do: ""
-  defp format_host(nil, host), do: "://#{host}"
-  defp format_host(scheme, host), do: "#{scheme}://#{host}"
-
-  defp format_path(nil), do: "/"
-  defp format_path([]), do: "/"
-  defp format_path(path), do: "/" <> Enum.join(path, "/")
-
-  defp format_qs(nil), do: ""
-  defp format_qs(qs), do: "?#{qs}"
 
   defp format_fragment(nil), do: ""
   defp format_fragment(fragment) when is_list(fragment), do: "/#{Enum.join(fragment, "/")}"

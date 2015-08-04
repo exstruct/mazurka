@@ -2,10 +2,14 @@ defmodule MazurkaTest.Resources.Users.Read do
   use Mazurka.Resource
   alias MazurkaTest.Resources
 
-  param user
+  param user do
+    Users.get(value)
+  end
 
-  let user = Users.get(Params.get("user"))
   let is_owner = Params.get("user") == Auth.user_id
+  # let is_owner = user.id == Auth.user_id
+
+  let other = 123
 
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
@@ -15,7 +19,7 @@ defmodule MazurkaTest.Resources.Users.Read do
         "is_user" => true,
         "created_at" => user.created_at,
         "display_name" => user.display_name,
-        "email" => is_owner &&& ^Dict.get(user, "email"),
+        "email" => is_owner &&& user.email,
         "nickname" => user.nickname,
       #   image: image(),
         "update" => link_to(Resources.Users.Update, %{user: Params.get("user")})

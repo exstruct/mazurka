@@ -1,6 +1,4 @@
 defmodule Mazurka.Resource.Test do
-  def global?, do: true
-
   defmacro test(name, [do: block]) do
     meta = %{file: __CALLER__.file,
              line: __CALLER__.line}
@@ -20,7 +18,11 @@ defmodule Mazurka.Resource.Test do
     end
   end
 
-  def compile(tests, env) do
+  def compile(_, _) do
+    nil
+  end
+
+  def compile_global(tests, env) do
     do_compile(tests, env, Mix.env)
   end
 
@@ -39,6 +41,7 @@ defmodule Mazurka.Resource.Test do
       quote do
         def unquote(:"test #{name}")({_, var!(__router__)}, _) do
           import Kernel
+          import Mazurka.Compiler.Kernel, only: []
           import Mazurka.Resource.Test
           import ExUnit.Assertions
           unquote(block)

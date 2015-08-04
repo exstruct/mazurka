@@ -9,6 +9,7 @@ defmodule Mazurka.Resource.Action do
 
   def compile(mediatype, block, globals, _meta) do
     quote do
+      unquote_splicing(globals[:param] || [])
       unquote_splicing(globals[:let] || [])
       action = unquote(block)
       events = unquote(globals[:event])

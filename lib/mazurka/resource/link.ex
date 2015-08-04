@@ -1,7 +1,7 @@
 defmodule Mazurka.Resource.Link do
   @moduledoc """
   Represents a link in a response. This is used by mediatypes to serialize the link in the appropriate
-  format. It's broken into its separate parts (method, host, path, etc.) for easy manipulation.  
+  format. It's broken into its separate parts (method, host, path, etc.) for easy manipulation.
   """
 
   defstruct mediatype: nil,
@@ -69,23 +69,21 @@ defmodule Mazurka.Resource.Link do
     %{mazurka_router: router, mazurka_mediatype_handler: mediatype_module} = private
     case router.resolve(module, params) do
       {:ok, method, scheme, host, path} ->
-        full_path_conn = %{conn | path_info: path}
         {:ok, %__MODULE__{mediatype: mediatype_module,
                           method: method,
                           scheme: scheme,
                           host: host,
                           port: conn.port,
-                          path: Plug.Conn.full_path(full_path_conn),
+                          path: request_path(%{conn | path_info: path}),
                           query: query,
                           fragment: fragment}}
       {:ok, method, path} ->
-        full_path_conn = %{conn | path_info: path}
         {:ok, %__MODULE__{mediatype: mediatype_module,
                           method: method,
                           scheme: conn.scheme,
                           host: conn.host,
                           port: conn.port,
-                          path: Plug.Conn.full_path(full_path_conn),
+                          path: request_path(%{conn | path_info: path}),
                           query: query,
                           fragment: fragment}}
       {:error, :not_found} ->
@@ -99,11 +97,18 @@ defmodule Mazurka.Resource.Link do
                 scheme: conn.scheme,
                 host: conn.host,
                 port: conn.port,
-                path: Plug.Conn.full_path(conn),
+                path: request_path(conn),
                 query: conn.query_string}
   end
   def from_conn(conn, path_info) do
     from_conn(%{conn | path_info: path_info})
+  end
+
+  defp request_path(%{script_name: [], path_info: []}) do
+    "/"
+  end
+  defp request_path(%{script_name: script, path_info: path}) do
+    "/" <> Enum.join(script ++ path, "/")
   end
 end
 

@@ -3,11 +3,11 @@ defmodule Mazurka.Resource.Partial do
     Mazurka.Compiler.Utils.register(mediatype, __MODULE__, block, {name, arguments})
   end
 
-  def format_name({name, arguments}) do
+  def format_name({name, _arguments}) do
     name
   end
 
-  def compile(mediatype, block, globals, {_, arguments}) do
+  def compile(_mediatype, block, globals, {_, arguments}) do
     arguments = Enum.map(arguments, fn({arg, _, _} = var) ->
       quote do
         unquote(var) = ^Dict.get(prop(:params), unquote(arg |> to_string))
@@ -16,6 +16,7 @@ defmodule Mazurka.Resource.Partial do
 
     quote do
       unquote_splicing(arguments)
+      unquote_splicing(globals[:param] || [])
       unquote_splicing(globals[:let] || [])
       unquote(block)
     end
