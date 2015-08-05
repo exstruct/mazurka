@@ -6,8 +6,7 @@ defmodule MazurkaTest.Resources.Users.Read do
     Users.get(value)
   end
 
-  let is_owner = Params.get("user") == Auth.user_id
-  # let is_owner = user.id == Auth.user_id
+  let is_owner = user.id == Auth.user_id
 
   let is_admin = case Params.get("user") do
     "1" ->

@@ -2,11 +2,11 @@ defmodule MazurkaTest.Resources.Users.Update do
   use Mazurka.Resource
   alias MazurkaTest.Resources
 
-  param user
+  param user do
+    Users.get(value)
+  end
 
   condition Params.get("user") == Auth.user_id, permission_error
-
-  let user = Users.get(Params.get("user"))
 
   mediatype Mazurka.Mediatype.Hyperjson do
     action do

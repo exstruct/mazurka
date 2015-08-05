@@ -7,6 +7,7 @@ defmodule Mazurka.Resource.Error do
 
   def compile(mediatype, block, globals, {_, _, [arg]}) do
     quote do
+      unquote_splicing(globals[:param] || [])
       unquote_splicing(globals[:let] || [])
       unquote(arg) = prop(:error)
       error = unquote(mediatype).handle_error(unquote(block))

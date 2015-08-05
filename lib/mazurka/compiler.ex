@@ -148,7 +148,7 @@ defmodule Mazurka.Compiler do
 
   defp compile(etude_ast, etude_module, env) do
     ## TODO read the existing beam file and verify it has changed before compiling
-    {:ok, _, _, beam} = Etude.compile(etude_module, etude_ast, [file: env.file])
+    {:ok, _, _, beam} = Etude.compile(etude_module, etude_ast, [file: env.file, native: Mix.env == :prod])
 
     # Make ex_doc happy
     chunk_data = :erlang.term_to_binary({:elixir_docs_v1, [
