@@ -18,6 +18,8 @@ defmodule MazurkaTest.Resources.Users.Read do
       false
   end
 
+  let can_edit = is_owner && is_admin
+
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
       %{
@@ -29,6 +31,7 @@ defmodule MazurkaTest.Resources.Users.Read do
         "email" => is_owner &&& user.email,
         "nickname" => user.nickname,
         "is_admin" => is_admin,
+        "can_edit" => can_edit,
       #   image: image(),
         "update" => link_to(Resources.Users.Update, %{user: Params.get("user")})
       }

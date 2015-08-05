@@ -89,16 +89,20 @@ defmodule Mazurka.Compiler.Kernel do
     {:etude_cond, [], [lhs, [do: lhs, else: rhs]]}
   end
 
-  defmacro left or right do
-    {:etude_cond, [], [left, [do: left, else: right]]}
+  defmacro lhs or rhs do
+    {:etude_cond, [], [lhs, [do: lhs, else: rhs]]}
   end
 
-  defmacro left and right do
-    {:etude_cond, [], [left, [do: right, else: false]]}
+  defmacro lhs && rhs do
+    {:etude_cond, [], [lhs, [do: rhs, else: false]]}
   end
 
-  defmacro left &&& right do
-    {:etude_cond, [], [left, [do: right, else: :undefined]]}
+  defmacro lhs and rhs do
+    {:etude_cond, [], [lhs, [do: rhs, else: false]]}
+  end
+
+  defmacro lhs &&& rhs do
+    {:etude_cond, [], [lhs, [do: rhs, else: :undefined]]}
   end
 
   defmacro elem(tuple, index) when Kernel.is_integer(index) do
