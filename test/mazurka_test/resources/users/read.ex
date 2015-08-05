@@ -33,7 +33,7 @@ defmodule MazurkaTest.Resources.Users.Read do
         "is_admin" => is_admin,
         "can_edit" => can_edit,
       #   image: image(),
-        "update" => link_to(Resources.Users.Update, %{user: Params.get("user")})
+        "update" => link_to(Resources.Users.Update, user: Params.get("user"))
       }
     end
 

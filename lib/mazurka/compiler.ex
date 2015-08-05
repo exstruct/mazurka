@@ -96,13 +96,19 @@ defmodule Mazurka.Compiler do
             {%Mazurka.Resource.Error{message: out}, context} ->
               {out, context}
             e ->
+              clear_cache(prev)
               throw e
           end
-          :erlang.erase()
-          for {k, v} <- prev do
-            :erlang.put(k, v)
+          clear_cache(prev)
+
+          # encode the response with the content type
+          out = if out != nil do
+            unquote(content_type).encode(out)
+          else
+            out
           end
-          {:ok, unquote(content_type).encode(out), context, unquote(resp_type)}
+
+          {:ok, out, context, unquote(resp_type)}
         end
 
         defp affordance(unquote(type), unquote(subtype), unquote(params), context, resolve, req, scope, props) do
@@ -212,6 +218,13 @@ defmodule Mazurka.Compiler do
         ##      for now we fail silently.
         Logger.info("no acceptable affordance was found for #{type}/#{subtype} in #{unquote(module)}")
         {{:__ETUDE_READY__, :undefined}, context}
+      end
+
+      defp clear_cache(prev) do
+        :erlang.erase()
+        for {k, v} <- prev do
+          :erlang.put(k, v)
+        end
       end
 
       unquote_splicing(globals)

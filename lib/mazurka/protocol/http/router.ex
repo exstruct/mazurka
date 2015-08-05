@@ -132,7 +132,8 @@ defmodule Mazurka.Protocol.HTTP.Router do
       {:ok, body, conn, content_type} = apply(mod, :action, [conn, &dispatch.resolve/7, accepts])
       conn
       |> Plug.Conn.put_resp_content_type(content_type)
-      |> Plug.Conn.send_resp(choose_status(conn), body)
+      |> handle_transition()
+      |> handle_response(body || "")
     rescue
       e in CaseClauseError ->
         case e do
@@ -140,6 +141,20 @@ defmodule Mazurka.Protocol.HTTP.Router do
             Plug.Conn.send_resp(conn, 404, ~S({"error":{"message":"not found!","status": 404}}))
         end
     end
+  end
+
+  defp handle_transition(%Plug.Conn{private: %{mazurka_transition: location}, status: status} = conn) do
+    ## https://en.wikipedia.org/wiki/HTTP_303
+    conn = Plug.Conn.put_resp_header(conn, "location", location)
+    status = status || 303
+    %{conn | status: status}
+  end
+  defp handle_transition(conn) do
+    conn
+  end
+
+  defp handle_response(conn, body) do
+    Plug.Conn.send_resp(conn, choose_status(conn), body)
   end
 
   defp choose_status(%Plug.Conn{private: %{mazurka_error: true}, status: status}) do

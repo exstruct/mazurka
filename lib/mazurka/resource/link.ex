@@ -25,8 +25,22 @@ defmodule Mazurka.Resource.Link do
       {to_string(name), value}
     end)}
   end
+  def format_params(items) when is_list(items) do
+    {:%{}, [], Enum.map(items, fn({name, value}) ->
+      {to_string(name), value}
+    end)}
+  end
 
   def link_to([module, params, query, fragment], _conn, _parent, _ref, _attrs) do
+    params = Enum.reduce(params, %{}, fn
+      ({key, %{"id" => id}}, acc) ->
+        Map.put(acc, to_string(key), to_string(id))
+      ({key, %{id: id}}, acc) ->
+        Map.put(acc, to_string(key), to_string(id))
+      ({key, value}, acc) ->
+        Map.put(acc, to_string(key), to_string(value))
+    end)
+
     props = %{params: params, query: query, fragment: fragment}
     ## FOR BACKWARDS COMPATIBILITY
     |> Dict.merge(params)

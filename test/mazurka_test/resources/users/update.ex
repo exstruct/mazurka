@@ -12,13 +12,13 @@ defmodule MazurkaTest.Resources.Users.Update do
     action do
       Users.update(Params.get("user"), %{
         "email" => Input.get("email"),
-        "full_name" => Input.full_name,
-        "nickname" => Input.nickname,
-        "password" => Input.password,
-        "password_confirm" => Input.password_confirm
+        "full_name" => Input.get("full_name"),
+        "nickname" => Input.get("nickname"),
+        "password" => Input.get("password"),
+        "password_confirm" => Input.get("password_confirm")
       })
 
-      transition_to Resources.Users.Read, %{user: Params.get("user")}
+      transition_to(Resources.Users.Read, user: Params.get("user"))
     end
 
     affordance do
@@ -57,6 +57,6 @@ defmodule MazurkaTest.Resources.Users.Update do
       accept "hyper+json"
     end
 
-    assert conn.status != 200
+    assert conn.status > 399
   end
 end
