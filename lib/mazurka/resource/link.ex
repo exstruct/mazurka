@@ -58,6 +58,17 @@ defmodule Mazurka.Resource.Link do
     end
   end
 
+  def invalidates(args, %{private: private} = conn, parent, ref, attrs) do
+    case resolve(args, conn, parent, ref, attrs) do
+      {:ok, :undefined} ->
+        {:error, :invalidates_unknown_location}
+      {:ok, affordance} ->
+        location = to_string(affordance)
+        invalidations = Map.get(private, :mazurka_invalidations, [])
+        {:ok, nil, %{conn | private: Map.put(private, :mazurka_invalidations, [location | invalidations])}}
+    end
+  end
+
   def encode_qs(params) do
     out = Enum.filter_map(params, fn({_k, v}) ->
       case v do

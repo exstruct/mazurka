@@ -18,6 +18,8 @@ defmodule MazurkaTest.Resources.Users.Update do
         "password_confirm" => Input.get("password_confirm")
       })
 
+      invalidates(Resources.Users.Read, user: Params.get("user"))
+
       transition_to(Resources.Users.Read, user: Params.get("user"))
     end
 

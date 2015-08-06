@@ -133,7 +133,8 @@ defmodule Mazurka.Protocol.HTTP.Router do
       conn
       |> Plug.Conn.put_resp_content_type(content_type)
       |> handle_transition()
-      |> handle_response(body || "")
+      |> handle_invalidations()
+      |> handle_response(body)
     rescue
       e in CaseClauseError ->
         case e do
@@ -153,6 +154,16 @@ defmodule Mazurka.Protocol.HTTP.Router do
     conn
   end
 
+  defp handle_invalidations(%Plug.Conn{private: %{mazurka_invalidations: invalidations}} = conn) do
+    Enum.reduce(invalidations, conn, &(put_resp_header(&2, "x-invalidates", &1)))
+  end
+  defp handle_invalidations(conn) do
+    conn
+  end
+
+  defp handle_response(conn, nil) do
+    Plug.Conn.send_resp(conn, 204, "")
+  end
   defp handle_response(conn, body) do
     Plug.Conn.send_resp(conn, choose_status(conn), body)
   end
@@ -164,9 +175,9 @@ defmodule Mazurka.Protocol.HTTP.Router do
     status || 200
   end
 
-  # defp put_resp_header(%Plug.Conn{resp_headers: headers} = conn, key, value) do
-  #   %{conn | resp_headers: [{key, value} | headers]}
-  # end
+  defp put_resp_header(%Plug.Conn{resp_headers: headers} = conn, key, value) do
+    %{conn | resp_headers: [{key, value} | headers]}
+  end
 
   defp compile(method, expr, options, contents) do
     {mod, options} =

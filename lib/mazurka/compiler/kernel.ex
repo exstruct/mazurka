@@ -54,6 +54,10 @@ defmodule Mazurka.Compiler.Kernel do
     link(__CALLER__, :transition_to, resource, params, query, fragment)
   end
 
+  defmacro invalidates(resource, params \\ nil, query \\ nil, fragment \\ nil) do
+    link(__CALLER__, :invalidates, resource, params, query, fragment)
+  end
+
   defp link(caller, function, resource, params, query, fragment) do
     [parent_module] = caller.context_modules
     parent = %{caller | module: parent_module}
