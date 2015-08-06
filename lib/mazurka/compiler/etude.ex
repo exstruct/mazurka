@@ -138,6 +138,9 @@ defmodule Mazurka.Compiler.Etude do
   defp handle_node({k, v}, acc) do
     {{k, v}, acc}
   end
+  defp handle_node({:{}, _, values}, acc) do
+    {:erlang.list_to_tuple(values), acc}
+  end
   # numbers
   defp handle_node(number, acc) when is_integer(number) or is_float(number) do
     {number, acc}
