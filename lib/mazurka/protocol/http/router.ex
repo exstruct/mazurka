@@ -128,20 +128,13 @@ defmodule Mazurka.Protocol.HTTP.Router do
   def __handle__(mod, _params, conn) do
     accepts = Plug.Conn.get_req_header(conn, "accept") |> Mazurka.Protocol.HTTP.AcceptHeader.handle()
     dispatch = conn.private[:mazurka_dispatch]
-    try do
-      {:ok, body, conn, content_type} = apply(mod, :action, [conn, &dispatch.resolve/7, accepts])
-      conn
-      |> Plug.Conn.put_resp_content_type(content_type)
-      |> handle_transition()
-      |> handle_invalidations()
-      |> handle_response(body)
-    rescue
-      e in CaseClauseError ->
-        case e do
-          %CaseClauseError{term: {:error, :not_found}} ->
-            Plug.Conn.send_resp(conn, 404, ~S({"error":{"message":"not found!","status": 404}}))
-        end
-    end
+    {:ok, body, conn, content_type} = apply(mod, :action, [conn, &dispatch.resolve/7, accepts])
+
+    conn
+    |> Plug.Conn.put_resp_content_type(content_type)
+    |> handle_transition()
+    |> handle_invalidations()
+    |> handle_response(body)
   end
 
   defp handle_transition(%Plug.Conn{private: %{mazurka_transition: location}, status: status} = conn) do

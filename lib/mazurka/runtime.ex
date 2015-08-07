@@ -27,6 +27,12 @@ defmodule Mazurka.Runtime do
     :erlang.apply(module, prop, args)
   end
 
+  def put_status([status], conn, _parent, _ref, _attrs) do
+    ## TODO potentially add support for more than just HTTP statuses
+    status = Plug.Conn.Status.code(status)
+    {:ok, status, %{conn | status: status}}
+  end
+
   def get_mediatype(context) do
     Dict.get(context.private, :mazurka_mediatype, {nil, nil, nil})
   end

@@ -18,9 +18,8 @@ defmodule MazurkaTest.Resources.Root do
   """
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
-      user = link_to Resources.Users.Read, %{user: user_id}
       %{
-        "account" => user,
+        "account" => link_to(Resources.Users.Read, user: user_id),
         "foo" => foo
         # oauth: %Oauth{},
         # search: %Search{} |> pointer :search,

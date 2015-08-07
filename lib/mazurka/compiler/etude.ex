@@ -207,6 +207,44 @@ defmodule Mazurka.Compiler.Etude do
     throw "String concatentation not implemented yet"
   end
 
+  defp handle_node({:try, meta, [expression, %Node.Var{name: handler}]}, acc) when is_atom(handler) do
+    p = %Node.Partial{
+      module: acc.module,
+      function: handler,
+      props: %{
+        error: %Node.Var{name: :error, line: meta[:line]}
+      },
+      line: meta[:line]
+    }
+
+    t = %Node.Try{
+      expression: expression,
+      clauses: [
+        {:error, %Node.Assign{name: :error, line: meta[:line]}, nil, p}
+      ]
+    }
+
+    {t, acc}
+  end
+  defp handle_node({:try, meta, [expression, cases]}, acc) when is_list(cases) do
+    t = %Node.Try{
+      expression: expression,
+      clauses: for {pattern, %Node.Var{name: handler}} <- cases do
+        p = %Node.Partial{
+          module: acc.module,
+          function: handler,
+          props: %{
+            error: pattern
+          },
+          line: meta[:line]
+        }
+        {:error, %Node.Assign{name: :error, line: meta[:line]}, nil, p}
+      end
+    }
+
+    {t, acc}
+  end
+
   # local call (needs to be last)
   defp handle_node({name, meta, args}, acc) when is_atom(name) and is_list(args) do
     IO.inspect {name, meta, args}

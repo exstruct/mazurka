@@ -3,7 +3,7 @@ defmodule MazurkaTest.Resources.Users.Read do
   alias MazurkaTest.Resources
 
   param user do
-    Users.get(value)
+    try(Users.get(value), not_found: not_found_error)
   end
 
   let is_owner = user.id == Auth.user_id
@@ -49,6 +49,16 @@ defmodule MazurkaTest.Resources.Users.Read do
         value: user.image_url
       })
     end
+
+    error not_found_error(err) do
+      status(:not_found)
+
+      %{
+        "error" => %{
+          "message" => "This isn't the user you're looking for"
+        }
+      }
+    end
   end
 
   # mediatype Mazurka.Mediatype.Html do
@@ -63,7 +73,7 @@ defmodule MazurkaTest.Resources.Users.Read do
   #   end
   # end
 
-  test "it should response with a 200" do
+  test "it should respond with a 200" do
     conn = request do
       params %{"user" => "6"}
       accept "hyper+json"
@@ -76,5 +86,14 @@ defmodule MazurkaTest.Resources.Users.Read do
 
     assert resp_body["id"]
     assert !resp_body["update"]
+  end
+
+  test "it should respond with a 404 when not found" do
+    conn = request do
+      params %{"user" => "7"}
+      accept "hyper+json"
+    end
+
+    assert conn.status == 404
   end
 end

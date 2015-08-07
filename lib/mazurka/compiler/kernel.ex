@@ -69,6 +69,12 @@ defmodule Mazurka.Compiler.Kernel do
     end
   end
 
+  defmacro status(code) do
+    quote do
+      ^^Mazurka.Runtime.put_status(unquote(code))
+    end
+  end
+
   defmacro if(expression, arms) do
     {:etude_cond, [], [expression, arms]}
   end

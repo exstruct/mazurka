@@ -28,8 +28,8 @@ defmodule Mazurka.Dispatch do
 
   defmacro __before_compile__(_) do
     quote do
-      defp exec(module, function, args, _conn, _parent, _ref, _attrs) do
-        raise %UndefinedFunctionError{module: module, function: function, arity: length(args)}
+      defp exec(module, function, args, %{private: %{mazurka_dispatch: dispatch}}, _parent, _ref, _attrs) do
+        raise %Mazurka.Dispatch.Exception{module: module, function: function, arity: length(args), dispatch: dispatch}
       end
     end
   end

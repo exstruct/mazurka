@@ -1,5 +1,9 @@
 defmodule Mazurka.Resource.Error do
-  defexception [:message]
+  defexception [:message, :state]
+
+  def message(%{message: message}) do
+    inspect(message)
+  end
 
   defmacro error(mediatype, name, [do: block]) do
     Mazurka.Compiler.Utils.register(mediatype, __MODULE__, block, name)
@@ -20,8 +24,8 @@ defmodule Mazurka.Resource.Error do
     name
   end
 
-  def set_error([message], conn, _parent, _ref, _attrs) do
-    conn = Plug.Conn.put_private(conn, :mazurka_error, true)
-    {:ok, message, conn}
+  def set_error([message], %{private: private} = conn, _parent, _ref, _attrs) do
+    private = Map.put(private, :mazurka_error, true)
+    :erlang.error(__MODULE__.exception([message: message, state: %{conn | private: private}]))
   end
 end

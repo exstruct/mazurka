@@ -92,12 +92,15 @@ defmodule Mazurka.Compiler do
           prev = :erlang.get()
           {out, context} = try do
             unquote(etude_module).action(context, resolve)
-          catch
-            {%Mazurka.Resource.Error{message: out}, context} ->
-              {out, context}
+          rescue
+            err in Mazurka.Resource.Error ->
+              {err.message, err.state}
+            err in Etude.Exception ->
+              clear_cache(prev)
+              Plug.Conn.WrapperError.reraise(err.state, :error, err)
             e ->
               clear_cache(prev)
-              throw e
+              reraise(e, System.stacktrace())
           end
           clear_cache(prev)
 

@@ -32,20 +32,27 @@ defmodule Mazurka.Resource.Link do
   end
 
   def link_to([module, params, query, fragment], _conn, _parent, _ref, _attrs) do
-    params = Enum.reduce(params, %{}, fn
-      ({key, %{"id" => id}}, acc) ->
-        Map.put(acc, to_string(key), to_string(id))
-      ({key, %{id: id}}, acc) ->
-        Map.put(acc, to_string(key), to_string(id))
-      ({key, value}, acc) ->
-        Map.put(acc, to_string(key), to_string(value))
-    end)
+    try do
+      params = Enum.reduce(params, %{}, fn
+        ({key, %{"id" => id}}, acc) ->
+          Map.put(acc, to_string(key), to_string(id))
+        ({key, %{id: id}}, acc) ->
+          Map.put(acc, to_string(key), to_string(id))
+        ({_, value}, _) when value in [nil, :undefined] ->
+          throw :undefined_param
+        ({key, value}, acc) ->
+          Map.put(acc, to_string(key), to_string(value))
+      end)
 
-    props = %{params: params, query: query, fragment: fragment}
-    ## FOR BACKWARDS COMPATIBILITY
-    |> Dict.merge(params)
+      props = %{params: params, query: query, fragment: fragment}
+      ## FOR BACKWARDS COMPATIBILITY
+      |> Dict.merge(params)
 
-    {:partial, {module, :affordance_partial, props}}
+      {:partial, {module, :affordance_partial, props}}
+    catch
+      :undefined_param ->
+        {:ok, :undefined}
+    end
   end
 
   def transition_to(args, %{private: private} = conn, parent, ref, attrs) do
