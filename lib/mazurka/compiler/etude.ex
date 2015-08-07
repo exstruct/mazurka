@@ -41,6 +41,13 @@ defmodule Mazurka.Compiler.Etude do
                          type: :list,
                          line: meta[:line]}, acc}
   end
+  defp handle_node({:<-, meta, [{%Node.Var{name: key, line: key_line}, %Node.Var{name: value, line: value_line}}, collection]}, acc) do
+    {%Node.Comprehension{collection: collection,
+                         key: %Node.Assign{name: key, line: key_line},
+                         value: %Node.Assign{name: value, line: value_line},
+                         type: :list,
+                         line: meta[:line]}, acc}
+  end
   defp handle_node({:for, _, [%Node.Comprehension{} = comprehension, expression]}, acc) do
     comprehension = %{comprehension | expression: expression}
     {comprehension, acc}
