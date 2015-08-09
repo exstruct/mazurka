@@ -97,7 +97,7 @@ defmodule Mazurka.Compiler do
               {err.message, err.state}
             err in Etude.Exception ->
               clear_cache(prev)
-              Plug.Conn.WrapperError.reraise(err.state, :error, err)
+              Plug.Conn.WrapperError.reraise(err.state, :error, err.error)
             e ->
               clear_cache(prev)
               reraise(e, System.stacktrace())
