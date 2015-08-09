@@ -8,7 +8,7 @@ defmodule MazurkaTest.Resources.Users.Read do
 
   let is_owner = user.id == Auth.user_id
 
-  let is_admin = case Params.get("user") do
+  let is_admin = case user.id do
     "1" ->
       true
     "3" ->
@@ -22,7 +22,7 @@ defmodule MazurkaTest.Resources.Users.Read do
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
       %{
-        "id" => Params.get("user"),
+        "id" => user.id,
         "root" => link_to(Resources.Root),
         "is_user" => true,
         "created_at" => user.created_at,
@@ -32,7 +32,7 @@ defmodule MazurkaTest.Resources.Users.Read do
         "is_admin" => is_admin,
         "can_edit" => can_edit,
       #   image: image(),
-        "update" => link_to(Resources.Users.Update, user: Params.get("user")),
+        "update" => link_to(Resources.Users.Update, user: user),
         "interests" => for {id, value} <- [thing: 1, other_thing: 2] do
           %{
             "id" => id,

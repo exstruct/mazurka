@@ -88,7 +88,7 @@ defmodule Mazurka.Compiler.Etude do
   end
   # call
   defp handle_node({:., meta, [%Node.Var{} = var, property]}, acc) do
-    {%Node.Call{module: Mazurka.Runtime,
+    {%Node.Call{module: :__PLACEHOLDER__,
                 function: :apply,
                 arguments: [var, property, []],
                 attrs: %{native: true},
@@ -102,11 +102,17 @@ defmodule Mazurka.Compiler.Etude do
   defp handle_node({%Node.Call{module: Mazurka.Runtime.Input, function: :get} = call, _, args}, acc) do
     {%{call | arguments: args, attrs: %{native: :hybrid}}, acc}
   end
+  ## TODO handle apply with 0 args... for now we'll do dict since it'll probably be used more
+  defp handle_node({%Node.Call{module: :__PLACEHOLDER__, function: :apply, arguments: [var, property, _]} = call, _, []}, acc) do
+    {%Node.Dict{function: :fetch!,
+                arguments: [var, property],
+                line: call.line}, acc}
+  end
   defp handle_node({%Node.Call{} = call, _, []}, acc) do
     {call, acc}
   end
-  defp handle_node({%Node.Call{module: Mazurka.Runtime, function: :apply, arguments: [var, property, _]} = call, _, args}, acc) do
-    {%{call | arguments: [var, property, args]}, acc}
+  defp handle_node({%Node.Call{module: :__PLACEHOLDER__, function: :apply, arguments: [var, property, _]} = call, _, args}, acc) do
+    {%{call | module: :erlang, arguments: [var, property, args]}, acc}
   end
   defp handle_node({%Node.Call{} = call, _, args}, acc) do
     {%{call | arguments: args}, acc}

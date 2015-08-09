@@ -6,11 +6,19 @@ defmodule MazurkaTest.Resources.Users.Update do
     Users.get(value)
   end
 
-  condition Params.get("user") == Auth.user_id, permission_error
+  condition user.id == Auth.user_id, permission_error
 
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
-      Users.update(Params.get("user"), %{
+      ## TODO use Etude.Dict.put
+      # user
+      # |> Dict.put("email", Input.get("email"))
+      # |> Dict.put("full_name", Input.get("full_name"))
+      # |> Dict.put("nickname", Input.get("nickname"))
+      # |> Dict.put("password", Input.get("password"))
+      # |> Dict.put("password_confirm", Input.get("password_confirm"))
+      # |> Users.update()
+      Users.update(user.id, %{
         "email" => Input.get("email"),
         "full_name" => Input.get("full_name"),
         "nickname" => Input.get("nickname"),
@@ -18,9 +26,9 @@ defmodule MazurkaTest.Resources.Users.Update do
         "password_confirm" => Input.get("password_confirm")
       })
 
-      invalidates(Resources.Users.Read, user: Params.get("user"))
+      invalidates(Resources.Users.Read, user: user)
 
-      transition_to(Resources.Users.Read, user: Params.get("user"))
+      transition_to(Resources.Users.Read, user: user)
     end
 
     affordance do
