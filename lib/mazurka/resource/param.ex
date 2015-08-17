@@ -29,7 +29,7 @@ defmodule Mazurka.Resource.Param do
   end
   defp compile_assign({name, [do: block]}, acc) do
     expr = quote do
-      unquote(Macro.var(:value, nil)) = Params.get(unquote(to_string(elem(name, 0))))
+      unquote(Macro.var(:value, nil)) = Params.get(unquote(name_to_binary(name)))
       unquote(block)
     end
 
@@ -37,8 +37,17 @@ defmodule Mazurka.Resource.Param do
       unquote(name) = unquote(expr)
     end | acc]
   end
-  defp compile_assign(_, acc) do
-    acc
+  defp compile_assign({name, _}, acc) do
+    [quote do
+      unquote(name) = Params.get(unquote(name_to_binary(name)))
+    end | acc]
+  end
+
+  defp name_to_binary({name, _meta, _context}) when is_atom(name) do
+    to_string(name)
+  end
+  defp name_to_binary(name) when is_atom(name) do
+    to_string(name)
   end
 
   @doc false
