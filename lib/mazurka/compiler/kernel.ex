@@ -24,7 +24,6 @@ defmodule Mazurka.Compiler.Kernel do
                                                            defimpl: 2,
                                                            defimpl: 3,
                                                            defoverridable: 1,
-                                                           in: 2,
                                                            is_nil: 1,
                                                            match?: 2,
                                                            sigil_S: 2,
@@ -113,6 +112,12 @@ defmodule Mazurka.Compiler.Kernel do
 
   defmacro lhs &&& rhs do
     {:etude_cond, [], [lhs, [do: rhs, else: :undefined]]}
+  end
+
+  defmacro left in right do
+    quote do
+      ^Enum.member?(unquote(right), unquote(left))
+    end
   end
 
   defmacro elem(tuple, index) when Kernel.is_integer(index) do
