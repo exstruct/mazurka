@@ -31,18 +31,9 @@ defmodule Mazurka.Resource.Link do
     end)}
   end
 
-  def link_to([module, params, query, fragment], _conn, _parent, _ref, _attrs) do
+  def link_to(args, _conn, _parent, _ref, _attrs) do
     try do
-      params = Enum.reduce(params, %{}, fn
-        ({key, %{"id" => id}}, acc) ->
-          Map.put(acc, to_string(key), to_string(id))
-        ({key, %{id: id}}, acc) ->
-          Map.put(acc, to_string(key), to_string(id))
-        ({_, value}, _) when value in [nil, :undefined] ->
-          throw :undefined_param
-        ({key, value}, acc) ->
-          Map.put(acc, to_string(key), to_string(value))
-      end)
+      [module, params, query, fragment] = unwrap_args(args)
 
       props = %{params: params, query: query, fragment: fragment}
       ## FOR BACKWARDS COMPATIBILITY
@@ -50,13 +41,13 @@ defmodule Mazurka.Resource.Link do
 
       {:partial, {module, :affordance_partial, props}}
     catch
-      :undefined_param ->
+      {:undefined_param, _} ->
         {:ok, :undefined}
     end
   end
 
   def transition_to(args, %{private: private} = conn, parent, ref, attrs) do
-    case resolve(args, conn, parent, ref, attrs) do
+    case args |> unwrap_args |> resolve(conn, parent, ref, attrs) do
       {:ok, :undefined} ->
         {:error, :transition_to_unknown_location}
       {:ok, affordance} ->
@@ -66,7 +57,7 @@ defmodule Mazurka.Resource.Link do
   end
 
   def invalidates(args, %{private: private} = conn, parent, ref, attrs) do
-    case resolve(args, conn, parent, ref, attrs) do
+    case args |> unwrap_args |> resolve(conn, parent, ref, attrs) do
       {:ok, :undefined} ->
         {:error, :invalidates_unknown_location}
       {:ok, affordance} ->
@@ -74,6 +65,26 @@ defmodule Mazurka.Resource.Link do
         invalidations = Map.get(private, :mazurka_invalidations, [])
         {:ok, nil, %{conn | private: Map.put(private, :mazurka_invalidations, [location | invalidations])}}
     end
+  end
+
+  defp unwrap_args([module, params, query, fragment]) do
+    [module, unwrap_ids(params), unwrap_ids(query), fragment]
+  end
+
+  defp unwrap_ids(kvs) when kvs in [nil, :undefined] do
+    kvs
+  end
+  defp unwrap_ids(kvs) do
+    Enum.reduce(kvs, %{}, fn
+      ({key, %{"id" => id}}, acc) ->
+        Map.put(acc, to_string(key), to_string(id))
+      ({key, %{id: id}}, acc) ->
+        Map.put(acc, to_string(key), to_string(id))
+      ({key, value}, _) when value in [nil, :undefined] ->
+        throw {:undefined_param, key}
+      ({key, value}, acc) ->
+        Map.put(acc, to_string(key), to_string(value))
+    end)
   end
 
   def encode_qs(params) do
