@@ -22,7 +22,8 @@ defmodule Mazurka.Mixfile do
   end
 
   defp deps do
-    [{:plug, ">= 0.9.0"},
+    [{:ecto, ">= 1.0.0"},
+     {:plug, ">= 0.9.0"},
      {:poison, ">= 1.4.0"},
      {:etude, "~> 0.3.0"},
      {:parse_trans, github: "uwiger/parse_trans", optional: true},
