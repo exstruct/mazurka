@@ -22,7 +22,7 @@ defmodule Mazurka.Model do
     ## TODO pull in the @primary_key
 
     quote do
-      def get(var!(repo), var!(id), var!(opts) \\ []) do
+      def get(var!(repo), var!(id), var!(opts)) do
         {:ok, unquote({:%{}, [], [{:__struct__, module} | fields]})}
       end
 
