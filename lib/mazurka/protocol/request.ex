@@ -102,15 +102,21 @@ defmodule Mazurka.Protocol.Request do
     end
   end
 
-  defmacro accept(subtype) when subtype in ["html", "plain"] do
+  defmacro accept(subtype) when subtype in ["html", "plain", "css"] do
     quote do
       accept("text", unquote(subtype))
     end
   end
   defmacro accept(subtype) do
-    subtype = to_string(subtype)
+    {type, subtype} = case subtype |> to_string |> String.split("/") do
+      [subtype] ->
+        {"application", subtype}
+      [type, subtype] ->
+        {type, subtype}
+    end
+
     quote do
-      accept("application", unquote(subtype))
+      accept(unquote(type), unquote(subtype))
     end
   end
 

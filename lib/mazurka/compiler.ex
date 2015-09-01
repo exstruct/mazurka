@@ -38,7 +38,7 @@ defmodule Mazurka.Compiler do
   end
   defp partition([{mediatype, name, ast, meta} | rest], {mediatypes, includes, globals}) do
     mt = mediatypes
-    |> Dict.get(mediatype, %{__default__: Dict.size(mediatypes) == 0})
+    |> Dict.get(mediatype, %{__default__: Map.size(mediatypes) == 0})
     |> put_acc(name, ast, meta)
 
     mediatypes = Dict.put(mediatypes, mediatype, mt)
@@ -64,23 +64,27 @@ defmodule Mazurka.Compiler do
     module = env.module
     etude_module = Module.concat([module, mediatype.name])
 
-    is_default = Dict.get(definitions, :__default__)
+    is_default = Map.get(definitions, :__default__)
+
+    content_types = definitions
+    |> Map.get(Mazurka.Resource.Provides)
+    |> Mazurka.Resource.Provides.format_types(mediatype.content_types())
 
     definitions
-    |> Dict.delete(:__default__)
-    |> Dict.put_new(Mazurka.Resource.Action, [Mazurka.Resource.Action.default(module)])
-    |> Dict.put_new(Mazurka.Resource.Affordance, [Mazurka.Resource.Affordance.default(module)])
+    |> Map.delete(:__default__)
+    |> Map.put_new(Mazurka.Resource.Action, [Mazurka.Resource.Action.default(module)])
+    |> Map.put_new(Mazurka.Resource.Affordance, [Mazurka.Resource.Affordance.default(module)])
     |> Enum.flat_map(&(prepare_definition(&1, mediatype, includes)))
     |> Utils.expand(%{env | module: etude_module})
     |> Mazurka.Compiler.Etude.elixir_to_etude(etude_module)
     |> compile(etude_module, env)
 
-    {mediatype, etude_module, is_default}
+    {mediatype, content_types, etude_module, is_default}
   end
 
-  defp prepare_clauses({mediatype, etude_module, is_default}, env) do
+  defp prepare_clauses({mediatype, content_types, etude_module, is_default}, env) do
     module = env.module
-    [{default_type, default_subtype, default_params, _} | _] = content_types = mediatype.content_types()
+    [{default_type, default_subtype, default_params, _} | _] = content_types
     for {type, subtype, params, content_type} <- content_types do
       params = Macro.escape(params)
       # TODO format params as well

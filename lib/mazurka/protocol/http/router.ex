@@ -128,13 +128,21 @@ defmodule Mazurka.Protocol.HTTP.Router do
   def __handle__(mod, _params, conn) do
     accepts = Plug.Conn.get_req_header(conn, "accept") |> Mazurka.Protocol.HTTP.AcceptHeader.handle()
     dispatch = conn.private[:mazurka_dispatch]
-    {:ok, body, conn, content_type} = apply(mod, :action, [conn, &dispatch.resolve/7, accepts])
 
+    apply(mod, :action, [conn, &dispatch.resolve/7, accepts])
+    |> handle_resource_resp(conn)
+  end
+
+  defp handle_resource_resp({:ok, body, conn, content_type}, _) do
     conn
     |> Plug.Conn.put_resp_content_type(content_type)
     |> handle_transition()
     |> handle_invalidations()
     |> handle_response(body)
+  end
+  defp handle_resource_resp({:error, :unacceptable}, conn) do
+    conn
+    |> Plug.Conn.send_resp(:not_acceptable, "Not Acceptable")
   end
 
   defp handle_transition(%Plug.Conn{private: %{mazurka_transition: location}, status: status} = conn) do

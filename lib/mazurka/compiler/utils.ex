@@ -7,17 +7,21 @@ defmodule Mazurka.Compiler.Utils do
   end
 
   def expand(quoted, env) do
+    do_expand(quoted, env)
+  end
+
+  defp do_expand(quoted, env) do
     Macro.postwalk(quoted, fn
       ({type, meta, children}) ->
         meta = replace_kernel(meta)
         Macro.expand({type, meta, children}, env)
       ([{:do, _} | _] = doblock) ->
         Enum.map(doblock, fn({key, children}) ->
-          children = expand(children, env)
+          children = do_expand(children, env)
           {key, children}
         end)
       ({name, children}) when is_atom(name) ->
-        children = expand(children, env)
+        children = do_expand(children, env)
         {name, children}
       (other) ->
         Macro.expand(other, env)
@@ -60,6 +64,7 @@ defmodule Mazurka.Compiler.Utils do
   def get(caller) do
     caller.module
     |> Module.get_attribute(__MODULE__)
+    |> reverse()
   end
   def get(caller, name) do
     get(caller)
@@ -67,4 +72,7 @@ defmodule Mazurka.Compiler.Utils do
       item == name
     end)
   end
+
+  defp reverse(nil), do: []
+  defp reverse(list), do: :lists.reverse(list)
 end

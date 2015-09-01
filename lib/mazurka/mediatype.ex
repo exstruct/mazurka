@@ -49,6 +49,14 @@ defmodule Mazurka.Mediatype do
           Mazurka.Resource.Partial.partial(unquote(mediatype), unquote(name), unquote(block))
         end
       end
+
+      defmacro provides(type) do
+        mediatype = __MODULE__
+        quote do
+          require Mazurka.Resource.Provides
+          Mazurka.Resource.Provides.provides(unquote(mediatype), unquote(type))
+        end
+      end
     end
   end
 end
