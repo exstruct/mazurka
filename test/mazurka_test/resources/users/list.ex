@@ -18,9 +18,10 @@ defmodule MazurkaTest.Resources.Users.List do
     provides "text/css"
 
     action do
+      baz = 123
       """
       .foo {
-        bar: baz;
+        bar: #{baz};
       }
       """
     end
@@ -46,5 +47,6 @@ defmodule MazurkaTest.Resources.Users.List do
 
     assert conn.status == 200
     assert String.starts_with?(conn.resp_body, ".foo")
+    assert String.contains?(conn.resp_body, "123")
   end
 end

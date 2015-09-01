@@ -203,21 +203,40 @@ defmodule Mazurka.Compiler.Etude do
     {{match, nil, body}, acc}
   end
 
-  defp handle_node({:::, meta, parts}, acc) do
-    parts = for part <- parts do
-      case part do
-        %{module: String.Chars,
-          function: :to_string,
-          attrs: attrs} ->
-          %{part | attrs: Map.put(attrs, :native, true)}
-        other ->
-          other
-      end
-    end
-    {{:::, meta, parts}, acc}
+  defp handle_node({name, _, args}, acc) when name in [:size, :unit] and length(args) == 1 do
+    {%Node.Call{module: :erlang,
+                function: name,
+                arguments: args}, acc}
   end
-  defp handle_node({:<<>>, _meta, _parts}, _acc) do
-    throw "String concatentation not implemented yet"
+  defp handle_node({:::, meta, [expression]}, acc) do
+    {%Node.Binary.Segment{
+      expression: to_string_native(expression),
+      line: meta[:line]
+    }, acc}
+  end
+  defp handle_node({:::, meta, [expression, specs]}, acc) do
+    node = struct Node.Binary.Segment, [
+      {:expression, to_string_native(expression)},
+      {:line, meta[:line]}
+      | construct_binary_segments(specs)
+    ]
+    {node, acc}
+  end
+  defp handle_node({:<<>>, meta, segments}, acc) do
+    node = %Node.Binary{
+      line: meta[:line],
+      segments: Enum.map(segments, fn
+        (segment) when is_binary(segment) ->
+          %Node.Binary.Segment{type: :binary, expression: segment}
+        (segment) when is_integer(segment) ->
+          %Node.Binary.Segment{type: :intger, expression: segment}
+        (segment) when is_float(segment) ->
+          %Node.Binary.Segment{type: :float, expression: segment}
+        (segment) ->
+          segment
+      end)
+    }
+    {node, acc}
   end
 
   defp handle_node({:try, meta, [expression, %Node.Var{name: handler}]}, acc) when is_atom(handler) do
@@ -269,5 +288,31 @@ defmodule Mazurka.Compiler.Etude do
 
   defp handle_node(%{__struct__: _} = struct, acc) do
     {struct, acc}
+  end
+
+  defp to_string_native(%Node.Call{module: Elixir.String.Chars, function: :to_string} = node) do
+    %{node | attrs: Map.put(node.attrs, :native, true)}
+  end
+  defp to_string_native(node) do
+    node
+  end
+
+  defp construct_binary_segments(%Node.Call{module: :erlang, function: :-, arguments: [lhs, rhs]}) do
+    construct_binary_segments(lhs) ++ construct_binary_segments(rhs)
+  end
+  defp construct_binary_segments(%Node.Var{name: name}) when name in [:little, :big] do
+    [endianness: name]
+  end
+  defp construct_binary_segments(%Node.Var{name: name}) when name in [:signed, :unsigned] do
+    [signedness: name]
+  end
+  defp construct_binary_segments(%Node.Var{name: name}) when name in [:integer, :float, :binary, :bitstring] do
+    [type: name]
+  end
+  defp construct_binary_segments(%Node.Call{function: :size, arguments: [size]}) do
+    [size: size]
+  end
+  defp construct_binary_segments(%Node.Call{function: :unit, arguments: [unit]}) do
+    [unit: unit]
   end
 end
