@@ -13,5 +13,10 @@ defmodule MazurkaTest.HTTP.Router do
   get     "/users/:user",               Resources.Users.Read
   post    "/users/:user",               Resources.Users.Update
 
+  get     "/junk/multiple",             Resources.Multiple
+  get     "/junk/modules",              Resources.Modules
+  get     "/junk/private-macro",        Resources.PrivateMacro
+  get     "/junk/helper-macro",         Resources.HelperMacro
+
   match   _,                            Resources.Errors.NotFound
 end

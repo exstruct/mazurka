@@ -1,5 +1,6 @@
 defmodule Mazurka.Compiler.Etude do
   alias Etude.Node
+  require Logger
 
   def elixir_to_etude(ast, module) do
     ## TODO prewalk and check for defined functions
@@ -277,9 +278,26 @@ defmodule Mazurka.Compiler.Etude do
     {t, acc}
   end
 
+  defp handle_node({:__aliases__, meta, module}, acc) do
+    if meta[:alias] == false do
+      {Module.concat(module), acc}
+    else
+      ## TODO will this ever happen? not sure when...
+      {Module.concat(module), acc}
+    end
+  end
+
   # local call (needs to be last)
   defp handle_node({name, meta, args}, acc) when is_atom(name) and is_list(args) do
-    IO.inspect {name, meta, args}
+    Logger.warn """
+    The following feature
+
+      #{inspect({name, meta, args})}
+
+    has not been implemented. Please open an issue at https://github.com/mazurka/mazurka/issues/new
+    along with the above AST.
+    """
+
     {%Node.Call{module: acc.module,
                 function: name,
                 arguments: args,

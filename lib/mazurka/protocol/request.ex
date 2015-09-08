@@ -62,15 +62,21 @@ defmodule Mazurka.Protocol.Request do
     end
     |> Macro.escape
     quote do
-      params = var!(conn).query_params
-      var!(conn) = %{var!(conn) | query_params: Dict.merge(params, unquote(query))}
+      params = var!(conn).params
+      query_params = var!(conn).query_params
+      var!(conn) = %{var!(conn) |
+                     params: Dict.merge(query_params, unquote(query)),
+                     query_params: Dict.merge(query_params, unquote(query))}
     end
   end
 
   defmacro query(key, value) do
     quote do
-      params = var!(conn).query_params
-      var!(conn) = %{var!(conn) | query_params: Dict.put(params, unquote(key), unquote(value))}
+      params = var!(conn).params
+      query_params = var!(conn).query_params
+      var!(conn) = %{var!(conn) |
+                     params: Dict.put(query_params, unquote(key), unquote(value)),
+                     query_params: Dict.put(query_params, unquote(key), unquote(value))}
     end
   end
 
