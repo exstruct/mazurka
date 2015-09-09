@@ -321,16 +321,22 @@ defmodule Mazurka.Compiler.Kernel do
                     :--,
                     :<,
                     :>,
-                    :<=,
+                    {:<=, :"=<"},
                     :>=,
                     :==,
-                    :!=,
-                    :===,
-                    :!==
+                    {:!=, :"/="},
+                    {:===, :"=:="},
+                    {:!==, :"=/="}
                     ]
-  for name <- e_infix_macros do
-    defmacro unquote(name)(left, right) do
-      {:^, [], [{{:., [], [:erlang, unquote(name)]}, [], [left, right]}]}
+  for conf <- e_infix_macros do
+    {source, target} = case conf do
+      t when is_atom(t) ->
+        {t, t}
+      t ->
+        t
+    end
+    defmacro unquote(source)(left, right) do
+      {:^, [], [{{:., [], [:erlang, unquote(target)]}, [], [left, right]}]}
     end
   end
 end
