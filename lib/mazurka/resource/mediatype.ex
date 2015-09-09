@@ -11,11 +11,14 @@ defmodule Mazurka.Resource.Mediatype do
 
   defmacro mediatype(module, [do: block]) do
     name = Utils.eval(module, __CALLER__)
-    name = [Module.concat(Mazurka.Mediatype, name), name] |> resolve_mediatype(name)
+    name = [name, Module.concat(Mazurka.Mediatype, name)] |> resolve_mediatype(name)
     Utils.register(name, __MODULE__, true, nil)
     wrap(block, name)
   end
 
+  defp wrap({:__block__, children}, module) do
+    wrap({:__block__, [], children}, module)
+  end
   defp wrap({:__block__, meta, children}, module) do
     {:__block__, meta, [pre(module, meta), default_error | children] ++ [post(module, meta)]}
   end
@@ -36,8 +39,8 @@ defmodule Mazurka.Resource.Mediatype do
   end
   defp resolve_mediatype([mod | rest], module) do
     mod.module_info() && mod
-  rescue
-    _ ->
+  catch
+    _, _ ->
       resolve_mediatype(rest, module)
   end
 
