@@ -21,13 +21,9 @@ defmodule Mazurka.Model do
 
     ## TODO pull in the @primary_key
 
-    field_clauses = for field <- Enum.map(valid_fields, &to_string/1) do
-      bin_field = to_string(field)
-      keys = [field, bin_field]
+    field_clauses = for field <- valid_fields do
+      keys = [field, to_string(field)]
       quote do
-        def fetch(model = %{__meta__: %Ecto.Schema.Metadata{}}, key, _ref) when key in unquote(keys) do
-          {:ok, Map.get(model, unquote(field)), model}
-        end
         def fetch(model = %{id: id, __meta__: %{state: :built, repo: repo, opts: opts} = meta}, key, ref) when key in unquote(keys) do
           pid = Etude.Async.spawn(ref, fn ->
             unquote(field_vars) = repo.get!(unquote(module), id, opts)
@@ -96,6 +92,8 @@ defmodule Mazurka.Model do
         acc
       ({:__meta__, _}, acc) ->
         acc
+      ({key, _}, acc) when is_binary(key) ->
+        [String.to_atom(key) | acc]
       ({key, _}, acc) ->
         [key | acc]
     end)
