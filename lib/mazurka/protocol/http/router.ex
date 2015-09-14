@@ -163,7 +163,8 @@ defmodule Mazurka.Protocol.HTTP.Router do
   end
 
   defp handle_response(conn, nil) do
-    Plug.Conn.send_resp(conn, 204, "")
+    status == conn.status || 204
+    Plug.Conn.send_resp(conn, status, "")
   end
   defp handle_response(conn, body) do
     Plug.Conn.send_resp(conn, choose_status(conn), body)
