@@ -1,7 +1,8 @@
 defmodule MazurkaTest.Resources.AccessProtocol do
   use Mazurka.Resource
 
-  let key = Params.get("key")
+  param key
+
   let user = %{"name" => "Joe"}
 
   mediatype Hyperjson do

@@ -18,6 +18,7 @@ defmodule MazurkaTest.HTTP.Router do
   get     "/junk/modules",                  Resources.Modules
   get     "/junk/private-macro",            Resources.PrivateMacro
   get     "/junk/helper-macro",             Resources.HelperMacro
+  get     "/junk/case/:number",             Resources.Case
 
   match   _,                                Resources.Errors.NotFound
 end
