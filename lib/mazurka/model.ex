@@ -21,6 +21,30 @@ defmodule Mazurka.Model do
 
     ## TODO pull in the @primary_key
 
+    field_clauses = for field <- Enum.map(valid_fields, &to_string/1) do
+      bin_field = to_string(field)
+      keys = [field, bin_field]
+      quote do
+        def fetch(model = %{__meta__: %Ecto.Schema.Metadata{}}, key, _ref) when key in unquote(keys) do
+          {:ok, Map.get(model, unquote(field)), model}
+        end
+        def fetch(model = %{id: id, __meta__: %{state: :built, repo: repo, opts: opts} = meta}, key, ref) when key in unquote(keys) do
+          pid = Etude.Async.spawn(ref, fn ->
+            unquote(field_vars) = repo.get!(unquote(module), id, opts)
+            model = Map.put(unquote(field_vars), :__meta__, %{meta | state: :loaded})
+            {:ok, model}
+          end)
+          {:pending, pid, %{model | __meta__: %{meta | state: :loading}}}
+        end
+        def fetch(model = %{__meta__: %{state: :loading}}, key, _) when key in unquote(keys) do
+          {:pending, model}
+        end
+        def fetch(model = %{__meta__: %{state: :loaded}}, key, ref) when key in unquote(keys) do
+          {:ok, Map.get(model, unquote(field)), model}
+        end
+      end
+    end
+
     quote do
       def get(var!(repo), var!(id), var!(opts)) do
         {:ok, unquote({:%{}, [], [{:__struct__, module} | fields]})}
@@ -32,27 +56,14 @@ defmodule Mazurka.Model do
         def cache_key(%{id: id, __meta__: %{repo: repo, opts: opts}}) do
           {repo, unquote(module), to_string(id), :erlang.phash2(opts)}
         end
+        def cache_key(%{id: id}) do
+          {unquote(module), to_string(id)}
+        end
 
         def fetch(model = %{id: id}, :id, _) do
           {:ok, id, model}
         end
-        def fetch(model = %{__meta__: %Ecto.Schema.Metadata{}}, key, _ref) when key in unquote(valid_fields) do
-          {:ok, Map.get(model, key), model}
-        end
-        def fetch(model = %{id: id, __meta__: %{state: :built, repo: repo, opts: opts} = meta}, key, ref) when key in unquote(valid_fields) do
-          pid = Etude.Async.spawn(ref, fn ->
-            unquote(field_vars) = repo.get!(unquote(module), id, opts)
-            model = Map.put(unquote(field_vars), :__meta__, %{meta | state: :loaded})
-            {:ok, model}
-          end)
-          {:pending, pid, %{model | __meta__: %{meta | state: :loading}}}
-        end
-        def fetch(model = %{__meta__: %{state: :loading}}, key, _) when key in unquote(valid_fields) do
-          {:pending, model}
-        end
-        def fetch(model = %{__meta__: %{state: :loaded}}, key, ref) when key in unquote(valid_fields) do
-          {:ok, Map.get(model, key), model}
-        end
+        unquote_splicing(field_clauses)
         unquote_splicing(assoc_fields)
         def fetch(model, _, _) do
           {:error, model}
@@ -101,18 +112,19 @@ defmodule Mazurka.Model do
 
   defp format_assoc_field(key, _assoc) do
     ## TODO
+    keys = [key, to_string(key)]
     quote do
-      def fetch(model = %{unquote(key) => %Ecto.Association.NotLoaded{}}, unquote(key), ref) do
+      def fetch(model = %{unquote(key) => %Ecto.Association.NotLoaded{}}, key, ref) when key in unquote(keys) do
         # TODO: add error handling
         {:ok, model.__meta__.repo.all(assoc(model, unquote(key))), model}
       end
-      def fetch(model = %{unquote(key) => %{__struct__: Mazurka.Model.Association.Loading}}, unquote(key), _) do
+      def fetch(model = %{unquote(key) => %{__struct__: Mazurka.Model.Association.Loading}}, key, _) when key in unquote(keys) do
         {:pending, model}
       end
-      def fetch(model = %{unquote(key) => value}, unquote(key), _) do
+      def fetch(model = %{unquote(key) => value}, key, _) when key in unquote(keys) do
         {:ok, value, model}
       end
-     end
+    end
   end
 
   defp format_struct_vars(fields) do
