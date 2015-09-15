@@ -20,6 +20,7 @@ defmodule MazurkaTest.HTTP.Router do
   get     "/junk/helper-macro",             Resources.HelperMacro
   get     "/junk/case/:number",             Resources.Case
   get     "/junk/validation/:key",          Resources.Validation
+  get     "/junk/transition_to_binary",     Resources.TransitionToBinary
 
   match   _,                                Resources.Errors.NotFound
 end

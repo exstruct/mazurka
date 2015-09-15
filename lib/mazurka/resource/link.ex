@@ -46,24 +46,30 @@ defmodule Mazurka.Resource.Link do
     end
   end
 
-  def transition_to(args, %{private: private} = conn, parent, ref, attrs) do
+  def transition_to([href, _, nil, nil], %{private: private} = conn, _parent, _ref, _attrs) when is_binary(href) do
+    {:ok, nil, %{conn | private: Dict.put(private, :mazurka_transition, href)}}
+  end
+  def transition_to(args, conn, parent, ref, attrs) do
     case args |> unwrap_args |> resolve(conn, parent, ref, attrs) do
       {:ok, :undefined} ->
         {:error, :transition_to_unknown_location}
       {:ok, affordance} ->
-        location = to_string(affordance)
-        {:ok, nil, %{conn | private: Dict.put(private, :mazurka_transition, location)}}
+        [to_string(affordance), nil, nil, nil]
+        |> transition_to(conn, parent, ref, attrs)
     end
   end
 
-  def invalidates(args, %{private: private} = conn, parent, ref, attrs) do
+  def invalidates([href, _, nil, nil], %{private: private} = conn, _parent, _ref, _attrs) when is_binary(href) do
+    invalidations = Map.get(private, :mazurka_invalidations, [])
+    {:ok, nil, %{conn | private: Map.put(private, :mazurka_invalidations, [href | invalidations])}}
+  end
+  def invalidates(args, conn, parent, ref, attrs) do
     case args |> unwrap_args |> resolve(conn, parent, ref, attrs) do
       {:ok, :undefined} ->
         {:error, :invalidates_unknown_location}
       {:ok, affordance} ->
-        location = to_string(affordance)
-        invalidations = Map.get(private, :mazurka_invalidations, [])
-        {:ok, nil, %{conn | private: Map.put(private, :mazurka_invalidations, [location | invalidations])}}
+        [to_string(affordance), nil, nil, nil]
+        |> invalidates(conn, parent, ref, attrs)
     end
   end
 
