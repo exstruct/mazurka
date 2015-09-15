@@ -16,6 +16,7 @@ defmodule Mazurka.Resource do
       import Mazurka.Resource.Param
       import Mazurka.Resource.Partial
       import Mazurka.Resource.Test
+      import Mazurka.Resource.Validation
       import unquote(__MODULE__)
 
       require Mazurka.Compiler.Utils

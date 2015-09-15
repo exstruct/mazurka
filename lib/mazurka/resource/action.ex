@@ -24,7 +24,10 @@ defmodule Mazurka.Resource.Action do
         action
       end
 
-      failure = unquote(globals[:condition] |> Mazurka.Resource.Condition.compile_fatal())
+      condition_failure = unquote(globals[:condition] |> Mazurka.Resource.Condition.compile_fatal())
+      validation_failure = unquote(globals[:validation] |> Mazurka.Resource.Validation.compile())
+
+      failure = condition_failure || validation_failure
 
       if failure do
         raise failure
