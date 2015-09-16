@@ -3,7 +3,7 @@ defmodule MazurkaTest.Dispatch do
   alias MazurkaTest.Services
   # alias Mazurka.Middleware
 
-  service Foo.bar/0
+  service Posts, Services.Posts
 
   service Auth.user_id/0, Services.Auth.user_id(conn) do
     Middleware.Logger.debug("Getting the user_id")

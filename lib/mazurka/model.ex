@@ -5,6 +5,7 @@ defmodule Mazurka.Model do
   defmacro __using__(_) do
     quote do
       use Ecto.Model
+      use Mazurka.Model.Relation
       @before_compile unquote(__MODULE__)
     end
   end
@@ -12,19 +13,20 @@ defmodule Mazurka.Model do
   defmacro __before_compile__(_ENV) do
     module = __CALLER__.module
 
+    relations = Mazurka.Model.Relation.get(module)
+
     struct_fields = Module.get_attribute(module, :struct_fields)
 
     fields = format_struct_fields(struct_fields)
     field_vars = format_struct_vars(struct_fields)
     valid_fields = format_valid_fields(struct_fields)
-    assoc_fields = format_assoc_fields(struct_fields)
 
-    ## TODO pull in the @primary_key
+    {primary_key, _, _} = Module.get_attribute(module, :primary_key)
 
     field_clauses = for field <- valid_fields do
       keys = [field, to_string(field)]
       quote do
-        def fetch(model = %{id: id, __meta__: %{state: :built, repo: repo, opts: opts} = meta}, key, ref) when key in unquote(keys) do
+        def fetch(model = %{unquote(primary_key) => id, __meta__: %{state: :built, repo: repo, opts: opts} = meta}, key, ref) when key in unquote(keys) do
           pid = Etude.Async.spawn(ref, fn ->
             unquote(field_vars) = repo.get!(unquote(module), id, opts)
             model = Map.put(unquote(field_vars), :__meta__, %{meta | state: :loaded})
@@ -49,19 +51,19 @@ defmodule Mazurka.Model do
       defimpl Etude.Dict, for: unquote(module) do
         use Etude.Dict
 
-        def cache_key(%{id: id, __meta__: %{repo: repo, opts: opts}}) do
+        def cache_key(%{unquote(primary_key) => id, __meta__: %{repo: repo, opts: opts}}) do
           {repo, unquote(module), to_string(id), :erlang.phash2(opts)}
         end
-        def cache_key(%{id: id}) do
+        def cache_key(%{unquote(primary_key) => id}) do
           {unquote(module), to_string(id)}
         end
 
-        def fetch(model = %{id: id}, :id, _) do
+        def fetch(model = %{unquote(primary_key) => id}, :id, _) do
           {:ok, id, model}
         end
+        unquote_splicing(relations)
         unquote_splicing(field_clauses)
-        unquote_splicing(assoc_fields)
-        def fetch(model, _, _) do
+        def fetch(model, key, _) do
           {:error, model}
         end
       end
@@ -69,20 +71,20 @@ defmodule Mazurka.Model do
   end
 
   defp format_struct_fields(fields) do
-    Enum.map(fields, fn
-      {:id, _} ->
-        {:id, Macro.var(:id, nil)}
-      {key, %Ecto.Association.NotLoaded{} = assoc} ->
-        {key, Macro.escape(assoc)}
-      {:__meta__, meta} ->
+    Enum.reduce(fields, [], fn
+      ({:id, _}, acc) ->
+        [{:id, Macro.var(:id, nil)} | acc]
+      ({_key, %Ecto.Association.NotLoaded{}}, acc) ->
+        acc
+      ({:__meta__, meta}, acc) ->
         meta = Map.merge(meta, %{
           __struct__: Mazurka.Model.Metadata,
           repo: Macro.var(:repo, nil),
           opts: Macro.var(:opts, nil)
         }) |> Map.to_list
-        {:__meta__, {:%{}, [], meta}}
-      {key, _} ->
-        {key, nil}
+        [{:__meta__, {:%{}, [], meta}} | acc]
+      ({key, _}, acc) ->
+        [{key, nil} | acc]
     end)
   end
 
@@ -97,32 +99,6 @@ defmodule Mazurka.Model do
       ({key, _}, acc) ->
         [key | acc]
     end)
-  end
-
-  defp format_assoc_fields(fields) do
-    Enum.reduce(fields, [], fn
-      ({key, %Ecto.Association.NotLoaded{} = assoc}, acc) ->
-        [format_assoc_field(key, assoc) | acc]
-      (_, acc) ->
-        acc
-    end)
-  end
-
-  defp format_assoc_field(key, _assoc) do
-    ## TODO
-    keys = [key, to_string(key)]
-    quote do
-      def fetch(model = %{unquote(key) => %Ecto.Association.NotLoaded{}}, key, ref) when key in unquote(keys) do
-        # TODO: add error handling
-        {:ok, model.__meta__.repo.all(assoc(model, unquote(key))), model}
-      end
-      def fetch(model = %{unquote(key) => %{__struct__: Mazurka.Model.Association.Loading}}, key, _) when key in unquote(keys) do
-        {:pending, model}
-      end
-      def fetch(model = %{unquote(key) => value}, key, _) when key in unquote(keys) do
-        {:ok, value, model}
-      end
-    end
   end
 
   defp format_struct_vars(fields) do
