@@ -2,9 +2,9 @@
 
 hypermedia api toolkit
 
-## Usage
+## Documentation
 
-Coming soon.
+https://www.mazurka.io
 
 ## Tests
 
