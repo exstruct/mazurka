@@ -61,8 +61,8 @@ defmodule Mazurka.Model do
         def fetch(model = %{unquote(primary_key) => id}, :id, _) do
           {:ok, id, model}
         end
-        unquote_splicing(relations)
-        unquote_splicing(field_clauses)
+        unquote_splicing(relations || [])
+        unquote_splicing(field_clauses || [])
         def fetch(model, key, _) do
           {:error, model}
         end
