@@ -77,7 +77,7 @@ defmodule Mazurka.Compiler do
     |> Enum.flat_map(&(prepare_definition(&1, mediatype, includes)))
     |> Utils.expand(%{env | module: etude_module})
     |> Mazurka.Compiler.Etude.elixir_to_etude(etude_module)
-    |> compile(etude_module, env)
+    |> compile_etude(etude_module, env)
 
     {mediatype, content_types, etude_module, is_default}
   end
@@ -153,7 +153,7 @@ defmodule Mazurka.Compiler do
     end
   end
 
-  defp compile(etude_ast, etude_module, env) do
+  def compile_etude(etude_ast, etude_module, env) do
     ## TODO read the existing beam file and verify it has changed before compiling
     {:ok, _, _, beam} = Etude.compile(etude_module, etude_ast, [file: env.file, native: Mix.env == :prod])
 

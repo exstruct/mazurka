@@ -1,8 +1,7 @@
 defmodule Mazurka.Compiler.Kernel do
-  def wrap(block) do
-    input = {:__aliases__, [alias: false], [:Mazurka, :Runtime, :Input]}
-    {:__block__, [],
-     [{:import, [],
+  def imports do
+    [
+      {:import, [],
        [{:__aliases__, [alias: false], [:Kernel]}, [only: [..: 2,
                                                            <>: 2,
                                                            alias!: 1,
@@ -37,11 +36,18 @@ defmodule Mazurka.Compiler.Kernel do
                                                            use: 2,], warn: false]]},
       {:import, [],
        [{:__aliases__, [alias: false], [:Mazurka, :Compiler, :Kernel]}, [warn: false]]},
-      {:alias, [], [input, [warn: false]]},
-      block]}
+      {:alias, [], [{:__aliases__, [alias: false], [:Mazurka, :Runtime, :Input]}, [warn: false]]}
+    ]
+  end
+
+  def wrap(block) do
+    {:__block__, [], Kernel."++"(imports, [block])}
   end
 
   defmacro prop(name) when Kernel.is_atom(name) do
+    {:etude_prop, [], [name]}
+  end
+  defmacro prop({name, _, _}) when Kernel.is_atom(name) do
     {:etude_prop, [], [name]}
   end
 

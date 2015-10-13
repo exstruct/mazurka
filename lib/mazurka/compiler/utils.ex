@@ -12,6 +12,8 @@ defmodule Mazurka.Compiler.Utils do
 
   defp do_expand(quoted, env) do
     Macro.postwalk(quoted, fn
+      ({:__block__, meta, children}) ->
+        {:__block__, meta, Enum.map(children, &(do_expand(&1, env)))}
       ({type, meta, children}) ->
         meta = replace_kernel(meta)
         Macro.expand({type, meta, children}, env)

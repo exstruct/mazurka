@@ -35,6 +35,13 @@ defmodule Mazurka.Compiler.Etude do
     attrs = Dict.put(attrs, :native, true)
     {%{call | attrs: attrs}, acc}
   end
+  defp handle_node({:-, meta, [value]}, acc) do
+    {%Node.Call{module: :erlang,
+                function: :"-",
+                arguments: [value],
+                attrs: %{native: true},
+                line: meta[:line]}, acc}
+  end
   ## comprehensions
   defp handle_node({:<-, meta, [%Node.Var{name: value, line: value_line}, collection]}, acc) do
     {%Node.Comprehension{collection: collection,

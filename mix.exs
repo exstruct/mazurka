@@ -7,15 +7,8 @@ defmodule Mazurka.Mixfile do
      elixir: "~> 1.0",
      description: "hypermedia api toolkit",
      package: package,
-     elixirc_paths: ["lib"] ++ dev_paths(Mix.env),
      deps: deps]
   end
-
-  ## Load the fixtures for easy development
-  defp dev_paths(:dev) do
-    ["test/mazurka_test"]
-  end
-  defp dev_paths(_), do: []
 
   def application do
     [applications: [:logger]]

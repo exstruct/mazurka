@@ -2,6 +2,10 @@
 |> Path.wildcard()
 |> Enum.map(&Code.require_file/1)
 
+"test/mazurka_test/partials/**/*.ex"
+|> Path.wildcard()
+|> Enum.map(&Code.require_file/1)
+
 "test/mazurka_test/resources/**/*.ex"
 |> Path.wildcard()
 |> Enum.map(&Code.require_file/1)

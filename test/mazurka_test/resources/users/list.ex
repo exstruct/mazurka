@@ -9,7 +9,7 @@ defmodule MazurkaTest.Resources.Users.List do
       %{
         "collection" => for user <- users do
           link_to(Resources.Users.Read, user: user)
-        end
+        end,
       }
     end
   end
