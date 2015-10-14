@@ -30,20 +30,13 @@ defmodule Mazurka.Protocol.HTTP.Router do
       end
 
       defoverridable [match: 2, dispatch: 2]
-
-      ## Build a graph of the resources and their links
-      Mazurka.Protocol.HTTP.Router.get "/__graph__", Mazurka.Protocol.HTTP.Graph
-      Module.delete_attribute __MODULE__, :mazurka_nodes
-      Module.delete_attribute __MODULE__, :mazurka_links
-      Module.register_attribute __MODULE__, :mazurka_nodes, accumulate: true
-      Module.register_attribute __MODULE__, :mazurka_links, accumulate: true
     end
   end
 
   @doc false
   defmacro __before_compile__(env) do
-    tests = Mazurka.Resource.Test.get_tests(env.module)
     test_mod = if Mix.env == :test do
+      tests = Mazurka.Resource.Test.get_tests(env.module)
       quote do
         defmodule Tests do
           tests = unquote(Macro.escape(tests))
@@ -63,16 +56,6 @@ defmodule Mazurka.Protocol.HTTP.Router do
     quote do
       import Mazurka.Protocol.HTTP.Router, only: []
       unquote(test_mod)
-
-      @doc """
-      Get a graph object of all of the resources and their links
-      """
-      def graph() do
-        %{
-          "nodes" => @mazurka_nodes,
-          "links" => @mazurka_links
-        }
-      end
 
       def resolve(_, _) do
         {:error, :not_found}
@@ -231,26 +214,20 @@ defmodule Mazurka.Protocol.HTTP.Router do
       end
     end
 
-    is_elixir_module = mod |> to_string |> String.downcase |> String.to_atom != mod
-
-    info = if is_elixir_module do
+    info = if Mix.env !== :dev && is_elixir_module?(mod) do
       quote do
         require unquote(mod)
 
-        ## TODO Include valid params from the mod
-        ## TODO Include linked resources from the mod
-
         ## Auto include resource tests
         :erlang.function_exported(unquote(mod), :tests, 1) and unquote(mod).tests(__MODULE__)
-
-        Module.put_attribute __MODULE__, :mazurka_nodes, %{
-          "name" => unquote(mod) |> Module.split |> Enum.join("."),
-          "path" => unquote(path)
-        }
       end
     end
 
     [matches, info]
+  end
+
+  defp is_elixir_module?(mod) do
+    mod |> to_string |> String.downcase |> String.to_atom != mod
   end
 
   # Convert the verbs given with `:via` into a variable and guard set that can
