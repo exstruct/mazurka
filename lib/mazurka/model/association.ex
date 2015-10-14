@@ -26,6 +26,11 @@ defmodule Mazurka.Model.Relation do
       def fetch(model = %{unquote(key) => value}, key, _) when key in unquote(keys) do
         {:ok, value, model}
       end
+      def fetch(model, key, ref) when key in unquote(keys) do
+        model
+        |> Map.put(unquote(key), %Ecto.Association.NotLoaded{})
+        |> fetch(key, ref)
+      end
     end
 
     module = __CALLER__.module
