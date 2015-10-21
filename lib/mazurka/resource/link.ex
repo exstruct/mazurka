@@ -36,8 +36,9 @@ defmodule Mazurka.Resource.Link do
       [module, params, query, fragment] = unwrap_args(args)
 
       props = %{params: params, query: query, fragment: fragment}
-      ## FOR BACKWARDS COMPATIBILITY
+      ## FOR BACKWARDS COMPATIBILITY - remove once markdown is removed
       |> Dict.merge(params)
+      |> Dict.merge(%{"_params" => params, "_query" => query, "_fragment" => fragment})
 
       {:partial, {module, :affordance_partial, props}}
     catch
