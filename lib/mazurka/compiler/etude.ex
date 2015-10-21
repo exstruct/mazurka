@@ -81,6 +81,11 @@ defmodule Mazurka.Compiler.Etude do
     {%Node.Prop{name: name,
                 line: meta[:line]}, acc}
   end
+  defp handle_node({:etude_dict_load, meta, arguments}, acc) do
+    {%Node.Dict{function: :load,
+                arguments: arguments,
+                line: meta[:line]}, acc}
+  end
   # atom
   defp handle_node(atom, acc) when is_atom(atom) do
     {atom, acc}

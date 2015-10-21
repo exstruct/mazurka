@@ -43,6 +43,8 @@ defmodule Mazurka.Model do
       end
     end
 
+    keys = valid_fields |> Enum.reject(&(&1 == primary_key))
+
     quote do
       def get(var!(repo), var!(id), var!(opts)) do
         {:ok, unquote({:%{}, [], [{:__struct__, module} | fields]})}
@@ -50,6 +52,10 @@ defmodule Mazurka.Model do
 
       defimpl Etude.Dict, for: unquote(module) do
         use Etude.Dict
+
+        def keys(model, _) do
+          {:ok, unquote(keys), model}
+        end
 
         def cache_key(%{unquote(primary_key) => id, __meta__: %{repo: repo, opts: opts}}) do
           {repo, unquote(module), to_string(id), :erlang.phash2(opts)}

@@ -51,6 +51,13 @@ defmodule Mazurka.Compiler.Kernel do
     {:etude_prop, [], [name]}
   end
 
+  defmacro load(dict) do
+    {:etude_dict_load, [], [dict]}
+  end
+  defmacro load(dict, keys) do
+    {:etude_dict_load, [], [dict, keys]}
+  end
+
   defmacro link_to(resource, params \\ nil, query \\ nil, fragment \\ nil) do
     link(__CALLER__, :link_to, resource, params, query, fragment)
   end

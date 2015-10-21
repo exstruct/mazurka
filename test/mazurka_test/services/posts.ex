@@ -10,6 +10,10 @@ defmodule MazurkaTest.Services.Posts do
   end
 
   def get(id) do
-    {:ok, %__MODULE__{id: id}}
+    get(__MODULE__, id, [])
+  end
+
+  def get!(_, id, _) do
+    %__MODULE__{id: id, title: "Hello!"}
   end
 end

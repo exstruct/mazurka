@@ -21,9 +21,6 @@ defmodule MazurkaTest.Resources.Root do
       %{
         "account" => link_to(Resources.Users.Read, user: user_id),
         "foo" => foo
-        # oauth: %Oauth{},
-        # search: %Search{} |> pointer :search,
-        # translations: %Translations{}
       }
     end
   end
