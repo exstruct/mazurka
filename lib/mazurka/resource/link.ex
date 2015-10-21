@@ -162,12 +162,12 @@ defmodule Mazurka.Resource.Link do
 end
 
 defimpl String.Chars, for: Mazurka.Resource.Link do
-  def to_string(%{fragment: fragment, host: host, path: path, port: port, query: query, scheme: scheme}) do
+  def to_string(%{fragment: fragment, host: host, method: method, path: path, port: port, query: query, scheme: scheme}) do
     %URI{fragment: format_fragment(fragment),
          host: host,
          path: format_path(path),
          port: port,
-         query: format_query(query),
+         query: format_query(query, method),
          scheme: Kernel.to_string(scheme)}
     |> Kernel.to_string
   end
@@ -179,11 +179,12 @@ defimpl String.Chars, for: Mazurka.Resource.Link do
   defp format_path(path) when is_list(path), do: "/" <> Enum.join(path, "/")
   defp format_path(path), do: Kernel.to_string(path)
 
-  defp format_query(nil), do: nil
-  defp format_query(""), do: nil
-  defp format_query(%{__struct__: _} = qs), do: Kernel.to_string(qs)
-  defp format_query(qs) when is_map(qs), do: Mazurka.Resource.Link.encode_qs(qs)
-  defp format_query(qs), do: Kernel.to_string(qs)
+  defp format_query(_, method) when method in ["POST", "PUT", "PATCH"], do: nil
+  defp format_query(nil, _), do: nil
+  defp format_query("", _), do: nil
+  defp format_query(%{__struct__: _} = qs, _), do: Kernel.to_string(qs)
+  defp format_query(qs, _) when is_map(qs), do: Mazurka.Resource.Link.encode_qs(qs)
+  defp format_query(qs, _), do: Kernel.to_string(qs)
 
   defp format_fragment(nil), do: nil
   defp format_fragment([]), do: nil
