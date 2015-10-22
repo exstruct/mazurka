@@ -19,4 +19,28 @@ defmodule Mazurka.Runtime do
     |> Dict.put(:mazurka_mediatype_handler, module)
     %{context | private: private}
   end
+
+  def get_param(list, name) when is_list(list) do
+    name_s = name |> to_string()
+    name_a = name |> String.to_existing_atom()
+    find_key(list, name, name_s, name_a)
+  end
+  def get_param(map, name) when is_map(map) do
+    map
+    |> :maps.to_list()
+    |> get_param(name)
+  end
+  def get_param(params, _) when params in [nil, :undefined] do
+    :undefined
+  end
+
+  defp find_key([], _, _, _) do
+    :undefined
+  end
+  defp find_key([{key, value} | _], name, name_s, name_a) when key in [name, name_s, name_a] do
+    value
+  end
+  defp find_key([_ | rest], name, name_s, name_a) do
+    find_key(rest, name, name_s, name_a)
+  end
 end

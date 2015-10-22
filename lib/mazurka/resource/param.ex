@@ -76,7 +76,7 @@ defmodule Mazurka.Resource.Param do
   end
   defp get(name, :prop) do
     quote do
-      ^Dict.get(unquote({:etude_cond, [], [get(:prop), [do: get(:prop), else: {:%{}, [], []}]]}), unquote(name))
+      ^Mazurka.Runtime.get_param(unquote(get(:prop)), unquote(name))
     end
   end
   defp get(name, :conn) do
