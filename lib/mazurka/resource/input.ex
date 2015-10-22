@@ -1,32 +1,37 @@
 defmodule Mazurka.Resource.Input do
   @doc false
   def format(ast, type \\ :prop) do
-    Macro.postwalk(ast, fn
+    Mazurka.Compiler.Utils.postwalk(ast, fn
       ({{:., _, [{:__aliases__, _, [:Input]}, :get]}, _, []}) ->
-        case type do
-          :prop ->
-            quote do
-              prop(:query)
-            end
-          :conn ->
-            quote do
-              ^^Mazurka.Resource.Input.get()
-            end
-        end
+        get(type)
+      ({{:., _, [input, :get]}, _, []}) when input in [:Input, Elixir.Input, __MODULE__] ->
+        get(type)
       ({{:., _, [{:__aliases__, _, [:Input]}, :get]}, _, [name]}) ->
-        case type do
-          :prop ->
-            quote do
-              ^Dict.get(prop(:query), unquote(name))
-            end
-          :conn ->
-            quote do
-              ^^Mazurka.Resource.Input.get(unquote(name))
-            end
-        end
+        get(name, type)
+      ({{:., _, [input, :get]}, _, [name]}) when input in [:Input, Elixir.Input, __MODULE__] ->
+        get(name, type)
       (other) ->
         other
     end)
+  end
+
+  defp get(:prop) do
+    {:etude_prop, [], [:query]}
+  end
+  defp get(:conn) do
+    quote do
+      ^^Mazurka.Resource.Input.get()
+    end
+  end
+  defp get(name, :prop) do
+    quote do
+      ^Dict.get(unquote({:etude_cond, [], [get(:prop), [do: get(:prop), else: {:%{}, [], []}]]}), unquote(name))
+    end
+  end
+  defp get(name, :conn) do
+    quote do
+      ^^Mazurka.Resource.Input.get(unquote(name))
+    end
   end
 
   @doc false

@@ -10,22 +10,32 @@ defmodule Mazurka.Compiler.Utils do
     do_expand(quoted, env)
   end
 
-  defp do_expand(quoted, env) do
+  def postwalk(quoted, fun) do
     Macro.postwalk(quoted, fn
       ({:__block__, meta, children}) ->
-        {:__block__, meta, Enum.map(children, &(do_expand(&1, env)))}
-      ({type, meta, children}) ->
-        meta = replace_kernel(meta)
-        Macro.expand({type, meta, children}, env)
+        {:__block__, meta, Enum.map(children, &(postwalk(&1, fun)))}
       ([{:do, _} | _] = doblock) ->
         Enum.map(doblock, fn({key, children}) ->
-          children = do_expand(children, env)
+          children = postwalk(children, fun)
           {key, children}
         end)
+        |> fun.()
       ({name, children}) when is_atom(name) ->
-        children = do_expand(children, env)
+        children = postwalk(children, fun)
         {name, children}
+        |> fun.()
       (other) ->
+        other
+        |> fun.()
+    end)
+  end
+
+  defp do_expand(quoted, env) do
+    postwalk(quoted, fn
+      {type, meta, children} ->
+        meta = replace_kernel(meta)
+        Macro.expand({type, meta, children}, env)
+      other ->
         Macro.expand(other, env)
     end)
   end

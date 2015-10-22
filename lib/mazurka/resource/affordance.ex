@@ -23,7 +23,11 @@ defmodule Mazurka.Resource.Affordance do
         response
       end
     end
-    |> Mazurka.Resource.Param.format
-    |> Mazurka.Resource.Input.format
+  end
+
+  def expand(ast, _) do
+    ast
+    |> Mazurka.Resource.Param.format()
+    |> Mazurka.Resource.Input.format()
   end
 end

@@ -76,6 +76,14 @@ defmodule Mazurka.Compiler do
     |> Map.put_new(Mazurka.Resource.Affordance, [Mazurka.Resource.Affordance.default(module)])
     |> Enum.flat_map(&(prepare_definition(&1, mediatype, includes)))
     |> Utils.expand(%{env | module: etude_module})
+    |> Enum.map(fn({{name, handler}, expanded}) ->
+      expanded = if :erlang.function_exported(handler, :expand, 2) do
+        handler.expand(expanded, env)
+      else
+        expanded
+      end
+      {name, expanded}
+    end)
     |> Mazurka.Compiler.Etude.elixir_to_etude(etude_module)
     |> compile_etude(etude_module, env)
 
@@ -136,7 +144,7 @@ defmodule Mazurka.Compiler do
   defp prepare_definition({handler, definitions}, mediatype, globals) do
     for {ast, meta} <- definitions do
       fn_name = format_name(handler, meta)
-      {fn_name, handler.compile(mediatype, ast, globals, meta)}
+      {{fn_name, handler}, handler.compile(mediatype, ast, globals, meta)}
     end
   end
 

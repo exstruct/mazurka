@@ -52,32 +52,37 @@ defmodule Mazurka.Resource.Param do
 
   @doc false
   def format(ast, type \\ :prop) do
-    Macro.postwalk(ast, fn
+    Mazurka.Compiler.Utils.postwalk(ast, fn
       ({{:., _, [{:__aliases__, _, [:Params]}, :get]}, _, []}) ->
-        case type do
-          :prop ->
-            quote do
-              prop(:params)
-            end
-          :conn ->
-            quote do
-              ^^Mazurka.Resource.Param.get()
-            end
-        end
-      ({{:., _, [{:__aliases__, _, [:Params]}, :get]}, _, [param]}) ->
-        case type do
-          :prop ->
-            quote do
-              ^Dict.get(prop(:params), unquote(param))
-            end
-          :conn ->
-            quote do
-              ^^Mazurka.Resource.Param.get(unquote(param))
-            end
-        end
+        get(type)
+      ({{:., _, [params, :get]}, _, []}) when params in [:Params, Elixir.Params, __MODULE__] ->
+        get(type)
+      ({{:., _, [{:__aliases__, _, [:Params]}, :get]}, _, [name]}) ->
+        get(name, type)
+      ({{:., _, [params, :get]}, _, [name]}) when params in [:Params, Elixir.Params, __MODULE__] ->
+        get(name, type)
       (other) ->
         other
     end)
+  end
+
+  defp get(:prop) do
+    {:etude_prop, [], [:params]}
+  end
+  defp get(:conn) do
+    quote do
+      ^^Mazurka.Resource.Param.get()
+    end
+  end
+  defp get(name, :prop) do
+    quote do
+      ^Dict.get(unquote({:etude_cond, [], [get(:prop), [do: get(:prop), else: {:%{}, [], []}]]}), unquote(name))
+    end
+  end
+  defp get(name, :conn) do
+    quote do
+      ^^Mazurka.Resource.Param.get(unquote(name))
+    end
   end
 
   @doc false

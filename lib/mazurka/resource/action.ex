@@ -35,6 +35,10 @@ defmodule Mazurka.Resource.Action do
         unquote(mediatype).handle_action(response)
       end
     end
+  end
+
+  def expand(ast, _) do
+    ast
     |> Mazurka.Resource.Param.format(:conn)
     |> Mazurka.Resource.Input.format(:conn)
   end
