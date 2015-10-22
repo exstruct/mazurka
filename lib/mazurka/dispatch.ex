@@ -1,18 +1,23 @@
 defmodule Mazurka.Dispatch do
   alias Mazurka.Compiler.Utils
 
-  defmacro __using__(_opts) do
+  defmacro __using__(_) do
     quote do
       import Mazurka.Dispatch
       @before_compile Mazurka.Dispatch
 
-      defmacro __using__(_) do
+      defmacro __using__(opts) do
         dispatch = __MODULE__
+        link_transform = case opts[:link_transform] do
+          {module, function} -> {module, function}
+          function when is_atom(function) -> {quote(do: __MODULE__), function}
+        end
         quote do
           def call(conn, opts) do
             conn = conn
             |> Plug.Conn.put_private(:mazurka_dispatch, unquote(dispatch))
             |> Plug.Conn.put_private(:mazurka_router, __MODULE__)
+            |> Plug.Conn.put_private(:mazurka_link_transform, unquote(link_transform))
             super(conn, opts)
           end
         end

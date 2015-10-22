@@ -4,7 +4,8 @@ defmodule Mazurka.Resource.Link do
   format. It's broken into its separate parts (method, host, path, etc.) for easy manipulation.
   """
 
-  defstruct mediatype: nil,
+  defstruct resource: nil,
+            mediatype: nil,
             method: nil,
             scheme: nil,
             host: nil,
@@ -117,28 +118,38 @@ defmodule Mazurka.Resource.Link do
 
   def resolve([module, params, query, fragment], %{private: private} = conn, _parent, _ref, _attrs) do
     %{mazurka_router: router, mazurka_mediatype_handler: mediatype_module} = private
-    case router.resolve(module, params) do
+    link = %__MODULE__{
+      resource: module,
+      mediatype: mediatype_module,
+      scheme: conn.scheme,
+      host: conn.host,
+      port: conn.port,
+      query: query,
+      fragment: fragment
+    }
+
+    link = case router.resolve(module, params) do
       {:ok, method, scheme, host, path} ->
-        {:ok, %__MODULE__{mediatype: mediatype_module,
-                          method: method,
-                          scheme: scheme,
-                          host: host,
-                          port: conn.port,
-                          path: request_path(%{conn | path_info: path}),
-                          query: query,
-                          fragment: fragment}}
+        %{link | method: method,
+                 scheme: scheme,
+                 host: host,
+                 path: request_path(%{conn | path_info: path})}
+        |> apply_link_transform(conn)
       {:ok, method, path} ->
-        {:ok, %__MODULE__{mediatype: mediatype_module,
-                          method: method,
-                          scheme: conn.scheme,
-                          host: conn.host,
-                          port: conn.port,
-                          path: request_path(%{conn | path_info: path}),
-                          query: query,
-                          fragment: fragment}}
+        %{link | method: method,
+                 path: request_path(%{conn | path_info: path})}
+        |> apply_link_transform(conn)
       {:error, :not_found} ->
-        {:ok, :undefined}
+        :undefined
     end
+    {:ok, link}
+  end
+
+  defp apply_link_transform(link, conn = %{private: %{mazurka_link_transform: {module, function}}}) do
+    apply(module, function, [link, conn])
+  end
+  defp apply_link_transform(link, _) do
+    link
   end
 
   def from_conn(%{private: %{mazurka_mediatype_handler: mediatype_module}} = conn) do

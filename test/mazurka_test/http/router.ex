@@ -1,7 +1,9 @@
 defmodule MazurkaTest.HTTP.Router do
   use Mazurka.Protocol.HTTP.Router
   use Mazurka.Mediatype.Hyperjson.Hyperpath
-  use MazurkaTest.Dispatch
+  use MazurkaTest.Dispatch, [
+    link_transform: :link_transform
+  ]
 
   alias MazurkaTest.Resources
 
@@ -27,4 +29,8 @@ defmodule MazurkaTest.HTTP.Router do
   get     "/junk/transition_to_binary",     Resources.TransitionToBinary
 
   match   _,                                Resources.Errors.NotFound
+
+  def link_transform(link, _conn) do
+    link
+  end
 end
