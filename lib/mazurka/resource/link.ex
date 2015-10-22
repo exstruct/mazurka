@@ -41,6 +41,7 @@ defmodule Mazurka.Resource.Link do
       |> Dict.merge(params)
       |> Dict.merge(%{"_params" => params, "_query" => query, "_fragment" => fragment})
 
+
       {:partial, {module, :affordance_partial, props}}
     catch
       {:undefined_param, _} ->

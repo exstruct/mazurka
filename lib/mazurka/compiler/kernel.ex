@@ -270,6 +270,19 @@ defmodule Mazurka.Compiler.Kernel do
     quote do: ^Regex.compile!(unquote(binary), unquote(:binary.list_to_bin(options)))
   end
 
+  defmacro @({:doc, _, [doc]}) do
+    ## TODO figure out how to get the following functions name
+    name = :todo
+    quote do
+      Module.add_doc(__MODULE__, __ENV__.line + 1, :def, {unquote(name), 0}, [], unquote(doc))
+    end
+  end
+  defmacro @(attribute) do
+    quote do
+      Elixir.Kernel.@(unquote(attribute))
+    end
+  end
+
   e_macros = [abs: [:number],
               apply: [:fun, :args],
               apply: [:module, :fun, :args],

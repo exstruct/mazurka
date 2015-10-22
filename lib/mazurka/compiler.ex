@@ -154,8 +154,10 @@ defmodule Mazurka.Compiler do
   end
 
   def compile_etude(etude_ast, etude_module, env) do
+    etude_opts = Module.get_attribute(env.module, :etude_opts) || []
+    etude_opts = Keyword.merge([file: env.file, native: Mix.env == :prod], etude_opts)
     ## TODO read the existing beam file and verify it has changed before compiling
-    {:ok, _, _, beam} = Etude.compile(etude_module, etude_ast, [file: env.file, native: Mix.env == :prod])
+    {:ok, _, _, beam} = Etude.compile(etude_module, etude_ast, etude_opts)
 
     # Make ex_doc happy
     chunk_data = :erlang.term_to_binary({:elixir_docs_v1, [

@@ -27,6 +27,8 @@ defmodule MazurkaTest.HTTP.Router do
   get     "/junk/case/:number",             Resources.Case
   get     "/junk/validation/:key",          Resources.Validation
   get     "/junk/transition_to_binary",     Resources.TransitionToBinary
+  get     "/junk/query",                    Resources.QueryParam
+  get     "/junk/query/link",               Resources.QueryParamLink
 
   match   _,                                Resources.Errors.NotFound
 
