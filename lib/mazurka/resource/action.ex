@@ -36,5 +36,6 @@ defmodule Mazurka.Resource.Action do
       end
     end
     |> Mazurka.Resource.Param.format(:conn)
+    |> Mazurka.Resource.Input.format(:conn)
   end
 end

@@ -24,5 +24,6 @@ defmodule Mazurka.Resource.Affordance do
       end
     end
     |> Mazurka.Resource.Param.format
+    |> Mazurka.Resource.Input.format
   end
 end

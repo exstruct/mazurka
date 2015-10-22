@@ -18,6 +18,7 @@ defmodule Mazurka.Resource.Error do
       ^^Mazurka.Resource.Error.set_error(error)
     end
     |> Mazurka.Resource.Param.format
+    |> Mazurka.Resource.Input.format
   end
 
   def format_name({name, _meta, _args}) when is_atom(name) do

@@ -35,8 +35,7 @@ defmodule Mazurka.Compiler.Kernel do
                                                            use: 1,
                                                            use: 2,], warn: false]]},
       {:import, [],
-       [{:__aliases__, [alias: false], [:Mazurka, :Compiler, :Kernel]}, [warn: false]]},
-      {:alias, [], [{:__aliases__, [alias: false], [:Mazurka, :Runtime, :Input]}, [warn: false]]}
+       [{:__aliases__, [alias: false], [:Mazurka, :Compiler, :Kernel]}, [warn: false]]}
     ]
   end
 
