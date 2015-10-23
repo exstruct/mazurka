@@ -21,9 +21,8 @@ defmodule Mazurka.Runtime do
   end
 
   def get_param(list, name) when is_list(list) do
-    name_s = name |> to_string()
-    name_a = name |> String.to_existing_atom()
-    find_key(list, name, name_s, name_a)
+    name = name |> to_string()
+    find_key(list, name)
   end
   def get_param(map, name) when is_map(map) do
     map
@@ -34,13 +33,14 @@ defmodule Mazurka.Runtime do
     :undefined
   end
 
-  defp find_key([], _, _, _) do
+  defp find_key([], _) do
     :undefined
   end
-  defp find_key([{key, value} | _], name, name_s, name_a) when key in [name, name_s, name_a] do
-    value
-  end
-  defp find_key([_ | rest], name, name_s, name_a) do
-    find_key(rest, name, name_s, name_a)
+  defp find_key([{key, value} | rest], name) do
+    if to_string(key) == name do
+      value
+    else
+      find_key(rest, name)
+    end
   end
 end
