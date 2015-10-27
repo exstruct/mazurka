@@ -12,6 +12,7 @@ defmodule Mazurka.Resource.Link do
             port: nil,
             path: nil,
             query: nil,
+            persistent_query: nil,
             fragment: nil
 
   def compile(_opts, _env) do
@@ -175,12 +176,15 @@ defmodule Mazurka.Resource.Link do
 end
 
 defimpl String.Chars, for: Mazurka.Resource.Link do
-  def to_string(%{fragment: fragment, host: host, method: method, path: path, port: port, query: query, scheme: scheme}) do
+  def to_string(%{fragment: fragment, host: host, method: method, path: path, port: port, query: query, scheme: scheme} = url) do
+    qs = query
+    |> format_query(method)
+    |> join_query(format_query(Map.get(url, :persistent_query), "GET"))
     %URI{fragment: format_fragment(fragment),
          host: host,
          path: format_path(path),
          port: port,
-         query: format_query(query, method),
+         query: qs,
          scheme: Kernel.to_string(scheme)}
     |> Kernel.to_string
   end
@@ -198,6 +202,11 @@ defimpl String.Chars, for: Mazurka.Resource.Link do
   defp format_query(%{__struct__: _} = qs, _), do: Kernel.to_string(qs)
   defp format_query(qs, _) when is_map(qs), do: Mazurka.Resource.Link.encode_qs(qs)
   defp format_query(qs, _), do: Kernel.to_string(qs)
+
+  defp join_query(nil, nil), do: nil
+  defp join_query(q, nil), do: q
+  defp join_query(nil, q), do: q
+  defp join_query(q1, q2), do: q1 <> "&" <> q2
 
   defp format_fragment(nil), do: nil
   defp format_fragment([]), do: nil
