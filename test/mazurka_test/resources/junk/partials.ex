@@ -40,7 +40,7 @@ defmodule MazurkaTest.Resources.Partials do
       params %{"name" => "Jane"}
     end
 
-    assert conn.status == 500
+    assert conn.status != 200
     assert conn.private.mazurka_error == true
   end
 end

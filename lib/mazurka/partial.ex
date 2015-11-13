@@ -16,9 +16,12 @@ defmodule Mazurka.Partial do
         _ -> name
       end
 
-      func = "#{name}_partial" |> String.to_atom
-      def unquote(func)(unquote_splicing(Mazurka.Partial.args)) do
+      def unquote(name)(unquote_splicing(Mazurka.Partial.args)) do
         Mazurka.Partial.__exec__(name, unquote(content))
+      end
+      # BACKWARD COMPATIBILITY WITH MARKDOWN
+      def unquote(:"#{name}_partial")(unquote_splicing(Mazurka.Partial.args)) do
+        unquote(name)(unquote_splicing(Mazurka.Partial.args))
       end
     end
   end
