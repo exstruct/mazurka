@@ -2,14 +2,23 @@ defmodule Mazurka.Partial do
   defmacro __using__(_) do
     quote do
       import unquote(__MODULE__)
+      unquote_splicing(Mazurka.Compiler.Kernel.imports)
     end
   end
 
-  defmacro defpartial({name, _, _}, [do: content]) do
-    quote do
-      def unquote("#{name}_partial" |> String.to_atom)(unquote_splicing(args)) do
-        unquote_splicing(Mazurka.Compiler.Kernel.imports)
-        unquote(__MODULE__).__exec__(unquote(name), unquote(content))
+  defmacro defpartial(name, [do: content]) do
+    quote bind_quoted: [
+      name: Macro.escape(name, unquote: true),
+      content: Macro.escape(content, unquote: true)
+    ] do
+      name = case name do
+        {direct, _, _} -> direct
+        _ -> name
+      end
+
+      func = "#{name}_partial" |> String.to_atom
+      def unquote(func)(unquote_splicing(Mazurka.Partial.args)) do
+        Mazurka.Partial.__exec__(name, unquote(content))
       end
     end
   end
@@ -29,7 +38,7 @@ defmodule Mazurka.Partial do
     end
   end
 
-  defp args do
+  def args do
     [:state__, :resolve__, :req__, :scope__, :props__]
     |> Enum.map(&(Macro.var(&1, nil)))
   end

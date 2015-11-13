@@ -30,4 +30,11 @@ defmodule MazurkaTest.Dispatch do
   end
 
   service Users, Services.Users
+
+  defp exec(DynamicPartials, fun, args, _, _, _, _) do
+    props = args |> List.flatten |> Enum.into(%{})
+    fun = fun |> Kernel.to_string |> Kernel.<>("_partial") |> String.to_atom
+
+    {:partial, {MazurkaTest.Partials.Dynamic, fun, props}}
+  end
 end
