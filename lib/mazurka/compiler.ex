@@ -84,7 +84,7 @@ defmodule Mazurka.Compiler do
       end
       {name, expanded}
     end)
-    |> Mazurka.Compiler.Etude.elixir_to_etude(etude_module)
+    |> Etude.Compiler.elixir_to_etude(etude_module)
     |> compile_etude(etude_module, env)
 
     {mediatype, content_types, etude_module, is_default}
