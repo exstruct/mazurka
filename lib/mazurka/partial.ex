@@ -33,7 +33,7 @@ defmodule Mazurka.Partial do
     content
     |> Mazurka.Compiler.Utils.expand(__CALLER__)
     |> name_fun()
-    |> Mazurka.Compiler.Etude.elixir_to_etude(parent)
+    |> Etude.Compiler.elixir_to_etude(parent)
     |> Mazurka.Compiler.compile_etude(mod, __CALLER__)
 
     quote do
