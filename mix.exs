@@ -3,7 +3,7 @@ defmodule Mazurka.Mixfile do
 
   def project do
     [app: :mazurka,
-     version: "0.3.24",
+     version: "0.3.25",
      elixir: "~> 1.0",
      description: "hypermedia api toolkit",
      package: package,
@@ -18,7 +18,7 @@ defmodule Mazurka.Mixfile do
     [{:ecto, ">= 1.0.0"},
      {:plug, ">= 0.9.0"},
      {:poison, ">= 1.4.0"},
-     {:etude, "~> 0.3.0"},
+     {:etude, "~> 0.3.7"},
      {:parse_trans, github: "uwiger/parse_trans", optional: true},
      {:mazurka_dsl, "~> 0.1.1", optional: true},
      {:mimetype_parser, "~> 0.1.0"},
