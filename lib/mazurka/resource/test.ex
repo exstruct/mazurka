@@ -36,6 +36,13 @@ defmodule Mazurka.Resource.Test do
     end
   end
 
+  defmacro authenticate_as(user_id, client_id \\ nil) do
+    quote do
+      {name, value} = var!(__router__).authenticate_as(unquote(user_id), unquote(client_id))
+      header name, value
+    end
+  end
+
   def compile(_, _) do
     nil
   end
