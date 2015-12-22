@@ -20,6 +20,10 @@ defmodule Mazurka.Dispatch do
             |> Plug.Conn.put_private(:mazurka_link_transform, unquote(link_transform))
             super(conn, opts)
           end
+
+          def dispatch(module, function, arguments, conn, parent, ref, attrs) do
+            unquote(dispatch).resolve(module, function, arguments, conn, parent, ref, attrs)
+          end
         end
       end
 
