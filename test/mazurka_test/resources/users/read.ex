@@ -80,13 +80,15 @@ defmodule MazurkaTest.Resources.Users.Read do
   # end
 
   test "it should respond with a 200" do
-    id = "6"
+    user = seed(Users)
 
     request do
-      params %{user: id}
+      params %{user: user}
       accept "hyper+json"
     end
   after conn ->
+    id = user.id
+
     conn
     |> assert_status(200)
     |> assert_json(%{"id" => ^id})

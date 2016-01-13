@@ -22,6 +22,10 @@ defmodule MazurkaTest.Services.Users do
     {:error, :not_found}
   end
 
+  def seed(_) do
+    {:ok, %{id: "6"}}
+  end
+
   def update(_id, _params, _env) do
     {:ok, true}
   end

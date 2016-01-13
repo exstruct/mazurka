@@ -94,6 +94,8 @@ defmodule Mazurka.Resource.Test do
     {variables, quote do
       fn
         (unquote(__context__)) ->
+          import Mazurka.Resource.Test.Seed
+
           unquote_splicing(Enum.reverse(expressions))
           unquote(__context__)
       end
