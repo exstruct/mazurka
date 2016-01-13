@@ -14,11 +14,12 @@ defmodule MazurkaTest.Resources.AccessProtocol do
   end
 
   test "should work" do
-    conn = request do
+    request do
       params %{"key" => "name"}
     end
-
-    assert conn.status == 200
-    assert String.contains?(conn.resp_body, "Joe")
+  after conn ->
+    conn
+    |> assert_status(200)
+    |> assert_json(%{"value" => "Joe"})
   end
 end

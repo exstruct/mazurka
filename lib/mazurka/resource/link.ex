@@ -81,10 +81,10 @@ defmodule Mazurka.Resource.Link do
     [module, unwrap_ids(params), unwrap_ids(query), fragment]
   end
 
-  defp unwrap_ids(kvs) when kvs in [nil, :undefined] do
+  def unwrap_ids(kvs) when kvs in [nil, :undefined] do
     kvs
   end
-  defp unwrap_ids(kvs) do
+  def unwrap_ids(kvs) do
     Enum.reduce(kvs, %{}, fn
       ({key, %{"id" => id}}, acc) ->
         Map.put(acc, to_string(key), to_string(id))

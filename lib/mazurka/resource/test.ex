@@ -1,46 +1,36 @@
 defmodule Mazurka.Resource.Test do
-  defmacro test(name, [do: block]) do
-    meta = %{file: __CALLER__.file,
+  require Logger
+
+  defmacro __using__(_) do
+    Mazurka.Resource.Test.Case.init(__CALLER__)
+    quote do
+      import unquote(__MODULE__), only: [test: 2]
+    end
+  end
+
+  defmacro test(name, [do: block, after: assertions]) do
+    tags = Mazurka.Resource.Test.Case.get_tags(__CALLER__)
+    meta = %{module: __CALLER__.module,
+             file: __CALLER__.file,
              line: __CALLER__.line}
-    Mazurka.Compiler.Utils.register(__MODULE__, {name, block}, meta)
+    Mazurka.Compiler.Utils.register(__MODULE__, {name, block, assertions, tags}, meta)
   end
+  defmacro test(name, [do: _]) do
+    Logger.error("""
+    test #{inspect(name)} missing 'after' block with assertions (#{__CALLER__.file}:#{__CALLER__.line})
 
-  defmacro request([do: block]) do
-    if Mix.env == :test do
-      quote do
-        require Mazurka.Protocol.Request
-        conn = Mazurka.Protocol.Request.request __MODULE__ do
-          import Mazurka.Protocol.Request
-          unquote(block)
+    it should look something like
+
+        test #{inspect(name)} do
+          request do
+
+          end
+        after conn ->
+          conn
+          |> assert_status(200)
         end
-        var!(__router__).request_call(conn, [])
-      end
-    end
-  end
-
-  defmacro seed(module, params \\ Macro.escape(%{})) do
-    fake_conn = %Plug.Conn{private: %{}} |> Macro.escape()
-    quote do
-      ## TODO support async etude calls
-      case var!(__router__).dispatch(unquote(module), :seed, [unquote(params)], unquote(fake_conn), nil, nil, nil) do
-        {:ok, value} ->
-          value
-      end
-    end
-  end
-
-  defmacro assert_json(conn, match) do
-    quote do
-      parsed = Poison.decode!(unquote(conn).resp_body)
-      ExUnit.Assertions.assert match?(unquote(match), parsed)
-    end
-  end
-
-  defmacro authenticate_as(user_id, client_id \\ nil) do
-    quote do
-      {name, value} = var!(__router__).authenticate_as(unquote(user_id), unquote(client_id))
-      header name, value
-    end
+    """)
+    throw :missing_assertions_block
   end
 
   def compile(_, _) do
@@ -48,101 +38,127 @@ defmodule Mazurka.Resource.Test do
   end
 
   def compile_global(tests, env) do
-    do_compile(tests, env, Mix.env)
+    tests
+    |> do_compile(env, Mix.env)
   end
 
   defp do_compile(_tests, _env, :dev) do
     quote do
       @doc false
-      defmacro tests(_) do
-        nil
-      end
+      def tests(_), do: []
     end
   end
   defp do_compile(tests, env, _) do
     module = env.module
-
-    definitions = Enum.map(tests, fn({{name, block}, _meta}) ->
-      quote do
-        def unquote(:"test #{name}")({_, var!(__router__)}, _) do
-          import Kernel
-          import Mazurka.Compiler.Kernel, only: []
-          import Mazurka.Resource.Test
-          import ExUnit.Assertions
-          unquote(block)
-        end
-      end
-    end)
-
-    tests = Enum.map(tests, fn({{name, _}, meta}) ->
-      {name, meta}
-    end)
-
     quote do
       @doc false
-      defmacro tests(router) do
-        router = Mazurka.Compiler.Utils.eval(router, __CALLER__)
-        Mazurka.Resource.Test.register_tests(router, unquote(module), unquote(Macro.escape(tests)))
+      def __mazurka_test__() do
+        unquote(Enum.map(tests, fn({{name, _, _, tags}, env}) -> Macro.escape({module, name, tags, env}) end))
       end
 
-      unquote_splicing(definitions)
+      unquote_splicing(Enum.map(tests, &compile_test/1))
+    end
+  end
 
-      @doc false
-      def __ex_unit__(router, pass, context) do
-        {:ok, context}
+  def compile_test({{name, block, assertions, _}, _}) do
+    {variables, seed, create_conn} = compile_block(block)
+    assertions = compile_assertions(assertions, variables)
+
+    quote do
+      def __mazurka_test__(unquote(name), unquote(__router__)) do
+        import Kernel
+        import Mazurka.Compiler.Kernel, only: []
+        {unquote(variables), unquote(seed), unquote(create_conn), unquote(assertions)}
       end
     end
   end
 
-  def register_tests(router, module, tests) do
-    cases = Enum.map(tests, fn({name, meta}) ->
-      meta = Macro.escape(meta)
-      quote bind_quoted: [module: module, router: router, name: name, meta: meta] do
-        Mazurka.Resource.Test.Case.test module, router, name, meta
-      end
+  defp compile_block({:__block__, _, list}) do
+    compile_block(list)
+  end
+  defp compile_block(list) when is_list(list) do
+    {seed, request} = Enum.split_while(list, fn
+      ({:request, _, _}) -> false
+      (_) -> true
     end)
 
-    test_ast = quote do
-      require Mazurka.Resource.Test.Case
-      unquote_splicing(cases)
-    end
-
-    Module.register_attribute(router, :mazurka_test, accumulate: true)
-    Module.put_attribute(router, :mazurka_test, test_ast)
-
-    nil
+    {variables, seed} = compile_seed(seed)
+    {variables, seed, compile_request(request, variables)}
+  end
+  defp compile_block(expression) do
+    compile_block([expression])
   end
 
-  def get_tests(module) do
-    Module.get_attribute(module, :mazurka_test)
+  defp compile_seed(seed) do
+    {variables, expressions} = Enum.reduce(seed, {[], []}, &compile_seed_expression/2)
+    {variables, quote do
+      fn
+        (unquote(__context__)) ->
+          unquote_splicing(Enum.reverse(expressions))
+          unquote(__context__)
+      end
+    end}
   end
 
-  defmodule Case do
-    defmacro test(source, router, message, meta, var \\ quote(do: _)) do
-      var      = Macro.escape(var)
+  defp compile_seed_expression({:=, _, [{name, _, context}, rhs]}, {variables, expressions}) when is_atom(context) do
+    expr = quote do
+      %{unquote(name) => unquote(Macro.var(name, nil))} = unquote(__context__) = unquote(put_new_lazy(name, rhs))
+    end
+    {[name | variables], [expr | expressions]}
+  end
+  defp compile_seed_expression({:=, _, _} = expr, _) do
+    throw {:unsupported_seed_expression, Macro.to_string(expr)}
+  end
+  defp compile_seed_expression(other, {variables, expressions}) do
+    {variables, [other | expressions]}
+  end
 
-      quote bind_quoted: binding do
-        test = :"test #{message}"
-        Mazurka.Resource.Test.Case.__on_definition__(__ENV__, test, source, router, meta)
+  defp compile_request([], _variables) do
+    throw :missing_request_block
+  end
+  defp compile_request(request, variables) do
+    quote do
+      fn
+        (unquote(variables_to_map(variables))) ->
+          import Mazurka.Resource.Test.Request, only: [request: 0, request: 1]
+          unquote_splicing(request)
+        (context) ->
+          IO.puts "Missing " <> inspect(unquote(variables) -- Map.keys(context))
+          throw :error
       end
     end
+  end
 
-    def __on_definition__(env, name, source, router, additional_tags) do
-      mod  = env.module
-      tags = Module.get_attribute(mod, :tag) ++ Module.get_attribute(mod, :moduletag)
-      tags = tags |> normalize_tags |> Dict.merge(additional_tags)
-
-      Module.put_attribute(mod, :ex_unit_tests,
-        %ExUnit.Test{name: name, case: {source, router}, tags: tags})
-
-      Module.delete_attribute(mod, :tag)
+  defp compile_assertions(assertions, variables) do
+    map = variables_to_map(variables)
+    quote do
+      use Mazurka.Resource.Test.Assertions
+      unquote({:fn, [], Enum.map(assertions, fn({:->, meta, [[conn], body]}) ->
+        {:->, meta, [[conn, map], body]}
+      end)})
     end
+  end
 
-    defp normalize_tags(tags) do
-      Enum.reduce Enum.reverse(tags), %{}, fn
-        tag, acc when is_atom(tag) -> Map.put(acc, tag, true)
-        tag, acc when is_list(tag) -> Dict.merge(acc, tag)
+  defp variables_to_map(variables) do
+    {:%{}, [], Enum.map(variables, &{&1, Macro.var(&1, nil)})}
+  end
+
+  defp put_new_lazy(name, fun) do
+    quote do
+      case unquote(__context__) do
+        %{unquote_splicing([{name, Macro.var(:_, nil)}])} = context ->
+          context
+        context ->
+          Map.put(context, unquote(name), unquote(fun))
       end
     end
+  end
+
+  defp __router__ do
+    Macro.var(:__router__, nil)
+  end
+
+  defp __context__ do
+    Macro.var(:__context__, nil)
   end
 end

@@ -29,21 +29,23 @@ defmodule MazurkaTest.Resources.HelperMacro do
   end
 
   test "should not return a link" do
-    conn = request do
+    request do
       accept "hyper+json"
     end
-
-    assert conn.status == 200
-    refute conn.resp_body |> String.contains?("edit")
+  after conn ->
+    conn
+    |> assert_status(200)
+    |> refute_json(%{"link" => %{"edit" => _}})
   end
 
   test "should return a link" do
-    conn = request do
+    request do
       accept "hyper+json"
       query "value", "foo"
     end
-
-    assert conn.status == 200
-    assert conn.resp_body |> String.contains?("edit")
+  after conn ->
+    conn
+    |> assert_status(200)
+    |> assert_json(%{"link" => %{"edit" => _}})
   end
 end

@@ -15,7 +15,7 @@ defmodule Mazurka.Resource do
       import Mazurka.Resource.Mediatype
       import Mazurka.Resource.Param
       import Mazurka.Resource.Partial
-      import Mazurka.Resource.Test
+      use Mazurka.Resource.Test
       import Mazurka.Resource.Validation
 
       require Mazurka.Compiler.Utils

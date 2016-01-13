@@ -62,11 +62,12 @@ defmodule MazurkaTest.Resources.Users.Update do
   end
 
   test "should fail if the user is not authenticated" do
-    conn = request do
+    request do
       params %{"user" => "6"}
       accept "hyper+json"
     end
-
-    assert conn.status > 399
+  after conn ->
+    conn
+    |> assert_error_status()
   end
 end

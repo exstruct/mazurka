@@ -80,26 +80,26 @@ defmodule MazurkaTest.Resources.Users.Read do
   # end
 
   test "it should respond with a 200" do
-    conn = request do
-      params %{"user" => "6"}
+    id = "6"
+
+    request do
+      params %{user: id}
       accept "hyper+json"
     end
-
-    assert conn.status == 200
-    assert conn.resp_body
-
-    resp_body = Mazurka.Format.JSON.decode(conn.resp_body)
-
-    assert resp_body["id"]
-    assert !resp_body["update"]
+  after conn ->
+    conn
+    |> assert_status(200)
+    |> assert_json(%{"id" => ^id})
+    |> refute_json(%{"update" => _})
   end
 
   test "it should respond with a 404 when not found" do
-    conn = request do
+    request do
       params %{"user" => "7"}
       accept "hyper+json"
     end
-
-    assert conn.status == 404
+  after conn ->
+    conn
+    |> assert_status(404)
   end
 end

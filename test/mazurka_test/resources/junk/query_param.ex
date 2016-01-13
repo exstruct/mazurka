@@ -11,11 +11,11 @@ defmodule MazurkaTest.Resources.QueryParam do
   end
 
   test "should work" do
-    conn = request do
-    end
-
-    assert conn.status == 200
-    body = Poison.decode!(conn.resp_body)
-    assert %{"bar" => %{"value" => "bar"}, "baz" => %{"value" => "baz"}} = body
+    request()
+  after conn ->
+    conn
+    |> assert_status(200)
+    |> assert_json(%{"bar" => %{"value" => "bar"},
+                     "baz" => %{"value" => "baz"}})
   end
 end

@@ -14,18 +14,20 @@ defmodule MazurkaTest.Resources.Validation do
   end
 
   test "should validate the input" do
-    conn = request do
+    request do
       params %{"key" => "name"}
     end
-
-    assert conn.status != 200
+  after conn ->
+    conn
+    |> refute_status(200)
   end
 
   test "should work" do
-    conn = request do
+    request do
       params %{"key" => "hello"}
     end
-
-    assert conn.status == 200
+  after conn ->
+    conn
+    |> assert_status(200)
   end
 end

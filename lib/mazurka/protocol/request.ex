@@ -10,6 +10,7 @@ defmodule Mazurka.Protocol.Request do
                               remote_ip: {127, 0, 0, 1},
                               params: %{},
                               query_params: %{},
+                              req_headers: [{"accept", "*/*"}],
                               private: %{mazurka_route: unquote(resource)}}
       unquote(block)
       var!(conn)
@@ -48,25 +49,26 @@ defmodule Mazurka.Protocol.Request do
 
   defmacro params(params) do
     quote do
-      var!(conn) = Plug.Conn.put_private(var!(conn), :mazurka_params, unquote(params))
+      params = Mazurka.Resource.Link.unwrap_ids(unquote(params))
+      var!(conn) = Plug.Conn.put_private(var!(conn), :mazurka_params, params)
     end
   end
 
   defmacro query(query) do
-    query = Mazurka.Compiler.Utils.eval(query, __CALLER__)
-    query = cond do
-      is_binary(query) ->
-        Plug.Conn.Query.decode(query)
-      is_map(query) ->
-        query
-    end
-    |> Macro.escape
     quote do
+      query = case unquote(query) do
+        q when is_binary(q) ->
+          Plug.Conn.Query.decode(query)
+        q when is_map(q) ->
+          Mazurka.Resource.Link.unwrap_ids(q)
+      end
+
       params = var!(conn).params
       query_params = var!(conn).query_params
+
       var!(conn) = %{var!(conn) |
-                     params: Dict.merge(query_params, unquote(query)),
-                     query_params: Dict.merge(query_params, unquote(query))}
+                     params: Dict.merge(query_params, query),
+                     query_params: Dict.merge(query_params, query)}
     end
   end
 
@@ -75,8 +77,8 @@ defmodule Mazurka.Protocol.Request do
       params = var!(conn).params
       query_params = var!(conn).query_params
       var!(conn) = %{var!(conn) |
-                     params: Dict.put(query_params, unquote(key), unquote(value)),
-                     query_params: Dict.put(query_params, unquote(key), unquote(value))}
+                     params: Dict.put(query_params, to_string(unquote(key)), to_string(unquote(value))),
+                     query_params: Dict.put(query_params, to_string(unquote(key)), to_string(unquote(value)))}
     end
   end
 
@@ -88,15 +90,9 @@ defmodule Mazurka.Protocol.Request do
   end
 
   defmacro header(kvs) do
-    kvs = kvs
-    |> Mazurka.Compiler.Utils.eval(__CALLER__)
-    |> Enum.map(fn({key, value}) ->
-      {to_string(key), to_string(value)}
-    end)
-    |> Macro.escape
-
     quote do
       headers = var!(conn).req_headers
+      kvs = Enum.map(unquote(kvs), fn {k, v} -> {to_string(k), to_string(v)} end)
       var!(conn) = %{var!(conn) | req_headers: unquote(kvs) ++ headers}
     end
   end
@@ -104,7 +100,7 @@ defmodule Mazurka.Protocol.Request do
   defmacro header(key, value) do
     quote do
       headers = var!(conn).req_headers
-      var!(conn) = %{var!(conn) | req_headers: [{unquote(key), unquote(value)} | headers]}
+      var!(conn) = %{var!(conn) | req_headers: [{to_string(unquote(key)), to_string(unquote(value))} | headers]}
     end
   end
 
@@ -149,6 +145,19 @@ defmodule Mazurka.Protocol.Request do
   end
 
   ## Helpers
+
+  def send_resp(req, status, headers, body) do
+    req = Map.merge(req, %{
+      status: status,
+      resp_headers: headers,
+      resp_body: :erlang.iolist_to_binary(body)
+    })
+    {:ok, nil, req}
+  end
+
+  def merge_resp(conn = %{adapter: {__MODULE__, state}}) do
+    Map.merge(conn, state)
+  end
 
   def split_path(path) do
     segments = :binary.split(path, "/", [:global])

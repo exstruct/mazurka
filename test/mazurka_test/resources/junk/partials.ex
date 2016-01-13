@@ -20,27 +20,27 @@ defmodule MazurkaTest.Resources.Partials do
   end
 
   test "should work" do
-    conn = request do
+    request do
       params %{"name" => "Joe"}
     end
-
-    assert conn.status == 200
-    resp = Poison.decode!(conn.resp_body)
-    assert resp["message"] == "Hello, Joe"
-    assert resp["direct"] == "direct called with arg=true, outside=needs_unquoting"
-    assert resp["first"] == "first called with arg=1"
-    assert resp["first_with_append"] == "first_with_append called with arg=1111"
-    assert resp["second"] == "second called with arg=2"
-    assert resp["second_with_append"] == "second_with_append called with arg=2222"
-    assert resp["dispatched"] == "first called with arg=dispatched"
+  after conn ->
+    conn
+    |> assert_status(200)
+    |> assert_json(%{"message" => "Hello, Joe",
+                     "direct" => "direct called with arg=true, outside=needs_unquoting",
+                     "first" => "first called with arg=1",
+                     "first_with_append" => "first_with_append called with arg=1111",
+                     "second" => "second called with arg=2",
+                     "second_with_append" => "second_with_append called with arg=2222",
+                     "dispatched" => "first called with arg=dispatched"})
   end
 
   test "should fail due to condition" do
-    conn = request do
+    request do
       params %{"name" => "Jane"}
     end
-
-    assert conn.status != 200
-    assert conn.private.mazurka_error == true
+  after conn ->
+    conn
+    |> assert_error_status()
   end
 end

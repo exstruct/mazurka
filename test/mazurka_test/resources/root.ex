@@ -33,11 +33,10 @@ defmodule MazurkaTest.Resources.Root do
     :ok
   end
 
-  test "should response with a 200" do
-    conn = request do
-      accept "hyper+json"
-    end
-
-    assert conn.status == 200
+  test "should respond with a 200" do
+    request()
+  after conn ->
+    conn
+    |> assert_status(200)
   end
 end

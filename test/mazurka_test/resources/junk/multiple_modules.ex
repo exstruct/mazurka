@@ -8,10 +8,12 @@ defmodule MazurkaTest.Resources.Multiple do
   end
 
   test "should work" do
-    conn = request do
+    request do
       accept "hyper+json"
     end
-    assert conn.status == 200
+  after conn ->
+    conn
+    |> assert_status(200)
   end
 end
 
@@ -25,9 +27,11 @@ defmodule MazurkaTest.Resources.Modules do
   end
 
   test "should work" do
-    conn = request do
+    request do
       accept "hyper+json"
     end
-    assert conn.status == 200
+  after conn ->
+    conn
+    |> assert_status(200)
   end
 end

@@ -8,10 +8,10 @@ defmodule MazurkaTest.Resources.TransitionToBinary do
   end
 
   test "should redirect to '/foo'" do
-    conn = request do
-    end
-
-    assert conn.status == 303
-    assert :proplists.get_value("location", conn.resp_headers) == "/foo"
+    request()
+  after conn ->
+    conn
+    |> assert_status(303)
+    |> assert_transition("/foo")
   end
 end

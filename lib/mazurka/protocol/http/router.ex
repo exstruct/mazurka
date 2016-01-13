@@ -6,12 +6,16 @@ defmodule Mazurka.Protocol.HTTP.Router do
   @doc false
   defmacro __using__(_) do
     quote location: :keep do
+      use Mazurka.Protocol.HTTP.Router.Tests
       import Mazurka.Protocol.HTTP.Router
       @before_compile Mazurka.Protocol.HTTP.Router
 
       use Mazurka.Protocol.HTTP.Request
       use Plug.Builder
 
+      defp match(%{private: %{mazurka_route: route}} = conn, _opts) when not is_nil(route) do
+        conn
+      end
       defp match(conn, _opts) do
         {mod, params} = do_match(conn.method, conn.path_info, conn.host)
         conn
@@ -34,29 +38,9 @@ defmodule Mazurka.Protocol.HTTP.Router do
   end
 
   @doc false
-  defmacro __before_compile__(env) do
-    test_mod = if Mix.env == :test do
-      tests = Mazurka.Resource.Test.get_tests(env.module)
-      quote do
-        defmodule Tests do
-          tests = unquote(Macro.escape(tests))
-          defmacro __using__(_) do
-            tests = unquote(Macro.escape(tests))
-            quote do
-              import ExUnit.Callbacks
-              import ExUnit.Assertions
-              import ExUnit.Case
-              import ExUnit.DocTest
-              unquote(tests)
-            end
-          end
-        end
-      end
-    end
+  defmacro __before_compile__(_) do
     quote do
       import Mazurka.Protocol.HTTP.Router, only: []
-      unquote(test_mod)
-
       def resolve(_, _) do
         {:error, :not_found}
       end
@@ -177,7 +161,7 @@ defmodule Mazurka.Protocol.HTTP.Router do
 
     {path, guards} = extract_path_and_guards(expr)
 
-    matches = quote bind_quoted: [method: method,
+    quote bind_quoted: [method: method,
                         path: path,
                         options: options,
                         guards: Macro.escape(guards, unquote: true),
@@ -212,22 +196,9 @@ defmodule Mazurka.Protocol.HTTP.Router do
           {:error, :not_found}
         end
       end
+
+      Mazurka.Protocol.HTTP.Router.Tests.register_tests(mod)
     end
-
-    info = if Mix.env !== :dev && is_elixir_module?(mod) do
-      quote do
-        require unquote(mod)
-
-        ## Auto include resource tests
-        :erlang.function_exported(unquote(mod), :tests, 1) and unquote(mod).tests(__MODULE__)
-      end
-    end
-
-    [matches, info]
-  end
-
-  defp is_elixir_module?(mod) do
-    mod |> to_string |> String.downcase |> String.to_atom != mod
   end
 
   # Convert the verbs given with `:via` into a variable and guard set that can

@@ -20,14 +20,14 @@ defmodule MazurkaTest.Resources.Posts.Read do
   end
 
   test "should respond to a request" do
-    conn = request do
+    request do
       params %{"post" => "123"}
     end
-
-    assert conn.status == 200
-    resp_body = Mazurka.Format.JSON.decode(conn.resp_body)
-    assert length(resp_body["comments"]) > 1
-    assert resp_body["title"] == "Hello!"
-    assert resp_body["null_title"] == nil
+  after conn ->
+    conn
+    |> assert_status(200)
+    |> assert_json(%{"comments" => [ _ | _],
+                     "title" => "Hello!",
+                     "null_title" => nil})
   end
 end

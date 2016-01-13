@@ -16,11 +16,12 @@ defmodule MazurkaTest.Resources.Case do
   end
 
   test "should work" do
-    conn = request do
+    request do
       params %{"number" => "3"}
     end
-
-    assert conn.status == 200
-    assert conn.resp_body == "9"
+  after conn ->
+    conn
+    |> assert_status(200)
+    |> assert_body("9")
   end
 end
