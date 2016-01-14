@@ -68,16 +68,20 @@ defmodule Mazurka.Protocol.HTTP.Router.Tests do
   end
 
   defp compile_test_body(module, name, router) do
-    quote do
-      {_variables, seed, conn, assertions} = unquote(module).__mazurka_test__(unquote(name), unquote(router))
-      context = seed.(%{})
-
-      context
-      |> conn.()
-      |> unquote(router).call([])
-      |> Mazurka.Protocol.Request.merge_resp()
-      |> assertions.(context)
+    quote bind_quoted: binding do
+      Mazurka.Protocol.HTTP.Router.Tests.__exec__(module, name, router)
     end
+  end
+
+  def __exec__(module, name, router) do
+    {_variables, seed, conn, assertions} = module.__mazurka_test__(name, router)
+    context = seed.(%{})
+
+    context
+    |> conn.()
+    |> router.call([])
+    |> Mazurka.Protocol.Request.merge_resp()
+    |> assertions.(context)
   end
 
   def __on_definition__(parent, env, name, tags \\ []) do
