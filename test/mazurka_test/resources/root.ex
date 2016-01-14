@@ -39,4 +39,11 @@ defmodule MazurkaTest.Resources.Root do
     conn
     |> assert_status(200)
   end
+
+  @tag :test_tag_disabled
+  test "should not run" do
+    request()
+  after conn ->
+    refute true
+  end
 end

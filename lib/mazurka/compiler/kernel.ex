@@ -4,6 +4,7 @@ defmodule Mazurka.Compiler.Kernel do
       {:import, [],
        [{:__aliases__, [alias: false], [:Kernel]}, [only: [..: 2,
                                                            <>: 2,
+                                                           @: 1,
                                                            alias!: 1,
                                                            binding: 0,
                                                            binding: 1,
@@ -268,19 +269,6 @@ defmodule Mazurka.Compiler.Kernel do
   defmacro sigil_r({:<<>>, line, pieces}, options) do
     binary = {:<<>>, line, Macro.unescape_tokens(pieces, fn(x) -> Regex.unescape_map(x) end)}
     quote do: ^Regex.compile!(unquote(binary), unquote(:binary.list_to_bin(options)))
-  end
-
-  defmacro @({:doc, _, [doc]}) do
-    ## TODO figure out how to get the following functions name
-    name = :todo
-    quote do
-      Module.add_doc(__MODULE__, __ENV__.line + 1, :def, {unquote(name), 0}, [], unquote(doc))
-    end
-  end
-  defmacro @(attribute) do
-    quote do
-      Elixir.Kernel.@(unquote(attribute))
-    end
   end
 
   e_macros = [abs: [:number],

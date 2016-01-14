@@ -9,11 +9,14 @@ defmodule Mazurka.Resource.Test do
   end
 
   defmacro test(name, [do: block, after: assertions]) do
-    tags = Mazurka.Resource.Test.Case.get_tags(__CALLER__)
-    meta = %{module: __CALLER__.module,
-             file: __CALLER__.file,
-             line: __CALLER__.line}
-    Mazurka.Compiler.Utils.register(__MODULE__, {name, block, assertions, tags}, meta)
+    block = Macro.escape(block)
+    assertions = Macro.escape(assertions)
+
+    quote do
+      tags = Mazurka.Resource.Test.Case.get_tags(__ENV__)
+      data = {unquote(name), unquote(block), unquote(assertions), tags}
+      Mazurka.Compiler.Utils.put(__ENV__, nil, unquote(__MODULE__), data, __ENV__)
+    end
   end
   defmacro test(name, [do: _]) do
     Logger.error("""
