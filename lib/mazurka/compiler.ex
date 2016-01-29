@@ -18,7 +18,7 @@ defmodule Mazurka.Compiler do
     |> Enum.map(&(prepare_global(&1, env)))
 
     etude_modules = Enum.map(mediatypes, &(prepare_etude_module(&1, includes, env)))
-    clauses = Enum.flat_map(etude_modules, &(prepare_clauses(&1, env)))
+    clauses = Enum.flat_map(etude_modules, &prepare_clauses/1)
 
     body(env.module, clauses, globals)
   end
@@ -90,8 +90,7 @@ defmodule Mazurka.Compiler do
     {mediatype, content_types, etude_module, is_default}
   end
 
-  defp prepare_clauses({mediatype, content_types, etude_module, is_default}, env) do
-    module = env.module
+  defp prepare_clauses({mediatype, content_types, etude_module, is_default}) do
     [{default_type, default_subtype, default_params, _} | _] = content_types
     for {type, subtype, params, content_type} <- content_types do
       params = Macro.escape(params)
@@ -100,7 +99,7 @@ defmodule Mazurka.Compiler do
       quote do
         defp handle(unquote(type) = type, unquote(subtype) = subtype, unquote(params) = params, context, resolve) do
           context = Mazurka.Runtime.put_mediatype(context, unquote(mediatype), {type, subtype, params})
-          Logger.debug("handling request with #{type}/#{subtype} in #{unquote(module)}")
+          Logger.debug("handling request with #{type}/#{subtype} in #{inspect(context.private.mazurka_resource)} #{inspect(context.private.mazurka_params)}")
           prev = :erlang.get()
           {out, context} = try do
             unquote(etude_module).action(context, resolve)
@@ -163,7 +162,7 @@ defmodule Mazurka.Compiler do
 
   def compile_etude(etude_ast, etude_module, env) do
     etude_opts = Module.get_attribute(env.module, :etude_opts) || []
-    etude_opts = Keyword.merge([file: env.file, native: Mix.env == :prod], etude_opts)
+    etude_opts = Keyword.merge([file: env.file, native: Mazurka.Utils.env == :prod], etude_opts)
     ## TODO read the existing beam file and verify it has changed before compiling
     {:ok, _, _, beam} = Etude.compile(etude_module, etude_ast, etude_opts)
 
@@ -178,6 +177,7 @@ defmodule Mazurka.Compiler do
     path = "#{Mix.Project.compile_path}/#{etude_module}.beam"
 
     File.write!(path, beam)
+
     :code.load_binary(etude_module, env.file |> to_char_list, beam)
   end
 

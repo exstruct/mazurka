@@ -1,18 +1,19 @@
 defmodule Mazurka.Resource.Input do
   @doc false
-  def format(ast, type \\ :prop) do
-    Mazurka.Compiler.Utils.postwalk(ast, fn
-      ({{:., _, [{:__aliases__, _, [:Input]}, :get]}, _, []}) ->
-        get(type)
-      ({{:., _, [input, :get]}, _, []}) when input in [:Input, Elixir.Input, __MODULE__] ->
-        get(type)
-      ({{:., _, [{:__aliases__, _, [:Input]}, :get]}, _, [name]}) ->
-        get(name, type)
-      ({{:., _, [input, :get]}, _, [name]}) when input in [:Input, Elixir.Input, __MODULE__] ->
-        get(name, type)
-      (other) ->
-        other
-    end)
+  def format({{:., _, [{:__aliases__, _, [:Input]}, :get]}, _, []}, type) do
+    get(type)
+  end
+  def format({{:., _, [input, :get]}, _, []}, type) when input in [:Input, Elixir.Input, __MODULE__] do
+    get(type)
+  end
+  def format({{:., _, [{:__aliases__, _, [:Input]}, :get]}, _, [name]}, type) do
+    get(type, name)
+  end
+  def format({{:., _, [input, :get]}, _, [name]}, type) when input in [:Input, Elixir.Input, __MODULE__] do
+    get(type, name)
+  end
+  def format(other, _) do
+    other
   end
 
   defp get(:prop) do
@@ -23,12 +24,12 @@ defmodule Mazurka.Resource.Input do
       ^^Mazurka.Resource.Input.get()
     end
   end
-  defp get(name, :prop) do
+  defp get(:prop, name) do
     quote do
       ^Mazurka.Runtime.get_param(unquote(get(:prop)), unquote(name))
     end
   end
-  defp get(name, :conn) do
+  defp get(:conn, name) do
     quote do
       ^^Mazurka.Resource.Input.get(unquote(name))
     end

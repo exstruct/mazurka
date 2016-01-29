@@ -42,8 +42,9 @@ defmodule Mazurka.Protocol.Request do
 
   defmacro path(path) do
     quote do
-      info = Mazurka.Protocol.Request.split_path(unquote(path))
-      var!(conn) = %{var!(conn) | path_info: info}
+      path = unquote(path)
+      info = Mazurka.Protocol.Request.split_path(path)
+      var!(conn) = %{var!(conn) | request_path: path, path_info: info}
     end
   end
 

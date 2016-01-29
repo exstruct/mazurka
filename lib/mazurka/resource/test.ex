@@ -42,7 +42,7 @@ defmodule Mazurka.Resource.Test do
 
   def compile_global(tests, env) do
     tests
-    |> do_compile(env, Mix.env)
+    |> do_compile(env, Mazurka.Utils.env)
   end
 
   defp do_compile(_tests, _env, :dev) do
@@ -68,9 +68,11 @@ defmodule Mazurka.Resource.Test do
     assertions = compile_assertions(assertions, variables)
 
     quote do
-      def __mazurka_test__(unquote(name), unquote(__router__)) do
+      def __mazurka_test__(unquote(name), var!(__resource__), var!(__params__), unquote(__router__)) do
         import Kernel
         import Mazurka.Compiler.Kernel, only: []
+        use Mazurka.Resource.Test.Params
+        use Mazurka.Resource.Test.Resource
         {unquote(variables), unquote(seed), unquote(create_conn), unquote(assertions)}
       end
     end
@@ -100,6 +102,7 @@ defmodule Mazurka.Resource.Test do
           import Mazurka.Resource.Test.Seed
 
           unquote_splicing(Enum.reverse(expressions))
+          __ignore_warning__ = unquote(variables_to_list(variables))
           unquote(__context__)
       end
     end}
@@ -125,6 +128,7 @@ defmodule Mazurka.Resource.Test do
     quote do
       fn
         (unquote(variables_to_map(variables))) ->
+          __ignore_warning__ = unquote(variables_to_list(variables))
           import Mazurka.Resource.Test.Request, only: [request: 0, request: 1]
           unquote_splicing(request)
         (context) ->
@@ -136,16 +140,24 @@ defmodule Mazurka.Resource.Test do
 
   defp compile_assertions(assertions, variables) do
     map = variables_to_map(variables)
+    list = variables_to_list(variables)
     quote do
       use Mazurka.Resource.Test.Assertions
       unquote({:fn, [], Enum.map(assertions, fn({:->, meta, [[conn], body]}) ->
-        {:->, meta, [[conn, map], body]}
+        {:->, meta, [[conn, map], quote do
+          __ignore_warning__ = unquote(list)
+          unquote(body)
+        end]}
       end)})
     end
   end
 
   defp variables_to_map(variables) do
     {:%{}, [], Enum.map(variables, &{&1, Macro.var(&1, nil)})}
+  end
+
+  defp variables_to_list(variables) do
+    Enum.map(variables, &Macro.var(&1, nil))
   end
 
   defp put_new_lazy(name, fun) do

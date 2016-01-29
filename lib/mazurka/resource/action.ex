@@ -38,8 +38,11 @@ defmodule Mazurka.Resource.Action do
   end
 
   def expand(ast, _) do
-    ast
-    |> Mazurka.Resource.Param.format(:conn)
-    |> Mazurka.Resource.Input.format(:conn)
+    Mazurka.Compiler.Utils.postwalk(ast, fn(expr) ->
+      expr
+      |> Mazurka.Resource.Param.format(:conn)
+      |> Mazurka.Resource.Input.format(:conn)
+      |> Mazurka.Resource.Resource.format(:conn)
+    end)
   end
 end

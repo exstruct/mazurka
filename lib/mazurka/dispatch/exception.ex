@@ -1,14 +1,7 @@
 defmodule Mazurka.Dispatch.Exception do
   defexception [:module, :function, :arity, :dispatch, self: false]
 
-  env = try do
-    Mix.env
-  rescue
-    _ ->
-      :prod
-  end
-
-  if env == :dev do
+  if Mazurka.Utils.env == :dev do
     def message(%{module: module, function: function, arity: arity, dispatch: dispatch} = err) do
       message = UndefinedFunctionError.message(err)
 

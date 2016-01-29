@@ -10,24 +10,32 @@ defmodule Mazurka.Compiler.Utils do
     do_expand(quoted, env)
   end
 
+  def prewalk(quoted, fun) do
+    Macro.prewalk(quoted, walk(fun, &prewalk(&1, fun)))
+  end
+
   def postwalk(quoted, fun) do
-    Macro.postwalk(quoted, fn
+    Macro.postwalk(quoted, walk(fun, &postwalk(&1, fun)))
+  end
+
+  defp walk(fun, recurse) do
+    fn
       ({:__block__, meta, children}) ->
-        {:__block__, meta, Enum.map(children, &(postwalk(&1, fun)))}
+        {:__block__, meta, Enum.map(children, recurse)}
       ([{:do, _} | _] = doblock) ->
         Enum.map(doblock, fn({key, children}) ->
-          children = postwalk(children, fun)
+          children = recurse.(children)
           {key, children}
         end)
         |> fun.()
       ({name, children}) when is_atom(name) ->
-        children = postwalk(children, fun)
+        children = recurse.(children)
         {name, children}
         |> fun.()
       (other) ->
         other
         |> fun.()
-    end)
+    end
   end
 
   defp do_expand(quoted, env) do

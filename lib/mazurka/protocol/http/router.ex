@@ -4,33 +4,36 @@ defmodule Mazurka.Protocol.HTTP.Router do
   """
 
   @doc false
-  defmacro __using__(_) do
+  defmacro __using__(opts) do
     quote location: :keep do
       use Mazurka.Protocol.HTTP.Router.Tests
       import Mazurka.Protocol.HTTP.Router
       @before_compile Mazurka.Protocol.HTTP.Router
 
       use Mazurka.Protocol.HTTP.Request
-      use Plug.Builder
+      use Plug.Builder, unquote(opts)
 
-      defp match(%{private: %{mazurka_route: route}} = conn, _opts) when not is_nil(route) do
-        conn
-      end
       defp match(conn, _opts) do
-        {mod, params} = do_match(conn.method, conn.path_info, conn.host)
-        conn
-        |> Plug.Conn.put_private(:mazurka_route, mod)
-        |> Plug.Conn.put_private(:mazurka_params, params)
+        case do_match(conn.method, conn.path_info) do
+          {:ok, mod, params} when is_tuple(mod) ->
+            conn
+            |> Plug.Conn.put_private(:mazurka_route, elem(mod, 0))
+            |> Plug.Conn.put_private(:mazurka_resource, mod)
+            |> Plug.Conn.put_private(:mazurka_params, params)
+          {:ok, mod, params} ->
+            conn
+            |> Plug.Conn.put_private(:mazurka_route, mod)
+            |> Plug.Conn.put_private(:mazurka_resource, mod)
+            |> Plug.Conn.put_private(:mazurka_params, params)
+        end
       end
 
       def resolve(mod) do
         resolve(mod, %{})
       end
 
-      defp dispatch(%Plug.Conn{assigns: assigns} = conn, _opts) do
-        route = Map.get(conn.private, :mazurka_route)
-        params = Map.get(conn.private, :mazurka_params)
-        Mazurka.Protocol.HTTP.Router.__handle__(route, params, conn)
+      defp dispatch(%Plug.Conn{private: %{mazurka_route: route}} = conn, _opts) do
+        Mazurka.Protocol.HTTP.Router.Handler.__handle__(conn, route)
       end
 
       defoverridable [match: 2, dispatch: 2]
@@ -44,46 +47,62 @@ defmodule Mazurka.Protocol.HTTP.Router do
       def resolve(_, _) do
         {:error, :not_found}
       end
+
+      def params(_) do
+        {:error, :not_found}
+      end
+
+      defp do_resolve(method, params) do
+        has_values = Enum.all?(params, fn
+          (nil) -> false
+          (:undefined) -> false
+          (_) -> true
+        end)
+
+        if has_values do
+          {:ok, method, params}
+        else
+          {:error, :not_found}
+        end
+      end
     end
   end
 
-  defmacro match(path, options, contents \\ []) do
-    options = options |> Mazurka.Compiler.Utils.eval(__CALLER__)
-    contents = contents |> Mazurka.Compiler.Utils.eval(__CALLER__)
-    compile(nil, path, options, contents)
+  @doc """
+  Main API to define routes.
+
+  It accepts an expression representing the path and many options
+  allowing the match to be configured.
+
+  ## Examples
+      match "/foo/bar", Api.Resource.Foo.Bar
+  """
+  defmacro match(path, target \\ []) do
+    compile(nil, path, target)
   end
+
   for method <- [:get, :post, :put, :patch, :delete, :options, :head] do
-    defmacro unquote(method)(path, options, contents \\ []) do
-      options = options |> Mazurka.Compiler.Utils.eval(__CALLER__)
-      contents = contents |> Mazurka.Compiler.Utils.eval(__CALLER__)
-      compile(unquote(method), path, options, contents)
+    @doc """
+    Dispatches to the path only if the request is a #{Plug.Router.Utils.normalize_method(method)} request.
+    See `match/3` for more examples.
+    """
+    defmacro unquote(method)(path, target \\ []) do
+      compile(unquote(method), path, target)
     end
   end
 
-  ## TODO use forward macro from Plug.Router.forward
-
   @doc false
-  def __route__(method, path, guards, options) do
-    {method, guards} = build_methods(List.wrap(method || options[:via]), guards)
-    {vars, match}   = Plug.Router.Utils.build_path_match(path)
-    {map_params, list_params} = format_params(vars)
-    {method, match, map_params, list_params, Plug.Router.Utils.build_host_match(options[:host]), guards}
-  end
-
-  def format_params(vars) do
-    map_params = Enum.map(vars, fn(var) ->
-      {:erlang.list_to_binary(:erlang.atom_to_list(var)), {var, [], nil}}
-    end)
-    list_params = Enum.map(vars, fn(var) ->
-      {var, [], nil}
-    end)
-    {{:%{}, [], map_params}, list_params}
+  def __route__(method, path) do
+    method = method && Plug.Router.Utils.normalize_method(method) || quote(do: _)
+    {vars, match} = Plug.Router.Utils.build_path_match(path)
+    {params, map_params, list_params} = format_params(vars)
+    {method, match, params, {:%{}, [], map_params}, list_params}
   end
 
   @doc false
-  def __resolve__(method, path, _host) do
+  def __resolve__(method, path) do
     {format_method(method),
-     format_path(path), []}
+     format_path(path)}
   end
 
   defp format_method({:_, _, _}), do: "GET"
@@ -92,139 +111,40 @@ defmodule Mazurka.Protocol.HTTP.Router do
   defp format_path({:_path, _, _}), do: []
   defp format_path(path), do: path
 
-  def __handle__(mod, _params, conn) do
-    accepts = Plug.Conn.get_req_header(conn, "accept") |> Mazurka.Protocol.HTTP.AcceptHeader.handle()
-    dispatch = conn.private[:mazurka_dispatch]
-
-    apply(mod, :action, [conn, &dispatch.resolve/7, accepts])
-    |> handle_resource_resp(conn)
+  defp format_params(vars) do
+    vars
+    |> Enum.reverse()
+    |> Enum.reduce({[], [], []}, fn(var, {params, map_params, list_params}) ->
+      v = {var, [], nil}
+      {[to_string(var) | params], [{to_string(var), v} | map_params], [v | list_params]}
+    end)
   end
 
-  defp handle_resource_resp({:ok, body, conn, content_type}, _) do
-    conn
-    |> Plug.Conn.put_resp_content_type(content_type)
-    |> handle_transition()
-    |> handle_invalidations()
-    |> handle_response(body)
+  defp compile(method, {:_, _, _}, target) do
+    compile(method, "/*_path", target)
   end
-  defp handle_resource_resp({:error, :unacceptable}, conn) do
-    conn
-    |> Plug.Conn.send_resp(:not_acceptable, "Not Acceptable")
-  end
-
-  defp handle_transition(%Plug.Conn{private: %{mazurka_transition: location}, status: status} = conn) do
-    ## https://en.wikipedia.org/wiki/HTTP_303
-    conn = Plug.Conn.put_resp_header(conn, "location", location)
-    status = status || 303
-    %{conn | status: status}
-  end
-  defp handle_transition(conn) do
-    conn
-  end
-
-  defp handle_invalidations(%Plug.Conn{private: %{mazurka_invalidations: invalidations}} = conn) do
-    Enum.reduce(invalidations, conn, &(put_resp_header(&2, "x-invalidates", &1)))
-  end
-  defp handle_invalidations(conn) do
-    conn
-  end
-
-  defp handle_response(conn, nil) do
-    status = conn.status || 204
-    Plug.Conn.send_resp(conn, status, "")
-  end
-  defp handle_response(conn, body) do
-    Plug.Conn.send_resp(conn, choose_status(conn), body)
-  end
-
-  defp choose_status(%Plug.Conn{private: %{mazurka_error: true}, status: status}) do
-    status || 500
-  end
-  defp choose_status(%Plug.Conn{status: status}) do
-    status || 200
-  end
-
-  defp put_resp_header(%Plug.Conn{resp_headers: headers} = conn, key, value) do
-    %{conn | resp_headers: [{key, value} | headers]}
-  end
-
-  defp compile(method, expr, options, contents) do
-    {mod, options} =
-      cond do
-        is_atom(options) ->
-          {options, []}
-        is_atom(contents) ->
-          {contents, options}
-        true ->
-          raise ArgumentError, message: "expected module handler to be an atom"
-    end
-
-    {path, guards} = extract_path_and_guards(expr)
-
+  defp compile(method, path, target) do
     quote bind_quoted: [method: method,
                         path: path,
-                        options: options,
-                        guards: Macro.escape(guards, unquote: true),
-                        mod: mod] do
-      {method, match, map_params, list_params, host, guards} = Mazurka.Protocol.HTTP.Router.__route__(method, path, guards, options)
-      {res_method, res_match, res_host} = Mazurka.Protocol.HTTP.Router.__resolve__(method, match, host)
-      defp do_match(unquote(method), unquote(match), unquote(host)) when unquote(guards) do
-        {unquote(mod), unquote(map_params)}
+                        target: target] do
+      {method, match, params, map_params, list_params} = Mazurka.Protocol.HTTP.Router.__route__(method, path)
+      defp do_match(unquote(method), unquote(match)) do
+        {:ok, unquote(target), unquote(map_params)}
       end
 
-      def resolve(unquote(mod), unquote(map_params) = params) do
-        has_values = Enum.all?(params, fn
-          ({_, nil}) -> false
-          ({_, :undefined}) -> false
-          ({_, _}) -> true
-        end)
-        if has_values do
-          {:ok, unquote(res_method), unquote(res_match)}
-        else
-          {:error, :not_found}
-        end
+      {resolve_method, resolve_match} = Mazurka.Protocol.HTTP.Router.__resolve__(method, match)
+      def resolve(unquote(target), unquote(map_params)) do
+        do_resolve(unquote(resolve_method), unquote(resolve_match))
       end
-      def resolve(unquote(mod), unquote(list_params) = params) do
-        has_values = Enum.all?(params, fn
-          (nil) -> false
-          (:undefined) -> false
-          (_) -> true
-        end)
-        if has_values do
-          {:ok, unquote(res_method), unquote(res_match)}
-        else
-          {:error, :not_found}
-        end
+      def resolve(unquote(target), unquote(list_params)) do
+        do_resolve(unquote(resolve_method), unquote(resolve_match))
       end
 
-      Mazurka.Protocol.HTTP.Router.Tests.register_tests(mod)
+      def params(unquote(target)) do
+        {:ok, unquote(params)}
+      end
+
+      Mazurka.Protocol.HTTP.Router.Tests.register_tests(target, __MODULE__)
     end
   end
-
-  # Convert the verbs given with `:via` into a variable and guard set that can
-  # be added to the dispatch clause.
-  defp build_methods([], guards) do
-    {quote(do: _), guards}
-  end
-
-  defp build_methods([method], guards) do
-    {Plug.Router.Utils.normalize_method(method), guards}
-  end
-
-  defp build_methods(methods, guards) do
-    methods = Enum.map methods, &Plug.Router.Utils.normalize_method(&1)
-    var     = quote do: method
-    guards  = join_guards(quote(do: unquote(var) in unquote(methods)), guards)
-    {var, guards}
-  end
-
-  defp join_guards(fst, true), do: fst
-  defp join_guards(fst, snd),  do: (quote do: unquote(fst) and unquote(snd))
-
-  # Extract the path and guards from the path.
-  defp extract_path_and_guards({:when, _, [path, guards]}), do: {extract_path(path), guards}
-  defp extract_path_and_guards(path), do: {extract_path(path), true}
-
-  defp extract_path({:_, _, var}) when is_atom(var), do: "/*_path"
-  defp extract_path(path), do: path
 end

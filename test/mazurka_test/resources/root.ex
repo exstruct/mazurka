@@ -20,6 +20,8 @@ defmodule MazurkaTest.Resources.Root do
     action do
       %{
         "account" => link_to(Resources.Users.Read, user: user_id),
+        "one" => link_to({Resources.Parameterized, "one"}),
+        "two" => link_to({Resources.Parameterized, "two"}),
         "foo" => foo
       }
     end
@@ -43,7 +45,7 @@ defmodule MazurkaTest.Resources.Root do
   @tag :test_tag_disabled
   test "should not run" do
     request()
-  after conn ->
+  after _conn ->
     refute true
   end
 end

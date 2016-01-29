@@ -87,17 +87,15 @@ defmodule MazurkaTest.Resources.Users.Read do
       accept "hyper+json"
     end
   after conn ->
-    id = user.id
-
     conn
     |> assert_status(200)
-    |> assert_json(%{"id" => ^id})
+    |> assert_json(%{"id" => user.id})
     |> refute_json(%{"update" => _})
   end
 
   test "it should respond with a 404 when not found" do
     request do
-      params %{"user" => "7"}
+      params %{user: "7"}
       accept "hyper+json"
     end
   after conn ->

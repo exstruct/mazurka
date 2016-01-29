@@ -20,9 +20,12 @@ defmodule Mazurka.Resource.Error do
   end
 
   def expand(ast, _) do
-    ast
-    |> Mazurka.Resource.Param.format()
-    |> Mazurka.Resource.Input.format()
+    Mazurka.Compiler.Utils.postwalk(ast, fn(expr) ->
+      expr
+      |> Mazurka.Resource.Param.format(:prop)
+      |> Mazurka.Resource.Input.format(:prop)
+      |> Mazurka.Resource.Resource.format(:prop)
+    end)
   end
 
   def format_name({name, _meta, _args}) when is_atom(name) do

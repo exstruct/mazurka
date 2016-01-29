@@ -6,13 +6,21 @@ defmodule Mazurka.Protocol.HTTP.Router.Tests do
     end
   end
 
-  defmacro register_tests(module) do
+  def register_tests(module, router) when is_atom(module) do
+    module
+    |> register_tests(module, router)
+  end
+  def register_tests(info, router) when is_tuple(info) do
+    info
+    |> elem(0)
+    |> register_tests(info, router)
+  end
+  defp register_tests(module, info, router) when is_atom(module) do
     if enabled? do
-      quote bind_quoted: binding do
-        if :erlang.function_exported(module, :__mazurka_test__, 0) do
-          for test <- module.__mazurka_test__() do
-            Module.put_attribute(__MODULE__, :__mazurka_test__, test)
-          end
+      Code.ensure_loaded?(module)
+      if function_exported?(module, :__mazurka_test__, 0) do
+        for test <- module.__mazurka_test__() do
+          Module.put_attribute(router, :__mazurka_test__, {test, info})
         end
       end
     end
@@ -28,7 +36,7 @@ defmodule Mazurka.Protocol.HTTP.Router.Tests do
   end
 
   defp enabled? do
-    Mix.env == :test
+    Mazurka.Utils.env == :test
   end
 
   defp wrap_tests(tests) do
@@ -49,44 +57,25 @@ defmodule Mazurka.Protocol.HTTP.Router.Tests do
     end
   end
 
-  defp compile_tests(module) do
-    module
+  defp compile_tests(router) do
+    router
     |> Module.get_attribute(:__mazurka_test__)
-    |> Enum.map(&compile_test(&1, module))
+    |> Enum.map(&compile_test(&1, router))
   end
 
-  defp compile_test({module, name, tags, env}, router) do
+  defp compile_test({{module, name, tags, env}, resource}, router) do
     tags     = Macro.escape(tags)
     env      = Macro.escape(env)
-    contents = Macro.escape(compile_test_body(module, name, router), unquote: true)
+    contents = Macro.escape(compile_test_body(module, name, router, resource), unquote: true)
 
     quote bind_quoted: binding do
-      test = :"test #{name} (#{inspect(module)})"
+      test = :"#{inspect(resource)}: test #{name}"
       Mazurka.Protocol.HTTP.Router.Tests.__on_definition__(__MODULE__, env, test, tags)
-      def unquote(test)(_, _), do: unquote(contents)
+      def unquote(test)(_), do: unquote(contents)
     end
-  end
-
-  defp compile_test_body(module, name, router) do
-    quote bind_quoted: binding do
-      Mazurka.Protocol.HTTP.Router.Tests.__exec__(module, name, router)
-    end
-  end
-
-  def __exec__(module, name, router) do
-    {_variables, seed, conn, assertions} = module.__mazurka_test__(name, router)
-    context = seed.(%{})
-
-    context
-    |> conn.()
-    |> router.call([])
-    |> Mazurka.Protocol.Request.merge_resp()
-    |> assertions.(context)
   end
 
   def __on_definition__(parent, env, name, tags \\ []) do
-    mod = env.module
-
     moduletag = Module.get_attribute(parent, :moduletag)
 
     unless moduletag do
@@ -99,12 +88,52 @@ defmodule Mazurka.Protocol.HTTP.Router.Tests do
       (tags)
       |> Map.merge(%{line: env.line, file: env.file})
 
-    test = %ExUnit.Test{name: name, case: {parent, mod}, tags: tags}
+    test = %ExUnit.Test{name: name, case: parent, tags: tags}
     test_names = Module.get_attribute(parent, :ex_unit_test_names)
 
     unless Map.has_key?(test_names, name) do
       Module.put_attribute(parent, :ex_unit_tests, test)
       Module.put_attribute(parent, :ex_unit_test_names, Map.put(test_names, name, true))
     end
+  end
+
+  defp compile_test_body(module, name, router, resource) do
+    quote bind_quoted: binding do
+      Mazurka.Protocol.HTTP.Router.Tests.__exec__(module, name, router, resource)
+    end
+  end
+
+  def __exec__(module, name, router, resource) do
+    {:ok, required_params} = router.params(resource)
+    required_params_map = Enum.reduce(required_params, %{}, &Map.put(&2, &1, nil))
+    {_variables, seed, conn, assertions} = module.__mazurka_test__(name, resource, required_params_map, router)
+    context = seed.(%{})
+
+    context
+    |> conn.()
+    |> resolve_route(router, resource, required_params)
+    |> router.call(router.init([]))
+    |> Mazurka.Protocol.Request.merge_resp()
+    |> assertions.(context)
+  end
+
+  defp resolve_route(%{path_info: nil, private: private} = conn, router, resource, required_params) do
+    params = Map.get(private, :mazurka_params, %{})
+
+    case router.resolve(resource, params) do
+      {:ok, method, path_info} ->
+        path = "/" <> Enum.join(path_info, "/")
+        %{conn | method: method, request_path: path, path_info: path_info}
+      {:error, :not_found} ->
+        missing_params = required_params -- Map.keys(params)
+        ExUnit.Assertions.flunk("""
+        Missing required parameters for #{inspect(resource)}:
+          expected: #{inspect(missing_params)}
+            actual: #{inspect(params)}
+        """)
+    end
+  end
+  defp resolve_route(conn, _, _, _) do
+    conn
   end
 end

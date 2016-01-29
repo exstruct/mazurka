@@ -51,19 +51,20 @@ defmodule Mazurka.Resource.Param do
   end
 
   @doc false
-  def format(ast, type \\ :prop) do
-    Mazurka.Compiler.Utils.postwalk(ast, fn
-      ({{:., _, [{:__aliases__, _, [:Params]}, :get]}, _, []}) ->
-        get(type)
-      ({{:., _, [params, :get]}, _, []}) when params in [:Params, Elixir.Params, __MODULE__] ->
-        get(type)
-      ({{:., _, [{:__aliases__, _, [:Params]}, :get]}, _, [name]}) ->
-        get(name, type)
-      ({{:., _, [params, :get]}, _, [name]}) when params in [:Params, Elixir.Params, __MODULE__] ->
-        get(name, type)
-      (other) ->
-        other
-    end)
+  def format({{:., _, [{:__aliases__, _, [:Params]}, :get]}, _, []}, type) do
+    get(type)
+  end
+  def format({{:., _, [params, :get]}, _, []}, type) when params in [:Params, Elixir.Params, __MODULE__] do
+    get(type)
+  end
+  def format({{:., _, [{:__aliases__, _, [:Params]}, :get]}, _, [name]}, type) do
+    get(type, name)
+  end
+  def format({{:., _, [params, :get]}, _, [name]}, type) when params in [:Params, Elixir.Params, __MODULE__] do
+    get(type, name)
+  end
+  def format(other, _type) do
+    other
   end
 
   defp get(:prop) do
@@ -74,24 +75,22 @@ defmodule Mazurka.Resource.Param do
       ^^Mazurka.Resource.Param.get()
     end
   end
-  defp get(name, :prop) do
+  defp get(:prop, name) do
     quote do
       ^Mazurka.Runtime.get_param(unquote(get(:prop)), unquote(name))
     end
   end
-  defp get(name, :conn) do
+  defp get(:conn, name) do
     quote do
       ^^Mazurka.Resource.Param.get(unquote(name))
     end
   end
 
   @doc false
-  def get([], conn, _parent, _ref, _attrs) do
-    params = Map.get(conn.private, :mazurka_params)
+  def get([], %{private: %{mazurka_params: params}}, _parent, _ref, _attrs) do
     {:ok, params}
   end
-  def get([name], conn, _parent, _ref, _attrs) do
-    params = Map.get(conn.private, :mazurka_params)
+  def get([name], %{private: %{mazurka_params: params}}, _parent, _ref, _attrs) do
     val = Map.get(params, name)
     normalized = if val == nil, do: :undefined, else: URI.decode(val)
     {:ok, normalized}

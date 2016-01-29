@@ -1,4 +1,6 @@
 defmodule Mazurka.Resource.Test.Assertions do
+  import ExUnit.Assertions
+
   defmacro __using__(_) do
     quote do
       import ExUnit.Assertions
@@ -8,99 +10,107 @@ defmodule Mazurka.Resource.Test.Assertions do
   end
 
   for call <- [:assert, :refute] do
-    defmacro unquote(:"#{call}_status")(conn, status_code) do
-      call = unquote(call)
-      quote do
-        a = unquote(conn).status
-        e = unquote(status_code)
-        ExUnit.Assertions.unquote(call)(a == e, [
-          lhs: a,
-          message: "Expected status code #{inspect(e)}, got #{inspect(a)}"])
-        unquote(conn)
-      end
+    def unquote(:"#{call}_status")(conn, status_code) do
+      a = conn.status
+      e = status_code
+      ExUnit.Assertions.unquote(call)(a == e, [
+        lhs: a,
+        message: "Expected status code #{inspect(e)}, got #{inspect(a)}"])
+      conn
     end
 
-    defmacro unquote(:"#{call}_success_status")(conn) do
-      call = unquote(call)
-      quote do
-        a = unquote(conn).status
-        ExUnit.Assertions.unquote(call)(a < 400, [
-          lhs: a,
-          message: "Expected status code #{inspect(a)} to be successful (< 400)"])
-        unquote(conn)
-      end
+    def unquote(:"#{call}_success_status")(conn) do
+      a = conn.status
+      ExUnit.Assertions.unquote(call)(a < 400, [
+        lhs: a,
+        message: "Expected status code #{inspect(a)} to be successful (< 400)"])
+      conn
     end
 
-    defmacro unquote(:"#{call}_error_status")(conn) do
-      call = unquote(call)
-      quote do
-        a = unquote(conn).status
-        ExUnit.Assertions.unquote(call)(a >= 400, [
-          lhs: a,
-          message: "Expected status code #{inspect(a)} to be an error (>= 400)"])
-        unquote(conn)
-      end
+    def unquote(:"#{call}_error_status")(conn) do
+      a = conn.status
+      ExUnit.Assertions.unquote(call)(a >= 400, [
+        lhs: a,
+        message: "Expected status code #{inspect(a)} to be an error (>= 400)"])
+      conn
     end
 
-    defmacro unquote(:"#{call}_body")(conn, body) do
-      call = unquote(call)
-      quote do
-        ExUnit.Assertions.unquote(call)(unquote(conn).resp_body == unquote(body))
-        unquote(conn)
-      end
+    def unquote(:"#{call}_body")(conn, body) do
+      ExUnit.Assertions.unquote(call)(conn.resp_body == body)
+      conn
     end
 
-    defmacro unquote(:"#{call}_body_contains")(conn, body) do
-      call = unquote(call)
-      quote do
-        a = unquote(conn).resp_body
-        e = unquote(body)
+    def unquote(:"#{call}_body_contains")(conn, body) do
+      a = conn.resp_body
+      e = body
 
-        indented = fn ->
-          a
-          |> String.split("\n")
-          |> Enum.map(&("    " <> &1))
-          |> Enum.join("\n")
-        end
-
-        ExUnit.Assertions.unquote(call)(String.contains?(a, e), [
-          lhs: a,
-          rhs: e,
-          message: "Expected response body to contain #{inspect(e)}, got:\n#{indented.()}"])
-        unquote(conn)
+      indented = fn ->
+        a
+        |> String.split("\n")
+        |> Enum.map(&("    " <> &1))
+        |> Enum.join("\n")
       end
+
+      ExUnit.Assertions.unquote(call)(String.contains?(a, e), [
+        lhs: a,
+        rhs: e,
+        message: "Expected response body to contain #{inspect(e)}, got:\n#{indented.()}"])
+      conn
     end
 
     defmacro unquote(:"#{call}_json")(conn, match) do
       call = unquote(call)
       match_code = match |> Macro.escape()
+      {match, vars} = format_match(match)
+
       quote do
-        var!(__parsed_body__) = var!(__parsed_body__) || Poison.decode!(unquote(conn).resp_body)
+        _conn = unquote(conn)
+        var!(__parsed_body__) = var!(__parsed_body__) || Poison.decode!(_conn.resp_body)
 
         match_code = unquote(match_code)
+        unquote_splicing(vars)
 
         ExUnit.Assertions.unquote(call)(match?(unquote(match), var!(__parsed_body__)), [
           expr: quote do
             unquote(match_code) = unquote(Macro.escape(var!(__parsed_body__)))
           end,
           message: "Expected JSON response body to match"])
-        unquote(conn)
+        _conn
       end
     end
 
-    defmacro unquote(:"#{call}_transition")(conn, location) do
-      call = unquote(call)
-      quote do
-        ExUnit.Assertions.unquote(call)(:proplists.get_value("location", unquote(conn).resp_headers) == unquote(location))
-      end
+    def unquote(:"#{call}_transition")(conn, location) do
+      ExUnit.Assertions.unquote(call)(:proplists.get_value("location", conn.resp_headers) == location)
+      conn
     end
 
-    defmacro unquote(:"#{call}_invalidates")(conn, _url) do
-      # call = unquote(call)
-      quote do
-        # TODO
-        unquote(conn)
-      end
+    def unquote(:"#{call}_invalidates")(conn, _url) do
+      ## TODO
+      conn
     end
+  end
+
+  defp format_match(ast) do
+    ast = Mazurka.Compiler.Utils.prewalk(ast, fn
+      ({call, _, _} = expr) when is_tuple(call) ->
+        acc(expr)
+      ({call, _, _} = expr) when not call in [:{}, :%{}, :_, :|, :^] ->
+        acc(expr)
+      (expr) ->
+        expr
+    end)
+    {ast, acc()}
+  end
+
+  defp acc do
+    Process.delete(:__assert_json__) || []
+  end
+  defp acc(expr) do
+    acc = Process.get(:__assert_json__, [])
+    var = Macro.var(:"_json_#{length(acc)}", __MODULE__)
+    Process.put(:__assert_json__, [quote do
+      unquote(var) = unquote(expr)
+    end | acc])
+    var
   end
 end

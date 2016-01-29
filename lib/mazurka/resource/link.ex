@@ -4,6 +4,8 @@ defmodule Mazurka.Resource.Link do
   format. It's broken into its separate parts (method, host, path, etc.) for easy manipulation.
   """
 
+  require Mazurka.Resource.Link.Assertions
+
   defstruct resource: nil,
             mediatype: nil,
             method: nil,
@@ -33,17 +35,16 @@ defmodule Mazurka.Resource.Link do
     end)}
   end
 
-  def link_to(args, _conn, _parent, _ref, _attrs) do
+  def link_to(args, conn, _parent, _ref, _attrs) do
     try do
-      [module, params, query, fragment] = unwrap_args(args)
+      [resource, params, query, fragment] = unwrap_args(args)
 
-      props = %{params: params, query: query, fragment: fragment}
+      props = %{resource: resource, params: params, query: query, fragment: fragment}
       ## FOR BACKWARDS COMPATIBILITY - remove once markdown is removed
       |> Dict.merge(params)
       |> Dict.merge(%{"_params" => params, "_query" => query, "_fragment" => fragment})
 
-
-      {:partial, {module, :affordance_partial, props}}
+      Mazurka.Resource.Link.Assertions.link_to(resource, props, conn)
     catch
       {:undefined_param, _} ->
         {:ok, :undefined}
@@ -77,8 +78,8 @@ defmodule Mazurka.Resource.Link do
     end
   end
 
-  defp unwrap_args([module, params, query, fragment]) do
-    [module, unwrap_ids(params), unwrap_ids(query), fragment]
+  defp unwrap_args([resource, params, query, fragment]) do
+    [resource, unwrap_ids(params), unwrap_ids(query), fragment]
   end
 
   def unwrap_ids(kvs) when kvs in [nil, :undefined] do
@@ -118,19 +119,10 @@ defmodule Mazurka.Resource.Link do
     end
   end
 
-  def resolve([module, params, query, fragment], %{private: private} = conn, _parent, _ref, _attrs) do
-    %{mazurka_router: router, mazurka_mediatype_handler: mediatype_module} = private
-    link = %__MODULE__{
-      resource: module,
-      mediatype: mediatype_module,
-      scheme: conn.scheme,
-      host: conn.host,
-      port: conn.port,
-      query: query,
-      fragment: fragment
-    }
+  def resolve([resource, params, query, fragment], %{private: %{mazurka_router: router}} = conn, _parent, _ref, _attrs) do
+    link = new(resource, query, fragment, conn)
 
-    link = case router.resolve(module, params) do
+    case router.resolve(resource, params) do
       {:ok, method, scheme, host, path} ->
         %{link | method: method,
                  scheme: scheme,
@@ -142,16 +134,27 @@ defmodule Mazurka.Resource.Link do
                  path: request_path(%{conn | path_info: path})}
         |> apply_link_transform(conn)
       {:error, :not_found} ->
-        :undefined
+        {:ok, :undefined}
     end
-    {:ok, link}
+  end
+
+  defp new(resource, query, fragment, %{private: %{mazurka_mediatype_handler: mediatype_module}} = conn) do
+    %__MODULE__{
+      resource: Mazurka.Resource.Link.Utils.resource_to_module(resource),
+      query: query,
+      fragment: fragment,
+      mediatype: mediatype_module,
+      scheme: conn.scheme,
+      host: conn.host,
+      port: conn.port,
+    }
   end
 
   defp apply_link_transform(link, conn = %{private: %{mazurka_link_transform: {module, function}}}) do
-    apply(module, function, [link, conn])
+    {:ok, apply(module, function, [link, conn])}
   end
   defp apply_link_transform(link, _) do
-    link
+    {:ok, link}
   end
 
   def from_conn(%{private: %{mazurka_mediatype_handler: mediatype_module}} = conn) do

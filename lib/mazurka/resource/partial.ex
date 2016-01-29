@@ -20,7 +20,11 @@ defmodule Mazurka.Resource.Partial do
       unquote_splicing(globals[:let] || [])
       unquote(block)
     end
-    |> Mazurka.Resource.Param.format
-    |> Mazurka.Resource.Input.format
+    |> Mazurka.Compiler.Utils.postwalk(fn(expr) ->
+      expr
+      |> Mazurka.Resource.Param.format(:prop)
+      |> Mazurka.Resource.Input.format(:prop)
+      |> Mazurka.Resource.Resource.format(:prop)
+    end)
   end
 end

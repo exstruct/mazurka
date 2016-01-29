@@ -14,6 +14,9 @@ defmodule MazurkaTest.HTTP.Router do
 
   get     "/posts/:post",                   Resources.Posts.Read
 
+  get     "/parameterized/one",             {Resources.Parameterized, "one"}
+  get     "/parameterized/two",             {Resources.Parameterized, "two"}
+
   get     "/users",                         Resources.Users.List
   get     "/users/:user",                   Resources.Users.Read
   post    "/users/:user",                   Resources.Users.Update
