@@ -14,13 +14,19 @@ defmodule Mazurka.Resource.Test.Resource do
 
   defmacro name do
     quote do
-      Mazurka.Resource.Resource.get_elem(var!(__resource__), -1)
+      Mazurka.Resource.Resource.get_name(var!(__resource__))
     end
   end
 
-  defmacro param(index) do
+  defmacro params do
     quote do
-      Mazurka.Resource.Resource.get_elem(var!(__resource__), unquote(index))
+      var!(__resource_params__)
+    end
+  end
+
+  defmacro param(name) do
+    quote do
+      Mazurka.Resource.Resource.get_param(var!(__resource_params__), unquote(name))
     end
   end
 end

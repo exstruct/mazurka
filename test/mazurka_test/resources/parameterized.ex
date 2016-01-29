@@ -1,11 +1,19 @@
 defmodule MazurkaTest.Resources.Parameterized do
   use Mazurka.Resource
 
+  let name = Resource.param(:name)
+
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
       %{
-        "name" => Resource.name,
-        "param" => Resource.param(0)
+        "resource" => Resource.name,
+        "name" => name
+      }
+    end
+
+    affordance do
+      %{
+        "name" => name
       }
     end
   end
@@ -15,7 +23,7 @@ defmodule MazurkaTest.Resources.Parameterized do
   after conn ->
     conn
     |> assert_status(200)
-    |> assert_json(%{"name" => to_string(Resource.name),
-                     "param" => Resource.param(0)})
+    |> assert_json(%{"resource" => to_string(Resource.name),
+                     "name" => Resource.param(:name)})
   end
 end

@@ -68,7 +68,7 @@ defmodule Mazurka.Resource.Test do
     assertions = compile_assertions(assertions, variables)
 
     quote do
-      def __mazurka_test__(unquote(name), var!(__resource__), var!(__params__), unquote(__router__)) do
+      def __mazurka_test__(unquote(name), var!(__resource__), var!(__resource_params__), var!(__params__), unquote(__router__)) do
         import Kernel
         import Mazurka.Compiler.Kernel, only: []
         use Mazurka.Resource.Test.Params

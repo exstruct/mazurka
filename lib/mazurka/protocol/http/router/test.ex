@@ -104,9 +104,9 @@ defmodule Mazurka.Protocol.HTTP.Router.Tests do
   end
 
   def __exec__(module, name, router, resource) do
-    {:ok, required_params} = router.params(resource)
+    {:ok, required_params, resource_params} = router.params(resource)
     required_params_map = Enum.reduce(required_params, %{}, &Map.put(&2, &1, nil))
-    {_variables, seed, conn, assertions} = module.__mazurka_test__(name, resource, required_params_map, router)
+    {_variables, seed, conn, assertions} = module.__mazurka_test__(name, resource, resource_params, required_params_map, router)
     context = seed.(%{})
 
     context
@@ -121,7 +121,7 @@ defmodule Mazurka.Protocol.HTTP.Router.Tests do
     params = Map.get(private, :mazurka_params, %{})
 
     case router.resolve(resource, params) do
-      {:ok, method, path_info} ->
+      {:ok, method, path_info, _resource_params} ->
         path = "/" <> Enum.join(path_info, "/")
         %{conn | method: method, request_path: path, path_info: path_info}
       {:error, :not_found} ->

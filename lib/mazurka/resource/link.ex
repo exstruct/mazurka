@@ -123,13 +123,7 @@ defmodule Mazurka.Resource.Link do
     link = new(resource, query, fragment, conn)
 
     case router.resolve(resource, params) do
-      {:ok, method, scheme, host, path} ->
-        %{link | method: method,
-                 scheme: scheme,
-                 host: host,
-                 path: request_path(%{conn | path_info: path})}
-        |> apply_link_transform(conn)
-      {:ok, method, path} ->
+      {:ok, method, path, _resource_params} ->
         %{link | method: method,
                  path: request_path(%{conn | path_info: path})}
         |> apply_link_transform(conn)

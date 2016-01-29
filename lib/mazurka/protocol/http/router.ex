@@ -15,15 +15,17 @@ defmodule Mazurka.Protocol.HTTP.Router do
 
       defp match(conn, _opts) do
         case do_match(conn.method, conn.path_info) do
-          {:ok, mod, params} when is_tuple(mod) ->
+          {:ok, resource, params, resource_params} when is_tuple(resource) ->
             conn
-            |> Plug.Conn.put_private(:mazurka_route, elem(mod, 0))
-            |> Plug.Conn.put_private(:mazurka_resource, mod)
+            |> Plug.Conn.put_private(:mazurka_route, elem(resource, 0))
+            |> Plug.Conn.put_private(:mazurka_resource, resource)
+            |> Plug.Conn.put_private(:mazurka_resource_params, resource_params)
             |> Plug.Conn.put_private(:mazurka_params, params)
-          {:ok, mod, params} ->
+          {:ok, resource, params, resource_params} ->
             conn
-            |> Plug.Conn.put_private(:mazurka_route, mod)
-            |> Plug.Conn.put_private(:mazurka_resource, mod)
+            |> Plug.Conn.put_private(:mazurka_route, resource)
+            |> Plug.Conn.put_private(:mazurka_resource, resource)
+            |> Plug.Conn.put_private(:mazurka_resource_params, resource_params)
             |> Plug.Conn.put_private(:mazurka_params, params)
         end
       end
@@ -52,7 +54,7 @@ defmodule Mazurka.Protocol.HTTP.Router do
         {:error, :not_found}
       end
 
-      defp do_resolve(method, params) do
+      defp do_resolve(method, params, resource_params) do
         has_values = Enum.all?(params, fn
           (nil) -> false
           (:undefined) -> false
@@ -60,7 +62,7 @@ defmodule Mazurka.Protocol.HTTP.Router do
         end)
 
         if has_values do
-          {:ok, method, params}
+          {:ok, method, params, resource_params}
         else
           {:error, :not_found}
         end
@@ -77,8 +79,8 @@ defmodule Mazurka.Protocol.HTTP.Router do
   ## Examples
       match "/foo/bar", Api.Resource.Foo.Bar
   """
-  defmacro match(path, target \\ []) do
-    compile(nil, path, target)
+  defmacro match(path, resource, resource_params \\ {:%{}, [], []}) do
+    compile(nil, path, resource, resource_params)
   end
 
   for method <- [:get, :post, :put, :patch, :delete, :options, :head] do
@@ -86,8 +88,8 @@ defmodule Mazurka.Protocol.HTTP.Router do
     Dispatches to the path only if the request is a #{Plug.Router.Utils.normalize_method(method)} request.
     See `match/3` for more examples.
     """
-    defmacro unquote(method)(path, target \\ []) do
-      compile(unquote(method), path, target)
+    defmacro unquote(method)(path, resource, resource_params \\ {:%{}, [], []}) do
+      compile(unquote(method), path, resource, resource_params)
     end
   end
 
@@ -120,31 +122,38 @@ defmodule Mazurka.Protocol.HTTP.Router do
     end)
   end
 
-  defp compile(method, {:_, _, _}, target) do
-    compile(method, "/*_path", target)
+  defp compile(method, path, resource, resource_params) when is_list(resource_params) do
+    compile(method, path, resource, {:%{}, [], resource_params})
   end
-  defp compile(method, path, target) do
+  defp compile(method, {:_, _, _}, resource, resource_params) do
+    compile(method, "/*_path", resource, resource_params)
+  end
+  defp compile(method, path, resource, resource_params) do
     quote bind_quoted: [method: method,
                         path: path,
-                        target: target] do
+                        resource: resource,
+                        resource_params_expr: resource_params] do
+
+      resource_params = Macro.escape(resource_params_expr)
+
       {method, match, params, map_params, list_params} = Mazurka.Protocol.HTTP.Router.__route__(method, path)
       defp do_match(unquote(method), unquote(match)) do
-        {:ok, unquote(target), unquote(map_params)}
+        {:ok, unquote(resource), unquote(map_params), unquote(resource_params)}
       end
 
       {resolve_method, resolve_match} = Mazurka.Protocol.HTTP.Router.__resolve__(method, match)
-      def resolve(unquote(target), unquote(map_params)) do
-        do_resolve(unquote(resolve_method), unquote(resolve_match))
+      def resolve(unquote(resource), unquote(map_params)) do
+        do_resolve(unquote(resolve_method), unquote(resolve_match), unquote(resource_params))
       end
-      def resolve(unquote(target), unquote(list_params)) do
-        do_resolve(unquote(resolve_method), unquote(resolve_match))
-      end
-
-      def params(unquote(target)) do
-        {:ok, unquote(params)}
+      def resolve(unquote(resource), unquote(list_params)) do
+        do_resolve(unquote(resolve_method), unquote(resolve_match), unquote(resource_params))
       end
 
-      Mazurka.Protocol.HTTP.Router.Tests.register_tests(target, __MODULE__)
+      def params(unquote(resource)) do
+        {:ok, unquote(params), unquote(resource_params)}
+      end
+
+      Mazurka.Protocol.HTTP.Router.Tests.register_tests(resource, __MODULE__)
     end
   end
 end

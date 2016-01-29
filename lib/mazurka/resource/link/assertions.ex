@@ -17,7 +17,9 @@ defmodule Mazurka.Resource.Link.Assertions do
       defmacro link_to(module, props, conn) do
         quote bind_quoted: binding do
           import Mazurka.Resource.Link.Assertions
-          return_value({module, props, conn})
+          {module, props, conn}
+          |> assert_resolve()
+          |> return_value()
         end
       end
     _ ->
@@ -63,11 +65,13 @@ defmodule Mazurka.Resource.Link.Assertions do
     res
   end
 
-  def assert_resolve({resource, props, conn} = res) do
+  def assert_resolve({resource, props, conn}) do
     router = conn.private.mazurka_router
     params = props.params
     case router.resolve(resource, params) do
-      {:error, :not_found} ->
+      {:ok, _method, _path, resource_params} ->
+        {resource, Map.put(props, :resource_params, resource_params), conn}
+      _ ->
         case router.params(resource) do
           {:ok, expected} ->
             Logger.warn """
@@ -92,8 +96,6 @@ defmodule Mazurka.Resource.Link.Assertions do
             """
         end
         false
-      _ ->
-        res
     end
   end
   def assert_resolve(res) do
