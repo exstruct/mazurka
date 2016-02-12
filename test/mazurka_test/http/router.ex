@@ -12,6 +12,9 @@ defmodule MazurkaTest.HTTP.Router do
 
   get     "/",                              Resources.Root
 
+  get     "/sitemap",                       Resources.Sitemap
+  get     "/sitemap/nested",                Resources.Sitemap.Nested
+
   get     "/posts/:post",                   Resources.Posts.Read
 
   get     "/parameterized/one",             {Resources.Parameterized, One}, name: "one"
