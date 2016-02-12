@@ -83,10 +83,14 @@ defmodule Mazurka.Protocol.Request do
     end
   end
 
-  defmacro body(_content) do
-    # TODO
+  defmacro body(content) do
     quote do
-      # var!(conn) = %{var!(conn) | }
+      params = var!(conn).params
+      var!(conn) = case unquote(content) do
+        content when is_map(content) ->
+          %{var!(conn) | params: Map.merge(params, content),
+                         body_params: content}
+      end
     end
   end
 
