@@ -65,6 +65,9 @@ defmodule MazurkaTest.Resources.Users.Update do
     request do
       params %{"user" => "6"}
       accept "hyper+json"
+      body %{
+        "email" => "cameron@mazurka.io"
+      }
     end
   after conn ->
     conn
