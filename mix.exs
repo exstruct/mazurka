@@ -15,11 +15,12 @@ defmodule Mazurka.Mixfile do
   end
 
   defp deps do
-    [{:ecto, ">= 1.0.0"},
+    [{:ecto, "~> 1.0.0"},
      {:plug, ">= 0.9.0"},
      {:poison, ">= 1.4.0"},
      {:etude, "~> 0.3.7"},
      {:xml_builder, "~> 0.0.8"},
+     {:html_builder, "~> 0.1.0"},
      {:parse_trans, github: "uwiger/parse_trans", optional: true},
      {:mazurka_dsl, "~> 0.1.1", optional: true},
      {:mimetype_parser, "~> 0.1.0"},
