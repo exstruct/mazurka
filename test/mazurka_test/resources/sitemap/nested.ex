@@ -5,13 +5,11 @@ defmodule MazurkaTest.Resources.Sitemap.Nested do
     {"Mazurka Homepage", "http://www.mazurka.io", "_blank"}
   ]
 
-  mediatype Mazurka.Mediatype.XML do
+  mediatype Mazurka.Mediatype.Sitemap do
     action do
-      {"urlset", %{"xmlns" => "http://www.sitemaps.org/schemas/sitemap/0.9"}, [
-        {"url", nil, for info <- sites do
-          {"loc", nil, elem(info, 1)}
-        end}
-      ]}
+      for info <- sites do
+        elem(info, 1)
+      end
     end
   end
 
@@ -43,6 +41,21 @@ defmodule MazurkaTest.Resources.Sitemap.Nested do
   after conn ->
     conn
     |> assert_status(200)
+  end
+
+  test "should generate a sitemap" do
+    request()
+  after conn ->
+    conn
+    |> assert_status(200)
+    |> assert_body("""
+      <?xml version=\"1.0\" encoding=\"UTF-8\" ?>
+      <urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">
+      \t<url>
+      \t\t<loc>http://www.mazurka.io</loc>
+      \t</url>
+      </urlset>
+      """ |> String.rstrip())
   end
 
   test "should respond with html" do
