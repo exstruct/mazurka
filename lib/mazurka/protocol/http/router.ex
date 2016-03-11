@@ -129,31 +129,32 @@ defmodule Mazurka.Protocol.HTTP.Router do
     compile(method, "/*_path", resource, resource_params)
   end
   defp compile(method, path, resource, resource_params) do
-    quote bind_quoted: [method: method,
-                        path: path,
-                        resource: resource,
-                        resource_params_expr: resource_params] do
+    [
+      quote bind_quoted: [method: method,
+                          path: path,
+                          resource: resource,
+                          resource_params_expr: resource_params] do
 
-      resource_params = Macro.escape(resource_params_expr)
+        resource_params = Macro.escape(resource_params_expr)
 
-      {method, match, params, map_params, list_params} = Mazurka.Protocol.HTTP.Router.__route__(method, path)
-      defp do_match(unquote(method), unquote(match)) do
-        {:ok, unquote(resource), unquote(map_params), unquote(resource_params)}
-      end
+        {method, match, params, map_params, list_params} = Mazurka.Protocol.HTTP.Router.__route__(method, path)
+        defp do_match(unquote(method), unquote(match)) do
+          {:ok, unquote(resource), unquote(map_params), unquote(resource_params)}
+        end
 
-      {resolve_method, resolve_match} = Mazurka.Protocol.HTTP.Router.__resolve__(method, match)
-      def resolve(unquote(resource), unquote(map_params)) do
-        do_resolve(unquote(resolve_method), unquote(resolve_match), unquote(resource_params))
-      end
-      def resolve(unquote(resource), unquote(list_params)) do
-        do_resolve(unquote(resolve_method), unquote(resolve_match), unquote(resource_params))
-      end
+        {resolve_method, resolve_match} = Mazurka.Protocol.HTTP.Router.__resolve__(method, match)
+        def resolve(unquote(resource), unquote(map_params)) do
+          do_resolve(unquote(resolve_method), unquote(resolve_match), unquote(resource_params))
+        end
+        def resolve(unquote(resource), unquote(list_params)) do
+          do_resolve(unquote(resolve_method), unquote(resolve_match), unquote(resource_params))
+        end
 
-      def params(unquote(resource)) do
-        {:ok, unquote(params), unquote(resource_params)}
-      end
-
-      Mazurka.Protocol.HTTP.Router.Tests.register_tests(resource, __MODULE__)
-    end
+        def params(unquote(resource)) do
+          {:ok, unquote(params), unquote(resource_params)}
+        end
+      end,
+      Mazurka.Protocol.HTTP.Router.Tests.register_tests(resource)
+    ]
   end
 end

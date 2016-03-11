@@ -6,24 +6,37 @@ defmodule Mazurka.Protocol.HTTP.Router.Tests do
     end
   end
 
-  def register_tests(module, router) when is_atom(module) do
-    module
-    |> register_tests(module, router)
-  end
-  def register_tests(info, router) when is_tuple(info) do
-    info
-    |> elem(0)
-    |> register_tests(info, router)
-  end
-  defp register_tests(module, info, router) when is_atom(module) do
-    if enabled? do
-      Code.ensure_loaded?(module)
-      if function_exported?(module, :__mazurka_test__, 0) do
-        for test <- module.__mazurka_test__() do
-          Module.put_attribute(router, :__mazurka_test__, {test, info})
+  def register_tests(module) do
+    if enabled? && !is_atom(module) do
+      [
+        {:require, [], [format_require(module)]},
+        quote do
+          {module, info} = Mazurka.Protocol.HTTP.Router.Tests.__format_test_module__(unquote(module))
+          if function_exported?(module, :__mazurka_test__, 0) do
+            for test <- module.__mazurka_test__() do
+              Module.put_attribute(__MODULE__, :__mazurka_test__, {test, info})
+            end
+          end
         end
-      end
+      ]
     end
+  end
+
+  defp format_require({:{}, _, [module | _]}) do
+    module
+  end
+  defp format_require({module, _info}) when is_tuple(module) do
+    module
+  end
+  defp format_require(module) do
+    module
+  end
+
+  def __format_test_module__(module) when is_tuple(module) do
+    {elem(module, 0), module}
+  end
+  def __format_test_module__(module) do
+    {module, module}
   end
 
   defmacro __before_compile__(env) do
