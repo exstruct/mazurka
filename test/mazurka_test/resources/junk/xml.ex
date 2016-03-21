@@ -1,24 +1,11 @@
-defmodule MazurkaTest.Resources.Sitemap do
+defmodule MazurkaTest.Resources.Xml do
   use Mazurka.Resource
 
-  mediatype Mazurka.Mediatype.Sitemap do
+  mediatype Mazurka.Mediatype.XML do
     action do
-      %{
-        index: [
-          link_to(MazurkaTest.Resources.Sitemap.Nested)
-        ]
-      }
-    end
-  end
-
-  mediatype Mazurka.Mediatype.HTML do
-    action do
-      {"html", [
-        {"head", nil, [
-          {"title", nil, "Sitemap"}
-        ]},
-        {"body", nil, [
-          link_to(MazurkaTest.Resources.Sitemap.Nested)
+      {"sitemapindex", %{"xmlns" => "http://www.sitemaps.org/schemas/sitemap/0.9"}, [
+        {"sitemap", nil, [
+          {"loc", nil, link_to(MazurkaTest.Resources.Sitemap.Nested)}
         ]}
       ]}
     end
@@ -31,7 +18,7 @@ defmodule MazurkaTest.Resources.Sitemap do
     |> assert_status(200)
   end
 
-  test "should generate a sitemap" do
+  test "should generate xml" do
     request()
   after conn ->
     conn
@@ -46,9 +33,9 @@ defmodule MazurkaTest.Resources.Sitemap do
       """ |> String.rstrip())
   end
 
-  test "should respond with html" do
+  test "should respond with xml" do
     request do
-      accept "html"
+      accept "xml"
     end
   after conn ->
     conn
