@@ -79,8 +79,21 @@ defmodule Mazurka.Resource.Test.Assertions do
       end
     end
 
-    def unquote(:"#{call}_transition")(conn, location) do
+    def unquote(:"#{call}_transition")(conn, location) when is_binary(location) do
+      location = if location == :proplists.get_value("location", conn.resp_headers) || location =~ ~r|://| do
+        location
+      else
+        %URI{scheme: to_string(conn.scheme || "http"), host: conn.host, port: conn.port, path: location} |> to_string()
+      end
+
       ExUnit.Assertions.unquote(call)(:proplists.get_value("location", conn.resp_headers) == location)
+      conn
+    end
+    def unquote(:"#{call}_transition")(conn, resource, params \\ %{}, query \\ nil, fragment \\ nil) do
+      {:ok, location} = [resource, Mazurka.Resource.Link.unwrap_ids(params), Mazurka.Resource.Link.unwrap_ids(query), fragment]
+      |> Mazurka.Resource.Link.resolve(conn, self(), :erlang.make_ref(), %{})
+
+      ExUnit.Assertions.unquote(call)(:proplists.get_value("location", conn.resp_headers) == to_string(location))
       conn
     end
 
