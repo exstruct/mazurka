@@ -1,212 +1,176 @@
 defmodule Mazurka.Resource.Link do
-  @moduledoc """
-  Represents a link in a response. This is used by mediatypes to serialize the link in the appropriate
-  format. It's broken into its separate parts (method, host, path, etc.) for easy manipulation.
+  @moduledoc false
+
+  use Mazurka.Resource.Utils
+
+  defmacro __using__(_) do
+    quote do
+      Module.register_attribute(__MODULE__, :mazurka_links, accumulate: true)
+      import unquote(__MODULE__)
+      alias unquote(__MODULE__)
+      @before_compile unquote(__MODULE__)
+    end
+  end
+
+  @doc """
+  Link to another resource
   """
 
-  require Mazurka.Resource.Link.Assertions
+  defmacro link_to(resource, params \\ nil, input \\ nil, opts \\ []) do
+    params = format_params(params)
+    input = format_params(input)
+    Module.put_attribute(__CALLER__.module, :mazurka_links, resource)
 
-  defstruct resource: nil,
-            mediatype: nil,
-            method: nil,
-            scheme: nil,
-            host: nil,
-            port: nil,
-            path: nil,
-            query: nil,
-            persistent_query: nil,
-            fragment: nil
+    quote do
+      conn = unquote(Utils.conn)
+      router = unquote(Utils.router)
 
-  def compile(_opts, _env) do
-    nil
+      resource = case unquote(resource) do
+                   resource when not is_nil(router) ->
+                     source = %{resource: __MODULE__,
+                                file: __ENV__.file,
+                                line: __ENV__.line,
+                                params: unquote(Utils.params),
+                                input: unquote(Utils.input),
+                                mediatype: unquote(Utils.mediatype),
+                                opts: unquote(Utils.opts)}
+                     Mazurka.Router.resolve_resource(router, resource, source, conn)
+                   resource ->
+                     resource
+                 end
+
+      resource.affordance(
+        unquote(Utils.mediatype),
+        unquote(params),
+        unquote(input),
+        conn,
+        router,
+        unquote(opts)
+      )
+    end
   end
 
-  def format_params(nil) do
+  @doc """
+  Transition to another resource
+  """
+
+  defmacro transition_to(resource, params \\ nil, input \\ nil, opts \\ []) do
+    params = format_params(params)
+    input = format_params(input)
+
+    quote do
+      conn = unquote(Utils.conn)
+
+      target = Mazurka.Resource.Link.resolve(
+        unquote(resource),
+        unquote(params),
+        unquote(input),
+        conn,
+        unquote(Utils.router),
+        unquote(opts)
+      )
+
+      unquote(Utils.conn) = Mazurka.Conn.transition(conn, target)
+
+      target
+    end
+  end
+
+  @doc """
+  Invalidate another resource
+  """
+
+  defmacro invalidates(resource, params \\ nil, input \\ nil, opts \\ []) do
+    params = format_params(params)
+    input = format_params(input)
+
+    quote do
+      conn = unquote(Utils.conn)
+
+      target = Mazurka.Resource.Link.resolve(
+        unquote(resource),
+        unquote(params),
+        unquote(input),
+        conn,
+        unquote(Utils.router),
+        unquote(opts)
+      )
+
+      unquote(Utils.conn) = Mazurka.Conn.invalidate(conn, target)
+
+      target
+    end
+  end
+
+  defp format_params(nil) do
     {:%{}, [], []}
   end
-  def format_params({:%{}, meta, items}) do
+  defp format_params({:%{}, meta, items}) do
     {:%{}, meta, Enum.map(items, fn({name, value}) ->
       {to_string(name), value}
     end)}
   end
-  def format_params(items) when is_list(items) do
+  defp format_params(items) when is_list(items) do
     {:%{}, [], Enum.map(items, fn({name, value}) ->
       {to_string(name), value}
     end)}
   end
-
-  def link_to(args, conn, _parent, _ref, _attrs) do
-    try do
-      [resource, params, query, fragment] = unwrap_args(args)
-
-      props = %{resource: resource, params: params, query: query, fragment: fragment}
-      ## FOR BACKWARDS COMPATIBILITY - remove once markdown is removed
-      |> Dict.merge(params)
-      |> Dict.merge(%{"_params" => params, "_query" => query, "_fragment" => fragment})
-
-      Mazurka.Resource.Link.Assertions.link_to(resource, props, conn)
-    catch
-      {:undefined_param, _} ->
-        {:ok, :undefined}
+  defp format_params(other) do
+    quote do
+      Enum.reduce(unquote(other), %{}, fn({name, value}, acc) ->
+        Map.put(acc, to_string(name), value)
+      end)
     end
   end
 
-  def transition_to([href, _, nil, nil], %{private: private} = conn, _parent, _ref, _attrs) when is_binary(href) do
-    {:ok, nil, %{conn | private: Dict.put(private, :mazurka_transition, href)}}
-  end
-  def transition_to(args, conn, parent, ref, attrs) do
-    case args |> unwrap_args |> resolve(conn, parent, ref, attrs) do
-      {:ok, :undefined} ->
-        {:error, :transition_to_unknown_location}
-      {:ok, affordance} ->
-        [to_string(affordance), nil, nil, nil]
-        |> transition_to(conn, parent, ref, attrs)
-    end
-  end
+  defmacro resolve(resource, params, input, conn, router, opts) do
+    current_params = Utils.params
+    current_input = Utils.input
+    current_mediatype = Utils.mediatype
+    current_opts = Utils.opts
 
-  def invalidates([href, _, nil, nil], %{private: private} = conn, _parent, _ref, _attrs) when is_binary(href) do
-    invalidations = Map.get(private, :mazurka_invalidations, [])
-    {:ok, nil, %{conn | private: Map.put(private, :mazurka_invalidations, [href | invalidations])}}
-  end
-  def invalidates(args, conn, parent, ref, attrs) do
-    case args |> unwrap_args |> resolve(conn, parent, ref, attrs) do
-      {:ok, :undefined} ->
-        {:error, :invalidates_unknown_location}
-      {:ok, affordance} ->
-        [to_string(affordance), nil, nil, nil]
-        |> invalidates(conn, parent, ref, attrs)
-    end
-  end
+    quote bind_quoted: binding do
+      case router do
+        nil ->
+          raise Mazurka.MissingRouterException, resource: resource, params: params, input: input, conn: conn, opts: opts
+        router ->
+          affordance = %Mazurka.Affordance{resource: resource,
+                                           params: params,
+                                           input: input,
+                                           opts: opts}
 
-  defp unwrap_args([resource, params, query, fragment]) do
-    [resource, unwrap_ids(params), unwrap_ids(query), fragment]
-  end
+          source = %{resource: __MODULE__,
+                     file: __ENV__.file,
+                     line: __ENV__.line,
+                     params: current_params,
+                     input: current_input,
+                     mediatype: current_mediatype,
+                     opts: current_opts}
 
-  def unwrap_ids(kvs) when kvs in [nil, :undefined] do
-    kvs
-  end
-  def unwrap_ids(kvs) do
-    Enum.reduce(kvs, %{}, fn
-      ({key, %{"id" => id}}, acc) ->
-        Map.put(acc, to_string(key), to_string(id))
-      ({key, %{id: id}}, acc) ->
-        Map.put(acc, to_string(key), to_string(id))
-      ({key, value}, _) when value in [nil, :undefined] ->
-        throw {:undefined_param, key}
-      ({key, value}, acc) ->
-        Map.put(acc, to_string(key), to_string(value))
-    end)
-  end
-
-  def encode_qs(params) do
-    out = Enum.filter_map(params, fn({_k, v}) ->
-      case v do
-        nil -> false
-        :undefined -> false
-        false -> false
-        "" -> false
-        _ -> true
+          Mazurka.Router.resolve(router, affordance, source, conn)
       end
-    end, fn({k, v}) ->
-      [k, "=", URI.encode_www_form(v)]
-    end)
-    |> Enum.join("&")
-
-    if out == "" do
-      nil
-    else
-      out
     end
   end
 
-  def resolve([resource, params, query, fragment], %{private: %{mazurka_router: router}} = conn, _parent, _ref, _attrs) do
-    link = new(resource, query, fragment, conn)
-
-    case router.resolve(resource, params) do
-      {:ok, method, path, _resource_params} ->
-        %{link | method: method,
-                 path: request_path(%{conn | path_info: path})}
-        |> apply_link_transform(conn)
-      {:error, :not_found} ->
-        {:ok, :undefined}
+  defmacro rel_self do
+    quote do
+      unquote(__MODULE__).resolve(
+        __MODULE__,
+        unquote(Utils.params),
+        unquote(Utils.input),
+        unquote(Utils.conn),
+        unquote(Utils.router),
+        unquote(Utils.opts)
+      )
     end
   end
 
-  defp new(resource, query, fragment, %{private: %{mazurka_mediatype_handler: mediatype_module}} = conn) do
-    %__MODULE__{
-      resource: Mazurka.Resource.Link.Utils.resource_to_module(resource),
-      query: query,
-      fragment: fragment,
-      mediatype: mediatype_module,
-      scheme: conn.scheme,
-      host: conn.host,
-      port: conn.port,
-    }
+  defmacro __before_compile__(_) do
+    quote unquote: false do
+      links = @mazurka_links |> Enum.uniq() |> Enum.sort()
+      def links do
+        unquote(links)
+      end
+    end
   end
-
-  defp apply_link_transform(link, conn = %{private: %{mazurka_link_transform: {module, function}}}) do
-    {:ok, apply(module, function, [link, conn])}
-  end
-  defp apply_link_transform(link, _) do
-    {:ok, link}
-  end
-
-  def from_conn(%{private: %{mazurka_mediatype_handler: mediatype_module}} = conn) do
-    %__MODULE__{mediatype: mediatype_module,
-                method: conn.method,
-                scheme: conn.scheme,
-                host: conn.host,
-                port: conn.port,
-                path: request_path(conn),
-                query: conn.query_string}
-  end
-  def from_conn(conn, path_info) do
-    from_conn(%{conn | path_info: path_info})
-  end
-
-  defp request_path(%{script_name: [], path_info: []}) do
-    "/"
-  end
-  defp request_path(%{script_name: script, path_info: path}) do
-    "/" <> Enum.join(script ++ path, "/")
-  end
-end
-
-defimpl String.Chars, for: Mazurka.Resource.Link do
-  def to_string(%{fragment: fragment, host: host, method: method, path: path, port: port, query: query, scheme: scheme} = url) do
-    qs = query
-    |> format_query(method)
-    |> join_query(format_query(Map.get(url, :persistent_query), "GET"))
-    %URI{fragment: format_fragment(fragment),
-         host: host,
-         path: format_path(path),
-         port: port,
-         query: qs,
-         scheme: Kernel.to_string(scheme)}
-    |> Kernel.to_string
-  end
-
-  defp format_path(nil), do: nil
-  defp format_path(""), do: nil
-  defp format_path([]), do: nil
-  defp format_path("/"), do: nil
-  defp format_path(path) when is_list(path), do: "/" <> Enum.join(path, "/")
-  defp format_path(path), do: Kernel.to_string(path)
-
-  defp format_query(_, method) when method in ["POST", "PUT", "PATCH"], do: nil
-  defp format_query(nil, _), do: nil
-  defp format_query("", _), do: nil
-  defp format_query(%{__struct__: _} = qs, _), do: Kernel.to_string(qs)
-  defp format_query(qs, _) when is_map(qs), do: Mazurka.Resource.Link.encode_qs(qs)
-  defp format_query(qs, _), do: Kernel.to_string(qs)
-
-  defp join_query(nil, nil), do: nil
-  defp join_query(q, nil), do: q
-  defp join_query(nil, q), do: q
-  defp join_query(q1, q2), do: q1 <> "&" <> q2
-
-  defp format_fragment(nil), do: nil
-  defp format_fragment([]), do: nil
-  defp format_fragment(fragment) when is_list(fragment), do: "/" <> Enum.join(fragment, "/")
-  defp format_fragment(fragment), do: Kernel.to_string(fragment)
 end

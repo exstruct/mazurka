@@ -6,6 +6,13 @@ defmodule Mazurka.Mixfile do
      version: "0.3.34",
      elixir: "~> 1.0",
      description: "hypermedia api toolkit",
+     test_coverage: [tool: ExCoveralls],
+     preferred_cli_env: [
+       "coveralls": :test,
+       "coveralls.circle": :test,
+       "coveralls.detail": :test,
+       "coveralls.html": :test
+     ],
      package: package,
      deps: deps]
   end
@@ -15,18 +22,11 @@ defmodule Mazurka.Mixfile do
   end
 
   defp deps do
-    [{:ecto, "~> 1.0.0"},
-     {:plug, ">= 0.9.0"},
-     {:poison, ">= 1.4.0"},
-     {:etude, "~> 0.3.7"},
-     {:xml_builder, "~> 0.0.8"},
-     {:html_builder, "~> 0.1.0"},
-     {:parse_trans, github: "uwiger/parse_trans", optional: true},
-     {:mazurka_dsl, "~> 0.1.1", optional: true},
-     {:mimetype_parser, "~> 0.1.0"},
-     {:cowboy, "~> 1.0.0", only: :dev},
+    [{:mimetype_parser, "~> 0.1.0"},
      {:earmark, "~> 0.1", only: :dev},
-     {:ex_doc, "~> 0.7", only: :dev}]
+     {:ex_doc, "~> 0.7", only: :dev},
+     {:mix_test_watch, "~> 0.2", only: :dev},
+     {:excoveralls, "~> 0.5.1", only: :test},]
   end
 
   defp package do
