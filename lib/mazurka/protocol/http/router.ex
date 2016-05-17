@@ -6,7 +6,6 @@ defmodule Mazurka.Protocol.HTTP.Router do
   @doc false
   defmacro __using__(opts) do
     quote location: :keep do
-      use Mazurka.Protocol.HTTP.Router.Tests
       import Mazurka.Protocol.HTTP.Router
       @before_compile Mazurka.Protocol.HTTP.Router
 
@@ -48,6 +47,10 @@ defmodule Mazurka.Protocol.HTTP.Router do
       import Mazurka.Protocol.HTTP.Router, only: []
       def resolve(_, _) do
         {:error, :not_found}
+      end
+
+      def resolve_module(_) do
+        nil
       end
 
       def params(_) do
@@ -148,6 +151,22 @@ defmodule Mazurka.Protocol.HTTP.Router do
         end
         def resolve(unquote(resource), unquote(list_params)) do
           do_resolve(unquote(resolve_method), unquote(resolve_match), unquote(resource_params))
+        end
+
+        arroba_path = String.replace(path, ":", "@")
+
+        def resolve_module(unquote(resource)) do
+          unquote(resource)
+        end
+        if is_binary(method) do
+          def resolve_module(unquote(method <> " " <> arroba_path)) do
+            unquote(resource)
+          end
+          if method == "GET" do
+            def resolve_module(unquote(arroba_path)) do
+              unquote(resource)
+            end
+          end
         end
 
         def params(unquote(resource)) do

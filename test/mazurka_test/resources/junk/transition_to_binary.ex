@@ -3,7 +3,7 @@ defmodule MazurkaTest.Resources.TransitionToBinary do
 
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
-      transition_to("/foo")
+      transition_to({:href, "/foo"})
     end
   end
 

@@ -19,7 +19,7 @@ defmodule MazurkaTest.Resources.Root do
   mediatype Mazurka.Mediatype.Hyperjson do
     action do
       %{
-        "account" => link_to(Resources.Users.Read, user: user_id),
+        "account" => link_to("/users/@user", user: user_id),
         "one" => link_to({Resources.Parameterized, One}),
         "two" => link_to({Resources.Parameterized, Two}),
         "foo" => foo

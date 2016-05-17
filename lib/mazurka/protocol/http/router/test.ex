@@ -12,7 +12,7 @@ defmodule Mazurka.Protocol.HTTP.Router.Tests do
         {:require, [], [format_require(module)]},
         quote do
           {module, info} = Mazurka.Protocol.HTTP.Router.Tests.__format_test_module__(unquote(module))
-          if function_exported?(module, :__mazurka_test__, 0) do
+          if @__mazurka_test__ && function_exported?(module, :__mazurka_test__, 0) do
             for test <- module.__mazurka_test__() do
               Module.put_attribute(__MODULE__, :__mazurka_test__, {test, info})
             end

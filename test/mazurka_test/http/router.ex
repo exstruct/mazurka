@@ -1,5 +1,6 @@
 defmodule MazurkaTest.HTTP.Router do
   use Mazurka.Protocol.HTTP.Router
+  use Mazurka.Protocol.HTTP.Router.Tests
   use Mazurka.Mediatype.Hyperjson.Hyperpath
   use MazurkaTest.Dispatch, [
     link_transform: :link_transform

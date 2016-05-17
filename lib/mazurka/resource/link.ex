@@ -37,7 +37,7 @@ defmodule Mazurka.Resource.Link do
 
   def link_to(args, conn, _parent, _ref, _attrs) do
     try do
-      [resource, params, query, fragment] = unwrap_args(args)
+      [resource, params, query, fragment] = unwrap_args(args, conn)
 
       props = %{resource: resource, params: params, query: query, fragment: fragment}
       ## FOR BACKWARDS COMPATIBILITY - remove once markdown is removed
@@ -51,35 +51,35 @@ defmodule Mazurka.Resource.Link do
     end
   end
 
-  def transition_to([href, _, nil, nil], %{private: private} = conn, _parent, _ref, _attrs) when is_binary(href) do
+  def transition_to([{:href, href}, _, nil, nil], %{private: private} = conn, _parent, _ref, _attrs) when is_binary(href) do
     {:ok, nil, %{conn | private: Dict.put(private, :mazurka_transition, href)}}
   end
   def transition_to(args, conn, parent, ref, attrs) do
-    case args |> unwrap_args |> resolve(conn, parent, ref, attrs) do
+    case args |> unwrap_args(conn) |> resolve(conn, parent, ref, attrs) do
       {:ok, :undefined} ->
         {:error, :transition_to_unknown_location}
       {:ok, affordance} ->
-        [to_string(affordance), nil, nil, nil]
+        [{:href, to_string(affordance)}, nil, nil, nil]
         |> transition_to(conn, parent, ref, attrs)
     end
   end
 
-  def invalidates([href, _, nil, nil], %{private: private} = conn, _parent, _ref, _attrs) when is_binary(href) do
+  def invalidates([{:href, href}, _, nil, nil], %{private: private} = conn, _parent, _ref, _attrs) when is_binary(href) do
     invalidations = Map.get(private, :mazurka_invalidations, [])
     {:ok, nil, %{conn | private: Map.put(private, :mazurka_invalidations, [href | invalidations])}}
   end
   def invalidates(args, conn, parent, ref, attrs) do
-    case args |> unwrap_args |> resolve(conn, parent, ref, attrs) do
+    case args |> unwrap_args(conn) |> resolve(conn, parent, ref, attrs) do
       {:ok, :undefined} ->
         {:error, :invalidates_unknown_location}
       {:ok, affordance} ->
-        [to_string(affordance), nil, nil, nil]
+        [{:href, to_string(affordance)}, nil, nil, nil]
         |> invalidates(conn, parent, ref, attrs)
     end
   end
 
-  defp unwrap_args([resource, params, query, fragment]) do
-    [resource, unwrap_ids(params), unwrap_ids(query), fragment]
+  defp unwrap_args([resource, params, query, fragment], %{private: %{mazurka_router: router}}) do
+    [router.resolve_module(resource) || resource, unwrap_ids(params), unwrap_ids(query), fragment]
   end
 
   def unwrap_ids(kvs) when kvs in [nil, :undefined] do
