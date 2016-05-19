@@ -33,6 +33,6 @@ defmodule Mazurka.Mixfile do
     [files: ["lib", "mix.exs", "README*"],
      maintainers: ["Cameron Bytheway"],
      licenses: ["MIT"],
-     links: %{"GitHub" => "https://github.com/mazurka/mazurka"}]
+     links: %{"GitHub" => "https://github.com/exstruct/mazurka"}]
   end
 end
