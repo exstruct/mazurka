@@ -184,8 +184,8 @@ defmodule Test.Mazurka.Resource.Link do
     "Baz.action" ->
       {_, _, conn} = Baz.action([], %{}, %{}, %{private: %{}}, Router)
       [second, first] = conn.private.mazurka_invalidations
-      assert Foo = first[:resource]
-      assert %{"foo" => "123"} = first[:params]
+      assert Foo = first.resource
+      assert %{"foo" => "123"} = first.params
       assert Bar = second.resource
       assert %{"bar" => "456"} = second.params
   end
