@@ -79,20 +79,28 @@ defmodule Mazurka.Resource.Link do
   end
 
   defp unwrap_args([resource, params, query, fragment], %{private: %{mazurka_router: router}}) do
-    [router.resolve_module(resource) || resource, unwrap_ids(params), unwrap_ids(query), fragment]
+    [
+      router.resolve_module(resource) || resource,
+      unwrap_ids(params),
+      unwrap_ids(query, :ignore),
+      fragment
+    ]
   end
 
-  def unwrap_ids(kvs) when kvs in [nil, :undefined] do
+  def unwrap_ids(kvs, mode \\ :throw)
+  def unwrap_ids(kvs, _) when kvs in [nil, :undefined] do
     kvs
   end
-  def unwrap_ids(kvs) do
+  def unwrap_ids(kvs, mode) do
     Enum.reduce(kvs, %{}, fn
       ({key, %{"id" => id}}, acc) ->
         Map.put(acc, to_string(key), to_string(id))
       ({key, %{id: id}}, acc) ->
         Map.put(acc, to_string(key), to_string(id))
-      ({key, value}, _) when value in [nil, :undefined] ->
+      ({key, value}, _) when value in [nil, :undefined] and mode == :throw ->
         throw {:undefined_param, key}
+      ({_, value}, acc) when value in [nil, :undefined] ->
+        acc
       ({key, value}, acc) ->
         Map.put(acc, to_string(key), to_string(value))
     end)
