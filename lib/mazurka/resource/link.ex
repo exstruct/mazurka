@@ -205,6 +205,7 @@ defimpl String.Chars, for: Mazurka.Resource.Link do
   defp format_query(nil, _), do: nil
   defp format_query("", _), do: nil
   defp format_query(%{__struct__: _} = qs, _), do: Kernel.to_string(qs)
+  defp format_query(qs, _) when map_size(qs) == 0, do: nil
   defp format_query(qs, _) when is_map(qs), do: Mazurka.Resource.Link.encode_qs(qs)
   defp format_query(qs, _), do: Kernel.to_string(qs)
 
