@@ -209,9 +209,9 @@ defimpl String.Chars, for: Mazurka.Resource.Link do
   defp format_query(qs, _) when is_map(qs), do: Mazurka.Resource.Link.encode_qs(qs)
   defp format_query(qs, _), do: Kernel.to_string(qs)
 
-  defp join_query(nil, nil), do: nil
-  defp join_query(q, nil), do: q
-  defp join_query(nil, q), do: q
+  defp join_query(a, b) when a in ["", nil] and b in ["", nil], do: nil
+  defp join_query(a, b) when b in ["", nil], do: a
+  defp join_query(a, b) when a in ["", nil], do: b
   defp join_query(q1, q2), do: q1 <> "&" <> q2
 
   defp format_fragment(nil), do: nil
