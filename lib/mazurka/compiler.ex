@@ -162,7 +162,7 @@ defmodule Mazurka.Compiler do
 
   def compile_etude(etude_ast, etude_module, env) do
     etude_opts = Module.get_attribute(env.module, :etude_opts) || []
-    etude_opts = Keyword.merge([file: env.file, native: Mazurka.Utils.env == :prod], etude_opts)
+    etude_opts = Keyword.merge([file: env.file], etude_opts)
     ## TODO read the existing beam file and verify it has changed before compiling
     {:ok, _, _, beam} = Etude.compile(etude_module, etude_ast, etude_opts)
 
