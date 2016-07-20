@@ -3,7 +3,7 @@ defmodule Mazurka.Mixfile do
 
   def project do
     [app: :mazurka,
-     version: "1.0.1",
+     version: "1.0.2",
      elixir: "~> 1.0",
      description: "hypermedia api toolkit",
      test_coverage: [tool: ExCoveralls],
