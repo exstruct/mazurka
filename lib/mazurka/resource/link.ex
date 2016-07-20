@@ -8,6 +8,7 @@ defmodule Mazurka.Resource.Link do
       Module.register_attribute(__MODULE__, :mazurka_links, accumulate: true)
       import unquote(__MODULE__)
       alias unquote(__MODULE__)
+      require Logger
       @before_compile unquote(__MODULE__)
     end
   end
@@ -24,29 +25,42 @@ defmodule Mazurka.Resource.Link do
     quote do
       conn = var!(conn)
       router = unquote(Utils.router)
+      resource = unquote(resource)
 
-      resource = case unquote(resource) do
-                   resource when not is_nil(router) ->
-                     source = %{resource: __MODULE__,
-                                file: __ENV__.file,
-                                line: __ENV__.line,
-                                params: unquote(Utils.params),
-                                input: unquote(Utils.input),
-                                mediatype: unquote(Utils.mediatype),
-                                opts: unquote(Utils.opts)}
-                     Mazurka.Router.resolve_resource(router, resource, source, conn)
-                   resource ->
-                     resource
-                 end
+      module = cond do
+        is_nil(router) ->
+          source = %{resource: __MODULE__,
+                     file: __ENV__.file,
+                     line: __ENV__.line,
+                     params: unquote(Utils.params),
+                     input: unquote(Utils.input),
+                     mediatype: unquote(Utils.mediatype),
+                     opts: unquote(Utils.opts)}
+          Mazurka.Router.resolve_resource(router, resource, source, conn)
+        true ->
+          resource
+      end
 
-      resource.affordance(
-        unquote(Utils.mediatype),
-        unquote(params),
-        unquote(input),
-        conn,
-        router,
-        [{:fragment, unquote(fragment)}, unquote(opts)]
-      )
+      opts = unquote(opts)
+      warn = opts[:warn]
+
+      case module do
+        nil when warn != false ->
+          file_line = Exception.format_file_line(__ENV__.file, __ENV__.line)
+          Logger.warn("#{file_line} resource #{inspect(resource)} not found")
+          nil
+        nil ->
+          nil
+        _ ->
+          module.affordance(
+            unquote(Utils.mediatype),
+            unquote(params),
+            unquote(input),
+            conn,
+            router,
+            [{:fragment, unquote(fragment)}, opts]
+          )
+      end
     end
   end
 
@@ -170,8 +184,8 @@ defmodule Mazurka.Resource.Link do
       links = @mazurka_links
       |> Enum.filter(fn
         ({:__aliases__, _, _}) -> true
-        ({name, _, _}) when is_atom(name) -> false
-        (_) -> true
+        (name) when is_binary(name) or is_atom(name) -> true
+        (_) -> false
       end)
       |> Enum.uniq()
       |> Enum.sort()

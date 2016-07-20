@@ -15,7 +15,7 @@ defmodule Mazurka.Mediatype.Hyper do
         %{__struct__: _} = response ->
           response
         response when is_map(response) and not is_nil(unquote(Utils.router)) ->
-          Map.put(response, "href", to_string(rel_self()))
+          Map.put_new(response, "href", to_string(rel_self()))
         response ->
           response
       end
