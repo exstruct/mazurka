@@ -17,9 +17,11 @@ defmodule Test.Mazurka.Resource.Link do
 
       mediatype Hyper do
         action do
+          link = Foo
           %{
             "bar" => bar,
-            "foo" => link_to(Foo, %{"foo" => bar <> bar})
+            "foo" => link_to(Foo, %{"foo" => bar <> bar}),
+            "baz" => link_to(link, %{"foo" => bar})
           }
         end
       end
@@ -42,7 +44,7 @@ defmodule Test.Mazurka.Resource.Link do
 
     "Bar.action" ->
       {body, content_type, _} = Bar.action([], %{"bar" => "123"}, %{}, %{}, Router)
-      assert %{"bar" => "123", "foo" => %{"href" => "/foo/123123"}, "href" => "/bar/123"} == body
+      assert %{"bar" => "123", "foo" => %{"href" => "/foo/123123"}, "baz" => %{"href" => "/foo/123"}, "href" => "/bar/123"} == body
       assert {"application", "json", %{}} == content_type
 
     "Bar.affordance" ->

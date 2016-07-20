@@ -16,13 +16,13 @@ defmodule Mazurka.Resource.Link do
   Link to another resource
   """
 
-  defmacro link_to(resource, params \\ nil, input \\ nil, opts \\ []) do
+  defmacro link_to(resource, params \\ nil, input \\ nil, fragment \\ nil, opts \\ []) do
     params = format_params(params)
     input = format_params(input)
     Module.put_attribute(__CALLER__.module, :mazurka_links, resource)
 
     quote do
-      conn = unquote(Utils.conn)
+      conn = var!(conn)
       router = unquote(Utils.router)
 
       resource = case unquote(resource) do
@@ -45,7 +45,7 @@ defmodule Mazurka.Resource.Link do
         unquote(input),
         conn,
         router,
-        unquote(opts)
+        [{:fragment, unquote(fragment)}, unquote(opts)]
       )
     end
   end
@@ -59,7 +59,7 @@ defmodule Mazurka.Resource.Link do
     input = format_params(input)
 
     quote do
-      conn = unquote(Utils.conn)
+      conn = var!(conn)
 
       target = Mazurka.Resource.Link.resolve(
         unquote(resource),
@@ -70,7 +70,7 @@ defmodule Mazurka.Resource.Link do
         unquote(opts)
       )
 
-      unquote(Utils.conn) = Mazurka.Conn.transition(conn, target)
+      var!(conn) = Mazurka.Conn.transition(conn, target)
 
       target
     end
@@ -85,7 +85,7 @@ defmodule Mazurka.Resource.Link do
     input = format_params(input)
 
     quote do
-      conn = unquote(Utils.conn)
+      conn = var!(conn)
 
       target = Mazurka.Resource.Link.resolve(
         unquote(resource),
@@ -96,7 +96,7 @@ defmodule Mazurka.Resource.Link do
         unquote(opts)
       )
 
-      unquote(Utils.conn) = Mazurka.Conn.invalidate(conn, target)
+      var!(conn) = Mazurka.Conn.invalidate(conn, target)
 
       target
     end
@@ -158,7 +158,7 @@ defmodule Mazurka.Resource.Link do
         __MODULE__,
         unquote(Utils.params),
         unquote(Utils.input),
-        unquote(Utils.conn),
+        var!(conn),
         unquote(Utils.router),
         unquote(Utils.opts)
       )
@@ -167,7 +167,14 @@ defmodule Mazurka.Resource.Link do
 
   defmacro __before_compile__(_) do
     quote unquote: false do
-      links = @mazurka_links |> Enum.uniq() |> Enum.sort()
+      links = @mazurka_links
+      |> Enum.filter(fn
+        ({:__aliases__, _, _}) -> true
+        ({name, _, _}) when is_atom(name) -> false
+        (_) -> true
+      end)
+      |> Enum.uniq()
+      |> Enum.sort()
       def links do
         unquote(links)
       end

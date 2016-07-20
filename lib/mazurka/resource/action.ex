@@ -36,8 +36,10 @@ defmodule Mazurka.Resource.Action do
   defmacro action(mediatype, [do: block]) do
     quote do
       defp mazurka__match_action(unquote(mediatype) = unquote(Utils.mediatype), unquote_splicing(arguments), unquote(scope)) do
+        var!(conn) = unquote(Utils.conn)
         action = unquote(block)
         res = unquote(mediatype).__handle_action__(action)
+        unquote(Utils.conn) = var!(conn)
         event(res, unquote_splicing(arguments))
       end
     end
@@ -58,6 +60,8 @@ defmodule Mazurka.Resource.Action do
               {[], []} ->
                 scope = mazurka__scope(mediatype, unquote_splicing(arguments))
                 case mazurka__conditions(unquote_splicing(arguments), scope) do
+                  {:error, %{:__struct__ => _} = exception} ->
+                    raise exception
                   {:error, message} ->
                     raise Mazurka.ConditionException, message: message, conn: unquote(conn)
                   :ok ->
