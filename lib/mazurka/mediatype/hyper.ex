@@ -24,7 +24,9 @@ defmodule Mazurka.Mediatype.Hyper do
 
   defmacro __handle_affordance__(affordance, props) do
     quote location: :keep do
-      case {unquote(affordance), unquote(props) || %{}} do
+      affordance = unquote(affordance)
+      props = Mazurka.Mediatype.Hyper.__noop__(unquote(props)) || %{}
+      case {affordance, props} do
         {%{__struct__: struct} = affordance, _} when struct in [Mazurka.Affordance.Undefined, Mazurka.Affordance.Unacceptable] ->
           affordance
         {%Mazurka.Affordance{} = affordance, %{"input" => _} = props} ->
@@ -44,5 +46,9 @@ defmodule Mazurka.Mediatype.Hyper do
           } |> Map.merge(props)
       end
     end
+  end
+
+  def __noop__(value) do
+    value
   end
 end
