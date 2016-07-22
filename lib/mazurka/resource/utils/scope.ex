@@ -53,6 +53,8 @@ defmodule Mazurka.Resource.Utils.Scope do
 
       defp mazurka__scope(unquote(Utils.mediatype), unquote_splicing(Utils.arguments)) do
         unquote(Utils.scope) = super(unquote(Utils.mediatype), unquote_splicing(Utils.arguments))
+        var!(conn) = unquote(Utils.conn)
+        _ = var!(conn)
         Map.put(unquote(Utils.scope), unquote(name), unquote(block))
       end
       defoverridable mazurka__scope: unquote(length(Utils.arguments) + 1)

@@ -27,19 +27,15 @@ defmodule Mazurka.Resource.Link do
       router = unquote(Utils.router)
       resource = unquote(resource)
 
-      module = cond do
-        is_nil(router) ->
-          source = %{resource: __MODULE__,
-                     file: __ENV__.file,
-                     line: __ENV__.line,
-                     params: unquote(Utils.params),
-                     input: unquote(Utils.input),
-                     mediatype: unquote(Utils.mediatype),
-                     opts: unquote(Utils.opts)}
-          Mazurka.Router.resolve_resource(router, resource, source, conn)
-        true ->
-          resource
-      end
+      source = %{resource: __MODULE__,
+                 file: __ENV__.file,
+                 line: __ENV__.line,
+                 params: unquote(Utils.params),
+                 input: unquote(Utils.input),
+                 mediatype: unquote(Utils.mediatype),
+                 opts: unquote(Utils.opts)}
+
+      module = Mazurka.Router.resolve_resource(router, resource, source, conn)
 
       opts = unquote(opts)
       warn = opts[:warn]
@@ -54,8 +50,8 @@ defmodule Mazurka.Resource.Link do
         _ ->
           module.affordance(
             unquote(Utils.mediatype),
-            unquote(params),
-            unquote(input),
+            Mazurka.Router.format_params(router, unquote(params), source, conn),
+            Mazurka.Router.format_params(router, unquote(input), source, conn),
             conn,
             router,
             [{:fragment, unquote(fragment)}, opts]
@@ -148,11 +144,6 @@ defmodule Mazurka.Resource.Link do
         nil ->
           raise Mazurka.MissingRouterException, resource: resource, params: params, input: input, conn: conn, opts: opts
         router ->
-          affordance = %Mazurka.Affordance{resource: resource,
-                                           params: params,
-                                           input: input,
-                                           opts: opts}
-
           source = %{resource: __MODULE__,
                      file: __ENV__.file,
                      line: __ENV__.line,
@@ -160,6 +151,14 @@ defmodule Mazurka.Resource.Link do
                      input: current_input,
                      mediatype: current_mediatype,
                      opts: current_opts}
+
+          params = Mazurka.Router.format_params(router, params, source, conn)
+          input  = Mazurka.Router.format_params(router, input, source, conn)
+
+          affordance = %Mazurka.Affordance{resource: resource,
+                                           params: params,
+                                           input: input,
+                                           opts: opts}
 
           Mazurka.Router.resolve(router, affordance, source, conn)
       end
