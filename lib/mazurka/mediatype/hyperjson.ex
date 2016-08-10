@@ -43,7 +43,7 @@ defmodule Mazurka.Mediatype.Hyperjson do
     quote do
       response = unquote(block)
       if ^:erlang.is_map(response) do
-        ^Dict.put(response, "href", Rels.self)
+        ^Dict.put_new(response, "href", Rels.self)
       else
         response
       end
@@ -67,7 +67,7 @@ defmodule Mazurka.Mediatype.Hyperjson do
 
       if ^:erlang.is_map(response) do
         response
-        |> ^Dict.put("href", Rels.self)
+        |> ^Dict.put_new("href", Rels.self)
         |> ^Dict.put_new("error", %{
           "message" => "Internal server error"
         })
