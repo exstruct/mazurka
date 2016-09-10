@@ -44,11 +44,11 @@ defmodule Test.Mazurka.Resource.Param do
 
   context Transform do
     resource Foo do
-      param foo do
-        [&value, &value]
+      param foo, fn(value) ->
+        [value, value]
       end
 
-      param bar, [&value, &value]
+      param bar, &[&1, &1]
 
       mediatype Hyper do
         action do
@@ -69,8 +69,8 @@ defmodule Test.Mazurka.Resource.Param do
     resource Foo do
       param foo
 
-      param bar do
-        [foo, &value]
+      param bar, fn(value) ->
+        [foo, value]
       end
 
       mediatype Hyper do

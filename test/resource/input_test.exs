@@ -24,11 +24,11 @@ defmodule Test.Mazurka.Resource.Input do
 
   context Transform do
     resource Foo do
-      input foo do
-        [&value, &value]
+      input foo, fn(value) ->
+        [value, value]
       end
 
-      input bar, [&value, &value]
+      input bar, &[&1, &1]
 
       mediatype Hyper do
         action do
@@ -49,8 +49,8 @@ defmodule Test.Mazurka.Resource.Input do
     resource Foo do
       input foo
 
-      input bar do
-        [foo, &value]
+      input bar, fn(value) ->
+        [foo, value]
       end
 
       mediatype Hyper do
