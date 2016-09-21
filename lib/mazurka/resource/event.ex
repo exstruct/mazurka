@@ -8,10 +8,10 @@ defmodule Mazurka.Resource.Event do
       import unquote(__MODULE__)
 
       @doc false
-      defp event(action, unquote_splicing(arguments)) do
-        {action, unquote(conn)}
+      def event(action, unquote_splicing(arguments())) do
+        {action, unquote(conn())}
       end
-      defoverridable event: unquote(length(arguments) + 1)
+      defoverridable event: unquote(length(arguments()) + 1)
     end
   end
 
@@ -26,12 +26,12 @@ defmodule Mazurka.Resource.Event do
   defmacro event([do: block]) do
     quote location: :keep do
       @doc false
-      defp event(action, unquote_splicing(arguments)) do
-        {var!(action), var!(conn)} = super(action, unquote_splicing(arguments))
+      def event(action, unquote_splicing(arguments())) do
+        {var!(action), var!(conn)} = super(action, unquote_splicing(arguments()))
         unquote(block)
         {var!(action), var!(conn)}
       end
-      defoverridable event: unquote(length(arguments) + 1)
+      defoverridable event: unquote(length(arguments()) + 1)
     end
   end
 end

@@ -5,10 +5,10 @@ defmodule Mazurka.Resource.Utils.Scope do
 
   defmacro __using__(_) do
     quote do
-      defp mazurka__scope(unquote(Utils.mediatype), unquote_splicing(Utils.arguments)) do
+      def __mazurka_scope__(unquote(Utils.mediatype), unquote_splicing(Utils.arguments)) do
         %{}
       end
-      defoverridable mazurka__scope: unquote(length(Utils.arguments) + 1)
+      defoverridable __mazurka_scope__: unquote(length(Utils.arguments) + 1)
     end
   end
 
@@ -44,13 +44,13 @@ defmodule Mazurka.Resource.Utils.Scope do
         unquote(body)
       end
 
-      defp mazurka__scope(unquote(Utils.mediatype), unquote_splicing(Utils.arguments)) do
+      def __mazurka_scope__(unquote(Utils.mediatype), unquote_splicing(Utils.arguments)) do
         unquote(Utils.scope) = super(unquote(Utils.mediatype), unquote_splicing(Utils.arguments))
         var!(conn) = unquote(Utils.conn)
         _ = var!(conn)
         Map.put(unquote(Utils.scope), unquote(name), unquote(block))
       end
-      defoverridable mazurka__scope: unquote(length(Utils.arguments) + 1)
+      defoverridable __mazurka_scope__: unquote(length(Utils.arguments) + 1)
     end
   end
 

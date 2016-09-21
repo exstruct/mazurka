@@ -13,8 +13,8 @@ defmodule Mazurka.Mixfile do
        "coveralls.detail": :test,
        "coveralls.html": :test
      ],
-     package: package,
-     deps: deps]
+     package: package(),
+     deps: deps()]
   end
 
   def application do

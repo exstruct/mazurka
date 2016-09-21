@@ -4,7 +4,7 @@ defmodule Mazurka.Resource.Utils.Global do
   defmacro __using__(opts) do
     var_name = opts[:var]
 
-    quote bind_quoted: binding do
+    quote bind_quoted: binding() do
       require Mazurka.Resource.Utils
 
       defmacro get() do

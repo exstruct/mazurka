@@ -139,7 +139,7 @@ defmodule Mazurka.Resource.Link do
     current_mediatype = Utils.mediatype
     current_opts = Utils.opts
 
-    quote bind_quoted: binding do
+    quote bind_quoted: binding() do
       case router do
         nil ->
           raise Mazurka.MissingRouterException, resource: resource, params: params, input: input, conn: conn, opts: opts
