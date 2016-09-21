@@ -118,7 +118,7 @@ defmodule Mazurka.Resource.Provides do
 
   def __format_matches__(provides) do
     provides
-    |> Enum.reduce({HashSet.new, []}, fn({{type, subtype, params} = ct, _}, {set, acc}) ->
+    |> Enum.reduce({new_set(), []}, fn({{type, subtype, params} = ct, _}, {set, acc}) ->
       acc = [{{type, subtype, params}, {type, subtype}} | acc]
       {set, acc} = format_match_wildcard(ct, 0, set, acc)
       {set, acc} = format_match_wildcard(ct, 1, set, acc)
@@ -128,6 +128,12 @@ defmodule Mazurka.Resource.Provides do
     end)
     |> elem(1)
     |> Enum.reverse()
+  end
+
+  if Code.ensure_loaded?(MapSet) do
+    defp new_set(), do: MapSet.new()
+  else
+    defp new_set(), do: HashSet.new()
   end
 
   defp format_match_star({type, subtype, params}, set, acc) do

@@ -13,10 +13,10 @@ defmodule Mazurka.Resource.Param do
       alias unquote(__MODULE__), as: Params
       import unquote(__MODULE__), only: [param: 1, param: 2]
 
-      defp mazurka__check_params(_) do
+      def __mazurka_check_params__(_) do
         {[], []}
       end
-      defoverridable mazurka__check_params: 1
+      defoverridable __mazurka_check_params__: 1
     end
   end
 
@@ -37,7 +37,7 @@ defmodule Mazurka.Resource.Param do
     [
       Scope.define(Utils.params, name, block),
       quote do
-        defp mazurka__check_params(params) do
+        def __mazurka_check_params__(params) do
           {missing, nil_params} = super(params)
           case Map.fetch(params, unquote(bin_name)) do
             :error ->
@@ -48,7 +48,7 @@ defmodule Mazurka.Resource.Param do
               {missing, nil_params}
           end
         end
-        defoverridable mazurka__check_params: 1
+        defoverridable __mazurka_check_params__: 1
       end
     ]
   end

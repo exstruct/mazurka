@@ -36,7 +36,7 @@ defmodule Mazurka.Mediatype do
       alias Mazurka.Resource.Utils
 
       defmacro __using__(_) do
-        content_types = __content_types__ |> Macro.escape()
+        content_types = __content_types__() |> Macro.escape()
         quote location: :keep do
           require Mazurka.Resource.Provides
           Mazurka.Resource.Provides.__mediatype_provides__(unquote(__MODULE__), unquote(content_types))

@@ -9,7 +9,7 @@ defmodule Mazurka.Resource.Utils do
   end
 
   def arguments do
-    [params, input, conn, router, opts]
+    [params(), input(), conn(), router(), opts()]
   end
 
   def router do
