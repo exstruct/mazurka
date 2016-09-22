@@ -58,4 +58,24 @@ defmodule Test.Mazurka.Resource.Event do
       {_, _, conn} = Foo.action([], %{}, %{}, %{})
       assert conn[:hello] == "world"
   end
+
+  context EventWithLet do
+    resource Foo do
+      let foo = 123
+
+      mediatype Hyper do
+        action do
+          %{"hello" => "world"}
+        end
+      end
+
+      event do
+        conn = Map.put(conn, :hello, foo + foo)
+      end
+    end
+  after
+    "action" ->
+      {_, _, conn} = Foo.action([], %{}, %{}, %{})
+      assert conn[:hello] == 246
+  end
 end
