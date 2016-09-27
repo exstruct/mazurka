@@ -28,6 +28,7 @@ defmodule Mazurka.Resource do
         use Mazurka.Resource.Let
         use Mazurka.Resource.Link
         use Mazurka.Resource.Mediatype
+        use Mazurka.Resource.Option
         use Mazurka.Resource.Param
         use Mazurka.Resource.Validation
         use Mazurka.Resource.Utils.Scope
@@ -51,7 +52,7 @@ defmodule Mazurka.Resource do
 
           #{inspect(__MODULE__)}.action(accept, params, input, conn, router)
       """
-      def action(accept, params, input, conn, router \\ nil, opts \\ [])
+      def action(accept, params, input, conn, router \\ nil, opts \\ %{})
 
       def action(content_types, unquote_splicing(arguments())) when is_list(content_types) do
         case mazurka__select_content_type(content_types) do
@@ -77,7 +78,7 @@ defmodule Mazurka.Resource do
 
           #{inspect(__MODULE__)}.affordance(content_type, params, input, conn, router)
       """
-      def affordance(accept, params, input, conn, router \\ nil, opts \\ [])
+      def affordance(accept, params, input, conn, router \\ nil, opts \\ %{})
 
       def affordance(content_types, unquote_splicing(arguments())) when is_list(content_types) do
         case mazurka__select_content_type(content_types) do

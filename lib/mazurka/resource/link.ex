@@ -17,9 +17,10 @@ defmodule Mazurka.Resource.Link do
   Link to another resource
   """
 
-  defmacro link_to(resource, params \\ nil, input \\ nil, fragment \\ nil, opts \\ []) do
+  defmacro link_to(resource, params \\ nil, input \\ nil, fragment \\ nil, opts \\ nil) do
     params = format_params(params)
     input = format_params(input)
+    opts = format_opts(opts)
     Module.put_attribute(__CALLER__.module, :mazurka_links, resource)
 
     quote do
@@ -38,7 +39,7 @@ defmodule Mazurka.Resource.Link do
       module = Mazurka.Router.resolve_resource(router, resource, source, conn)
 
       opts = unquote(opts)
-      warn = opts[:warn]
+      warn = Map.get(opts, :warn)
 
       case module do
         nil when warn != false ->
@@ -54,7 +55,7 @@ defmodule Mazurka.Resource.Link do
             Mazurka.Router.format_params(router, unquote(input), source, conn),
             conn,
             router,
-            [{:fragment, unquote(fragment)}, opts]
+            Map.put(opts, :fragment, unquote(fragment))
           )
       end
     end
@@ -64,9 +65,10 @@ defmodule Mazurka.Resource.Link do
   Transition to another resource
   """
 
-  defmacro transition_to(resource, params \\ nil, input \\ nil, opts \\ []) do
+  defmacro transition_to(resource, params \\ nil, input \\ nil, opts \\ nil) do
     params = format_params(params)
     input = format_params(input)
+    opts = format_opts(opts)
 
     quote do
       conn = var!(conn)
@@ -90,9 +92,10 @@ defmodule Mazurka.Resource.Link do
   Invalidate another resource
   """
 
-  defmacro invalidates(resource, params \\ nil, input \\ nil, opts \\ []) do
+  defmacro invalidates(resource, params \\ nil, input \\ nil, opts \\ nil) do
     params = format_params(params)
     input = format_params(input)
+    opts = format_opts(opts)
 
     quote do
       conn = var!(conn)
@@ -130,6 +133,21 @@ defmodule Mazurka.Resource.Link do
       Enum.reduce(unquote(other), %{}, fn({name, value}, acc) ->
         Map.put(acc, to_string(name), value)
       end)
+    end
+  end
+
+  defp format_opts(opts) when opts in [nil, []] do
+    {:%{}, [], []}
+  end
+  defp format_opts({:%{}, _meta, _items} = map) do
+    map
+  end
+  defp format_opts(items) when is_list(items) do
+    {:%{}, [], items}
+  end
+  defp format_opts(other) do
+    quote do
+      Enum.into(unquote(other), %{})
     end
   end
 

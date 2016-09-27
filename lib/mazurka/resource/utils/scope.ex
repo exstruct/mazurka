@@ -12,12 +12,17 @@ defmodule Mazurka.Resource.Utils.Scope do
     end
   end
 
-  def define(var, {name, _, _}, block) when is_atom(name) do
-    define(var, name, block)
+  def define(var, name, block, type \\ :binary)
+  def define(var, {name, _, _}, block, type) when is_atom(name) do
+    define(var, name, block, type)
   end
-  def define(var, name, block) when is_atom(name) do
+  def define(var, name, block, :binary) when is_atom(name) do
     bin_name = to_string(name)
     block = transform_value(var, bin_name, block)
+    compile(name, block)
+  end
+  def define(var, name, block, :atom) when is_atom(name) do
+    block = transform_value(var, name, block)
     compile(name, block)
   end
 
