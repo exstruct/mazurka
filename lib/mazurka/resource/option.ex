@@ -18,10 +18,10 @@ defmodule Mazurka.Resource.Option do
 
       option name
 
-      option age, String.to_integer(&value)
+      option age, &String.to_integer(&1)
 
-      option address do
-        Address.parse(&value)
+      option address, fn(value) ->
+        Address.parse(value)
       end
   """
 

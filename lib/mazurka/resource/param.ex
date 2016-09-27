@@ -25,10 +25,10 @@ defmodule Mazurka.Resource.Param do
 
       param user
 
-      param user, User.get(&value)
+      param user, &User.get(&1)
 
-      param user do
-        User.get(&value)
+      param user, fn(value) ->
+        User.get(value)
       end
   """
 

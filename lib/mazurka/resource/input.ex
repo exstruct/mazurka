@@ -18,10 +18,10 @@ defmodule Mazurka.Resource.Input do
 
       input name
 
-      input age, String.to_integer(&value)
+      input age, &String.to_integer(&1)
 
-      input address do
-        Address.parse(&value)
+      input address, fn(value) ->
+        Address.parse(value)
       end
   """
 
