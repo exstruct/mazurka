@@ -30,7 +30,7 @@ defmodule Test.Mazurka.Case do
           for {n, d, _, b} <- tests do
             [
               "## ", n, "\n\n",
-              String.trim("#{d}"),
+              trim("#{d}"),
               "\n```elixir\n",
               ast_to_string(b),
               "\n```",
@@ -141,7 +141,7 @@ defmodule Test.Mazurka.Case do
             "```"
           ]
         (comment) when is_binary(comment) ->
-          comment |> String.trim()
+          comment |> trim()
       end)
       |> Enum.join("\n\n")
 
@@ -154,7 +154,7 @@ defmodule Test.Mazurka.Case do
         File.mkdir_p!(Path.dirname(path))
         File.write!(path, [
           "# ", group, " - ", name, "\n\n",
-          String.trim(@contextdoc),
+          trim(@contextdoc),
           "\n\n## Setup\n\n",
           doc,
           "\n\n",
@@ -171,6 +171,16 @@ defmodule Test.Mazurka.Case do
           {:__aliases__, [], [Module.split(alias) |> List.last |> String.to_atom()]}
         end
       end
+    end
+  end
+
+  if function_exported?(String, :trim, 1) do
+    def trim(a) do
+      String.trim(a)
+    end
+  else
+    def trim(a) do
+      String.strip(a)
     end
   end
 end
