@@ -1,8 +1,10 @@
 defmodule Test.Mazurka.Resource.Link do
   use Test.Mazurka.Case
 
-  context Dual do
-    resource Foo do
+  context "Dual" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       mediatype Hyper do
@@ -12,7 +14,9 @@ defmodule Test.Mazurka.Resource.Link do
       end
     end
 
-    resource Bar do
+    defmodule Bar do
+      use Mazurka.Resource
+
       param bar
 
       mediatype Hyper do
@@ -63,8 +67,10 @@ defmodule Test.Mazurka.Resource.Link do
       end
   end
 
-  context MissingParam do
-    resource Foo do
+  context "Missing Param" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       mediatype Hyper do
@@ -74,7 +80,9 @@ defmodule Test.Mazurka.Resource.Link do
       end
     end
 
-    resource Bar do
+    defmodule Bar do
+      use Mazurka.Resource
+
       mediatype Hyper do
         action do
           %{
@@ -90,8 +98,10 @@ defmodule Test.Mazurka.Resource.Link do
       end
   end
 
-  context NilParam do
-    resource Foo do
+  context "Nil Param" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       mediatype Hyper do
@@ -101,7 +111,9 @@ defmodule Test.Mazurka.Resource.Link do
       end
     end
 
-    resource Bar do
+    defmodule Bar do
+      use Mazurka.Resource
+
       mediatype Hyper do
         action do
           %{
@@ -116,8 +128,10 @@ defmodule Test.Mazurka.Resource.Link do
       assert %{"foo" => %Mazurka.Affordance.Undefined{resource: Foo}} = res
   end
 
-  context Transition do
-    resource Foo do
+  context "Transition" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       mediatype Hyper do
@@ -127,7 +141,9 @@ defmodule Test.Mazurka.Resource.Link do
       end
     end
 
-    resource Bar do
+    defmodule Bar do
+      use Mazurka.Resource
+
       mediatype Hyper do
         action do
           transition_to(Foo, foo: "123")
@@ -147,8 +163,10 @@ defmodule Test.Mazurka.Resource.Link do
       assert %{"foo" => "123"} == affordance.params
   end
 
-  context Invaldation do
-    resource Foo do
+  context "Invalidation" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       mediatype Hyper do
@@ -158,7 +176,9 @@ defmodule Test.Mazurka.Resource.Link do
       end
     end
 
-    resource Bar do
+    defmodule Bar do
+      use Mazurka.Resource
+
       param bar
 
       mediatype Hyper do
@@ -168,7 +188,9 @@ defmodule Test.Mazurka.Resource.Link do
       end
     end
 
-    resource Baz do
+    defmodule Baz do
+      use Mazurka.Resource
+
       mediatype Hyper do
         action do
           invalidates(Foo, foo: "123")

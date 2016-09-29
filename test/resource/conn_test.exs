@@ -1,8 +1,10 @@
 defmodule Test.Mazurka.Resource.Conn do
   use Test.Mazurka.Case
 
-  context ConnAccess do
-    resource Foo do
+  context "Conn Access" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       mediatype Hyper do
         action do
           %{"port" => conn.port}

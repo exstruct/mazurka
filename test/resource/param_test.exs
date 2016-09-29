@@ -2,7 +2,9 @@ defmodule Test.Mazurka.Resource.Param do
   use Test.Mazurka.Case
 
   context Single do
-    resource Foo do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       mediatype Hyper do
@@ -43,7 +45,9 @@ defmodule Test.Mazurka.Resource.Param do
   end
 
   context Transform do
-    resource Foo do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo, fn(value) ->
         [value, value]
       end
@@ -66,7 +70,9 @@ defmodule Test.Mazurka.Resource.Param do
   end
 
   context Referential do
-    resource Foo do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       param bar, fn(value) ->

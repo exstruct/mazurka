@@ -2,7 +2,9 @@ defmodule Test.Mazurka.Resource.Input do
   use Test.Mazurka.Case
 
   context Single do
-    resource Foo do
+    defmodule Foo do
+      use Mazurka.Resource
+
       input foo
 
       mediatype Hyper do
@@ -23,7 +25,9 @@ defmodule Test.Mazurka.Resource.Input do
   end
 
   context Transform do
-    resource Foo do
+    defmodule Foo do
+      use Mazurka.Resource
+
       input foo, fn(value) ->
         [value, value]
       end
@@ -46,7 +50,9 @@ defmodule Test.Mazurka.Resource.Input do
   end
 
   context Referential do
-    resource Foo do
+    defmodule Foo do
+      use Mazurka.Resource
+
       input foo
 
       input bar, fn(value) ->

@@ -3,7 +3,7 @@ defmodule Mazurka.Mixfile do
 
   def project do
     [app: :mazurka,
-     version: "1.0.4",
+     version: "1.0.5",
      elixir: "~> 1.0",
      description: "hypermedia api toolkit",
      test_coverage: [tool: ExCoveralls],
@@ -14,7 +14,9 @@ defmodule Mazurka.Mixfile do
        "coveralls.html": :test
      ],
      package: package(),
-     deps: deps()]
+     deps: deps(),
+     docs: [extra_section: "Guide",
+            extras: examples]]
   end
 
   def application do
@@ -34,5 +36,21 @@ defmodule Mazurka.Mixfile do
      maintainers: ["Cameron Bytheway"],
      licenses: ["MIT"],
      links: %{"GitHub" => "https://github.com/exstruct/mazurka"}]
+  end
+
+  def examples() do
+    if Mix.env == :dev do
+      ["extra/GETTING_STARTED.md",
+       "extra/Overview.md",
+       "extra/Installation.md",
+       "extra/Mediatype.md",
+       "extra/Affordance.md",
+       "extra/Param_Input_and_Option.md",
+       "extra/Condition_and_Validation.md",
+       "extra/EXAMPLES.md"
+       | Path.wildcard("testdoc/**/*.md")]
+    else
+      []
+    end
   end
 end

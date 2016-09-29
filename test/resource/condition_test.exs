@@ -1,8 +1,18 @@
 defmodule Test.Mazurka.Resource.Condition do
   use Test.Mazurka.Case
 
-  context Single do
-    resource Foo do
+  context "Simple" do
+    @contextdoc """
+    In this example, we're going to add a condition that asserts the `foo` param does not equal `"bar"`.
+    """
+
+    comment """
+    We start by creating a resource and adding the `condition/1` call
+    """
+
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       condition foo != "bar"
@@ -14,27 +24,75 @@ defmodule Test.Mazurka.Resource.Condition do
       end
     end
 
-    router Router do
-      route "GET", ["foo", :foo], Foo
+    comment """
+    We'll also set up a router so we can observe how affordances work with failed conditions.
+    """
+
+    defmodule Router do
+      def resolve(%{resource: Foo, params: %{"foo" => foo}} = affordance, _source, _conn) do
+        %{affordance | method: "GET", path: "/foo/#{foo}"}
+      end
     end
   after
-    "action" ->
-      assert {_, _, _} = Foo.action([], %{"foo" => "foo"}, %{}, %{})
+    """
+    Action success
 
-    "action conditions failure" ->
+    Here we pass the value of `"baz"` for the `"foo"` param.
+
+    This call should return successfully.
+    """ ->
+      accepts = [{"application", "hyper+json", %{}}]
+      params = %{"foo" => "baz"}
+      input = %{}
+      conn = %{}
+      {response, content_type, _conn} = Foo.action(accepts, params, input, conn, Router)
+      assert %{"foo" => "baz"} = response
+      assert {"application", "hyper+json", _} = content_type
+
+    """
+    Action failure
+
+    In this case we'll pass `"bar"` as the `"foo"` param and we should get
+    a `Mazurka.ConditionException`.
+    """ ->
       assert_raise Mazurka.ConditionException, fn ->
-        Foo.action([], %{"foo" => "bar"}, %{}, %{})
+        accepts = []
+        params = %{"foo" => "bar"}
+        input = %{}
+        conn = %{}
+        Foo.action(accepts, params, input, conn)
       end
 
-    "affordance" ->
-      assert {_, _} = Foo.affordance([], %{"foo" => "foo"}, %{}, %{}, Router)
+    """
+    Affordance success
 
-    "affordance conditions failure" ->
-      assert {%Mazurka.Affordance.Undefined{}, _} = Foo.affordance([], %{"foo" => "bar"}, %{}, %{}, Router)
+    When we call the `Foo.affordance/5` function with valid params we get a valid affordance.
+    """ ->
+      accepts = [{"application", "hyper+json", %{}}]
+      params = %{"foo" => "baz"}
+      input = %{}
+      conn = %{}
+      {affordance, content_type} = Foo.affordance(accepts, params, input, conn, Router)
+      assert %{"href" => "/foo/baz"} = affordance
+      assert {"application", "hyper+json", _} = content_type
+
+    """
+    Affordance failure
+
+    When calling an affordance with invalid data we'll get a `Mazurka.Affordance.Undefined` struct informing us that the affordance was unable to render.
+    """ ->
+      accepts = [{"application", "hyper+json", %{}}]
+      params = %{"foo" => "bar"}
+      input = %{}
+      conn = %{}
+      {affordance, _} = Foo.affordance(accepts, params, input, conn, Router)
+      assert %Mazurka.Affordance.Undefined{} = affordance
   end
 
-  context Several do
-    resource Foo do
+  context "Several" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       condition foo != "bar"
@@ -74,8 +132,10 @@ defmodule Test.Mazurka.Resource.Condition do
       assert {%Mazurka.Affordance.Undefined{}, _} = Foo.affordance([], %{"foo" => "baz"}, %{}, %{}, Router)
   end
 
-  context Ordering do
-    resource Foo do
+  context "Ordering" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       condition foo != "bar"
@@ -116,8 +176,10 @@ defmodule Test.Mazurka.Resource.Condition do
       assert {%Mazurka.Affordance.Undefined{}, _} = Foo.affordance([], %{"foo" => "baz"}, %{}, %{}, Router)
   end
 
-  context CustomMessage do
-    resource Foo do
+  context "Custom Message" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       condition foo != "bar", "Uh oh..."

@@ -2,7 +2,9 @@ defmodule Test.Mazurka.Resource.Event do
   use Test.Mazurka.Case
 
   context Single do
-    resource Foo do
+    defmodule Foo do
+      use Mazurka.Resource
+
       mediatype Hyper do
         action do
           %{"hello" => "bar"}
@@ -20,7 +22,9 @@ defmodule Test.Mazurka.Resource.Event do
   end
 
   context Multiple do
-    resource Foo do
+    defmodule Foo do
+      use Mazurka.Resource
+
       mediatype Hyper do
         action do
           %{"hello" => "world"}
@@ -42,7 +46,9 @@ defmodule Test.Mazurka.Resource.Event do
   end
 
   context Action do
-    resource Foo do
+    defmodule Foo do
+      use Mazurka.Resource
+
       mediatype Hyper do
         action do
           %{"hello" => "world"}
@@ -59,8 +65,10 @@ defmodule Test.Mazurka.Resource.Event do
       assert conn[:hello] == "world"
   end
 
-  context EventWithLet do
-    resource Foo do
+  context "Event with Let Scoping" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       let foo = 123
 
       mediatype Hyper do

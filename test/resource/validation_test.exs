@@ -1,8 +1,10 @@
 defmodule Test.Mazurka.Resource.Validation do
   use Test.Mazurka.Case
 
-  context Single do
-    resource Foo do
+  context "Simple" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       validation foo != "bar"
@@ -33,8 +35,10 @@ defmodule Test.Mazurka.Resource.Validation do
       assert {_, _} = Foo.affordance([], %{"foo" => "bar"}, %{}, %{}, Router)
   end
 
-  context Several do
-    resource Foo do
+  context "Several" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       validation foo != "bar"
@@ -74,8 +78,10 @@ defmodule Test.Mazurka.Resource.Validation do
       assert {_, _} = Foo.affordance([], %{"foo" => "baz"}, %{}, %{}, Router)
   end
 
-  context Ordering do
-    resource Foo do
+  context "Ordering" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       validation foo != "bar"
@@ -116,8 +122,10 @@ defmodule Test.Mazurka.Resource.Validation do
       assert {_, _} = Foo.affordance([], %{"foo" => "baz"}, %{}, %{}, Router)
   end
 
-  context CustomMessage do
-    resource Foo do
+  context "Custom Message" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       param foo
 
       validation foo != "bar", "Uh oh..."

@@ -1,8 +1,10 @@
 defmodule Test.Mazurka.Resource.ContentType do
   use Test.Mazurka.Case
 
-  context Multiple do
-    resource Foo do
+  context "Multiple Types" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       mediatype Hyper do
         action do
           %{"hello" => "World"}
@@ -46,8 +48,10 @@ defmodule Test.Mazurka.Resource.ContentType do
       end
   end
 
-  context TextRequest do
-    resource Foo do
+  context "Text Request" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       mediatype Text do
         action do
           "Hello, World!"
@@ -60,8 +64,10 @@ defmodule Test.Mazurka.Resource.ContentType do
       assert "Hello, World!" = res
   end
 
-  context XMLRequest do
-    resource Foo do
+  context "XML Request" do
+    defmodule Foo do
+      use Mazurka.Resource
+
       mediatype XML do
         action do
           {"foo", %{}, []}

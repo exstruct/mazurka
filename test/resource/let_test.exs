@@ -2,7 +2,9 @@ defmodule Test.Mazurka.Resource.Let do
   use Test.Mazurka.Case
 
   context Basic do
-    resource Foo do
+    defmodule Foo do
+      use Mazurka.Resource
+
       let foo = 1
 
       let bar do
