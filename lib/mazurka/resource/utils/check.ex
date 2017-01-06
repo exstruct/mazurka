@@ -8,7 +8,7 @@ defmodule Mazurka.Resource.Utils.Check do
     macro = :"#{String.downcase(name)}"
 
     quote bind_quoted: binding(), location: :keep do
-      use Mazurka.Resource.Utils
+      alias Mazurka.Resource.Utils
 
       defmacro __using__(_) do
         check = unquote(mazurka_check)
@@ -16,10 +16,10 @@ defmodule Mazurka.Resource.Utils.Check do
           import unquote(__MODULE__)
 
           @doc false
-          def unquote(check)(unquote_splicing(arguments()), _) do
+          def unquote(check)(unquote_splicing(Utils.arguments), _) do
             :ok
           end
-          defoverridable [{unquote(check), unquote(length(arguments()) + 1)}]
+          defoverridable [{unquote(check), unquote(length(Utils.arguments) + 1)}]
         end
       end
 
@@ -38,8 +38,8 @@ defmodule Mazurka.Resource.Utils.Check do
         check = unquote(mazurka_check)
         quote location: :keep do
           @doc false
-          def unquote(check)(unquote_splicing(arguments()), unquote(scope())) do
-            case super(unquote_splicing(arguments()), unquote(scope())) do
+          def unquote(check)(unquote_splicing(Utils.arguments), unquote(Utils.scope)) do
+            case super(unquote_splicing(Utils.arguments), unquote(Utils.scope)) do
               :ok ->
                 Mazurka.Resource.Utils.Scope.dump()
                 if unquote(block) do
@@ -51,7 +51,7 @@ defmodule Mazurka.Resource.Utils.Check do
                 other
             end
           end
-          defoverridable [{unquote(check), unquote(length(arguments()) + 1)}]
+          defoverridable [{unquote(check), unquote(length(Utils.arguments) + 1)}]
         end
       end
 

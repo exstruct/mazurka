@@ -3,7 +3,7 @@ defmodule Mazurka.Resource do
   TODO write the docs
   """
 
-  use Mazurka.Resource.Utils
+  alias Mazurka.Resource.Utils
 
   @doc """
   Initialize a module as a mazurka resource
@@ -54,7 +54,7 @@ defmodule Mazurka.Resource do
       """
       def action(accept, params, input, conn, router \\ nil, opts \\ %{})
 
-      def action(content_types, unquote_splicing(arguments())) when is_list(content_types) do
+      def action(content_types, unquote_splicing(Utils.arguments)) when is_list(content_types) do
         case mazurka__select_content_type(content_types) do
           nil ->
             raise Mazurka.UnacceptableContentTypeException, [
@@ -62,7 +62,7 @@ defmodule Mazurka.Resource do
               acceptable: mazurka__acceptable_content_types()
             ]
           content_type ->
-            {response, conn} = action(content_type, unquote_splicing(arguments()))
+            {response, conn} = action(content_type, unquote_splicing(Utils.arguments))
             {response, content_type, conn}
         end
       end
@@ -80,7 +80,7 @@ defmodule Mazurka.Resource do
       """
       def affordance(accept, params, input, conn, router \\ nil, opts \\ %{})
 
-      def affordance(content_types, unquote_splicing(arguments())) when is_list(content_types) do
+      def affordance(content_types, unquote_splicing(Utils.arguments)) when is_list(content_types) do
         case mazurka__select_content_type(content_types) do
           nil ->
             raise Mazurka.UnacceptableContentTypeException, [
@@ -88,7 +88,7 @@ defmodule Mazurka.Resource do
               acceptable: mazurka__acceptable_content_types()
             ]
           content_type ->
-            response = affordance(content_type, unquote_splicing(arguments()))
+            response = affordance(content_type, unquote_splicing(Utils.arguments))
             {response, content_type}
         end
       end

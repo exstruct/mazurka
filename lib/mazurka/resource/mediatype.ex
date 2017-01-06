@@ -27,7 +27,7 @@ defmodule Mazurka.Resource.Mediatype do
   end
 
   defp resolve([], module) do
-    raise Mazurka.UndefinedMediatype, mediatype: module
+    raise Mazurka.UndefinedMediatypeException, mediatype: module
   end
   defp resolve([mod | rest], module) do
     mod.module_info() && mod

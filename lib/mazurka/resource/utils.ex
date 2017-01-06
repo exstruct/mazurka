@@ -1,13 +1,6 @@
 defmodule Mazurka.Resource.Utils do
   @moduledoc false
 
-  defmacro __using__(_) do
-    quote do
-      import unquote(__MODULE__)
-      alias unquote(__MODULE__)
-    end
-  end
-
   def arguments do
     [params(), input(), conn(), router(), opts()]
   end

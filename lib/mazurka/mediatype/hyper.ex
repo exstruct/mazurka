@@ -1,6 +1,6 @@
 defmodule Mazurka.Mediatype.Hyper do
   use Mazurka.Mediatype
-  use Mazurka.Resource.Utils
+  alias Mazurka.Resource.Utils
 
   def __content_types__ do
     [{"application", "json", %{}},

@@ -1,7 +1,7 @@
 defmodule Mazurka.Resource.Affordance do
   @moduledoc false
 
-  use Mazurka.Resource.Utils
+  alias Mazurka.Resource.Utils
 
   defmacro __using__(_) do
     quote do
@@ -35,7 +35,8 @@ defmodule Mazurka.Resource.Affordance do
 
   defmacro affordance(mediatype, [do: block]) do
     quote location: :keep do
-      defp mazurka__match_affordance(unquote(mediatype) = unquote(Utils.mediatype()), unquote_splicing(arguments()), unquote(scope())) do
+      defp mazurka__match_affordance(unquote(mediatype) = unquote(Utils.mediatype), unquote_splicing(Utils.arguments), unquote(Utils.scope)) do
+        Mazurka.Resource.Utils.Scope.dump()
         var!(conn) = unquote(Utils.conn())
         affordance = rel_self()
         props = unquote(block)
@@ -47,44 +48,44 @@ defmodule Mazurka.Resource.Affordance do
 
   defmacro __before_compile__(_) do
     quote location: :keep do
-      def affordance(content_type = {_, _, _}, unquote_splicing(arguments())) do
+      def affordance(content_type = {_, _, _}, unquote_splicing(Utils.arguments)) do
         case mazurka__provide_content_type(content_type) do
           nil ->
             %Mazurka.Affordance.Unacceptable{resource: __MODULE__,
-                                             params: unquote(params()),
-                                             input: unquote(input()),
-                                             opts: unquote(opts())}
+                                             params: unquote(Utils.params),
+                                             input: unquote(Utils.input),
+                                             opts: unquote(Utils.opts)}
           mediatype ->
-            affordance(mediatype, unquote_splicing(arguments()))
+            affordance(mediatype, unquote_splicing(Utils.arguments))
         end
       end
-      def affordance(mediatype, unquote_splicing(arguments())) when is_atom(mediatype) do
-        case __mazurka_check_params__(unquote(params())) do
+      def affordance(mediatype, unquote_splicing(Utils.arguments)) when is_atom(mediatype) do
+        case __mazurka_check_params__(unquote(Utils.params)) do
           {[], []} ->
-            scope = __mazurka_scope__(mediatype, unquote_splicing(arguments()))
-            case __mazurka_conditions__(unquote_splicing(arguments()), scope) do
+            scope = __mazurka_scope__(mediatype, unquote_splicing(Utils.arguments))
+            case __mazurka_conditions__(unquote_splicing(Utils.arguments), scope) do
               {:error, _} ->
                 %Mazurka.Affordance.Undefined{resource: __MODULE__,
                                               mediatype: mediatype,
-                                              params: unquote(params()),
-                                              input: unquote(input()),
-                                              opts: unquote(opts())}
+                                              params: unquote(Utils.params),
+                                              input: unquote(Utils.input),
+                                              opts: unquote(Utils.opts)}
               :ok ->
-                mazurka__match_affordance(mediatype, unquote_splicing(arguments()), scope)
+                mazurka__match_affordance(mediatype, unquote_splicing(Utils.arguments), scope)
             end
           {missing, _} when length(missing) > 0 ->
-            raise Mazurka.MissingParametersException, params: missing, conn: unquote(conn())
+            raise Mazurka.MissingParametersException, params: missing, conn: unquote(Utils.conn())
           _ ->
             %Mazurka.Affordance.Undefined{resource: __MODULE__,
                                           mediatype: mediatype,
-                                          params: unquote(params()),
-                                          input: unquote(input()),
-                                          opts: unquote(opts())}
+                                          params: unquote(Utils.params),
+                                          input: unquote(Utils.input),
+                                          opts: unquote(Utils.opts)}
         end
       end
 
-      defp mazurka__match_affordance(mediatype, unquote_splicing(arguments()), scope) do
-        mazurka__default_affordance(mediatype, unquote_splicing(arguments()), scope)
+      defp mazurka__match_affordance(mediatype, unquote_splicing(Utils.arguments), scope) do
+        mazurka__default_affordance(mediatype, unquote_splicing(Utils.arguments), scope)
       end
     end
   end

@@ -1,9 +1,9 @@
 defmodule Mazurka.Resource.Input do
   @moduledoc false
 
-  use Mazurka.Resource.Utils
-  use Mazurka.Resource.Utils.Global, var: :input
-  alias Mazurka.Resource.Utils.Scope
+  alias Mazurka.Resource.Utils
+  use Utils.Global, var: :input
+  alias Utils.Scope
 
   defmacro __using__(_) do
     quote do

@@ -62,7 +62,7 @@ defmodule Mazurka.MissingRouterException do
   end
 end
 
-defmodule Mazurka.UndefinedMediatype do
+defmodule Mazurka.UndefinedMediatypeException do
   @moduledoc """
   TODO write the docs
   """

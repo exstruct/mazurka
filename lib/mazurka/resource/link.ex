@@ -1,7 +1,7 @@
 defmodule Mazurka.Resource.Link do
   @moduledoc false
 
-  use Mazurka.Resource.Utils
+  alias Mazurka.Resource.Utils
 
   defmacro __using__(_) do
     quote do

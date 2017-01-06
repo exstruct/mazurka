@@ -81,7 +81,7 @@ defmodule Test.Mazurka.Resource.ContentType do
   end
 
   test "throws an error with an undefined mediatype" do
-    assert_raise Mazurka.UndefinedMediatype, fn ->
+    assert_raise Mazurka.UndefinedMediatypeException, fn ->
       defmodule Foo do
         use Mazurka.Resource
 

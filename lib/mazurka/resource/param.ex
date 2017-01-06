@@ -2,10 +2,9 @@ defmodule Mazurka.Resource.Param do
   @moduledoc false
 
   # expose the params getter
-  use Mazurka.Resource.Utils.Global, var: :params
-
-  use Mazurka.Resource.Utils
-  alias Mazurka.Resource.Utils.Scope
+  alias Mazurka.Resource.Utils
+  use Utils.Global, var: :params
+  alias Utils.Scope
 
   defmacro __using__(_) do
     quote do

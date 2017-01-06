@@ -1,9 +1,9 @@
 defmodule Mazurka.Resource.Option do
   @moduledoc false
 
-  use Mazurka.Resource.Utils
-  use Mazurka.Resource.Utils.Global, var: :opts, type: :atom
-  alias Mazurka.Resource.Utils.Scope
+  alias Mazurka.Resource.Utils
+  use Utils.Global, var: :opts, type: :atom
+  alias Utils.Scope
 
   defmacro __using__(_) do
     quote do
