@@ -41,6 +41,7 @@ defmodule Mazurka.Resource.Utils.Check do
           def unquote(check)(unquote_splicing(arguments()), unquote(scope())) do
             case super(unquote_splicing(arguments()), unquote(scope())) do
               :ok ->
+                Mazurka.Resource.Utils.Scope.dump()
                 if unquote(block) do
                   :ok
                 else

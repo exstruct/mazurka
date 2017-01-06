@@ -28,6 +28,7 @@ defmodule Mazurka.Resource.Event do
       @doc false
       def __mazurka_event__(action, unquote_splicing(arguments()), unquote(scope()), unquote(mediatype())) do
         {var!(action), var!(conn)} = super(action, unquote_splicing(arguments()), unquote(scope()), unquote(mediatype()))
+        Mazurka.Resource.Utils.Scope.dump()
         unquote(block)
         {var!(action), var!(conn)}
       end

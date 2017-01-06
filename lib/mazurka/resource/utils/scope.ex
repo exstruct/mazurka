@@ -5,6 +5,7 @@ defmodule Mazurka.Resource.Utils.Scope do
 
   defmacro __using__(_) do
     quote do
+      @mazurka_scope []
       def __mazurka_scope__(unquote(Utils.mediatype), unquote_splicing(Utils.arguments)) do
         %{}
       end
@@ -42,31 +43,27 @@ defmodule Mazurka.Resource.Utils.Scope do
   end
 
   def compile(name, block) do
-    body = Macro.escape(get(name))
-
     quote do
-      defmacrop unquote(name)() do
-        unquote(body)
-      end
-
       def __mazurka_scope__(unquote(Utils.mediatype), unquote_splicing(Utils.arguments)) do
         unquote(Utils.scope) = super(unquote(Utils.mediatype), unquote_splicing(Utils.arguments))
         var!(conn) = unquote(Utils.conn)
         _ = var!(conn)
+        unquote(__MODULE__).dump()
         Map.put(unquote(Utils.scope), unquote(name), unquote(block))
       end
       defoverridable __mazurka_scope__: unquote(length(Utils.arguments) + 1)
+
+      @mazurka_scope :ordsets.add_element(unquote(name), @mazurka_scope)
     end
   end
 
-  defp get(name) do
+  defmacro dump() do
+    scope = Module.get_attribute(__CALLER__.module, :mazurka_scope)
+    vars = Enum.map(scope, &{&1, Macro.var(&1, nil)})
+    assigns = Enum.map(scope, &quote(do: _ = unquote(Macro.var(&1, nil))))
     quote do
-      case Map.fetch(unquote(Utils.scope), unquote(name)) do
-        :error ->
-          raise RuntimeError, message: "variable #{inspect(unquote(name))} was not set before trying to use it"
-        {:ok, value} ->
-          value
-      end
+      %{unquote_splicing(vars)} = unquote(Utils.scope)
+      unquote_splicing(assigns)
     end
   end
 end

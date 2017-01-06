@@ -36,6 +36,7 @@ defmodule Mazurka.Resource.Action do
   defmacro action(mediatype, [do: block]) do
     quote do
       defp mazurka__match_action(unquote(mediatype) = unquote(Utils.mediatype), unquote_splicing(arguments()), unquote(scope())) do
+        Mazurka.Resource.Utils.Scope.dump()
         var!(conn) = unquote(Utils.conn)
         action = unquote(block)
         res = unquote(mediatype).__handle_action__(action)
