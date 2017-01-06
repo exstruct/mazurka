@@ -16,7 +16,7 @@ defmodule Mazurka.Mixfile do
      package: package(),
      deps: deps(),
      docs: [extra_section: "Guide",
-            extras: examples]]
+            extras: examples()]]
   end
 
   def application do
@@ -25,8 +25,7 @@ defmodule Mazurka.Mixfile do
 
   defp deps do
     [{:mimetype_parser, "~> 0.1.0"},
-     {:earmark, "~> 0.1", only: :dev},
-     {:ex_doc, "~> 0.7", only: :dev},
+     {:ex_doc, ">= 0.0.0", only: :dev},
      {:mix_test_watch, "~> 0.2", only: :dev},
      {:excoveralls, "~> 0.5.1", only: :test},]
   end

@@ -116,9 +116,15 @@ defmodule Mazurka.Resource.Provides do
     end)
   end
 
+  if Code.ensure_loaded?(MapSet) do
+    @set MapSet
+  else
+    @set HashSet
+  end
+
   def __format_matches__(provides) do
     provides
-    |> Enum.reduce({new_set(), []}, fn({{type, subtype, params} = ct, _}, {set, acc}) ->
+    |> Enum.reduce({@set.new(), []}, fn({{type, subtype, params} = ct, _}, {set, acc}) ->
       acc = [{{type, subtype, params}, {type, subtype}} | acc]
       {set, acc} = format_match_wildcard(ct, 0, set, acc)
       {set, acc} = format_match_wildcard(ct, 1, set, acc)
@@ -130,16 +136,10 @@ defmodule Mazurka.Resource.Provides do
     |> Enum.reverse()
   end
 
-  if Code.ensure_loaded?(MapSet) do
-    defp new_set(), do: MapSet.new()
-  else
-    defp new_set(), do: HashSet.new()
-  end
-
   defp format_match_star({type, subtype, params}, set, acc) do
     key = {"*", "*", params}
-    if !Set.member?(set, key) do
-      {Set.put(set, key), [{key, {type, subtype}} | acc]}
+    if !@set.member?(set, key) do
+      {@set.put(set, key), [{key, {type, subtype}} | acc]}
     else
       {set, acc}
     end
@@ -147,8 +147,8 @@ defmodule Mazurka.Resource.Provides do
 
   defp format_match_wildcard({type, subtype, _} = content_type, pos, set, acc) do
     key = put_elem(content_type, pos, "*")
-    if !Set.member?(set, key) do
-      {Set.put(set, key), [{key, {type, subtype}} | acc]}
+    if !@set.member?(set, key) do
+      {@set.put(set, key), [{key, {type, subtype}} | acc]}
     else
       {set, acc}
     end
