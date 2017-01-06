@@ -3,7 +3,7 @@ defmodule Mazurka.Mixfile do
 
   def project do
     [app: :mazurka,
-     version: "1.0.5",
+     version: "1.0.6",
      elixir: "~> 1.0",
      description: "hypermedia api toolkit",
      test_coverage: [tool: ExCoveralls],
@@ -15,8 +15,8 @@ defmodule Mazurka.Mixfile do
      ],
      package: package(),
      deps: deps(),
-     docs: [extra_section: "Guide",
-            extras: examples()]]
+     docs: [extras: examples(),
+            logo: "extra/logo.png"]]
   end
 
   def application do
@@ -39,15 +39,22 @@ defmodule Mazurka.Mixfile do
 
   def examples() do
     if Mix.env == :dev do
-      ["extra/GETTING_STARTED.md",
-       "extra/Overview.md",
-       "extra/Installation.md",
-       "extra/Mediatype.md",
-       "extra/Affordance.md",
-       "extra/Param_Input_and_Option.md",
-       "extra/Condition_and_Validation.md",
-       "extra/EXAMPLES.md"
-       | Path.wildcard("testdoc/**/*.md")]
+      [
+        {"Getting Started", [
+          "extra/Overview.md",
+          "extra/Installation.md",
+          "extra/Mediatype.md",
+          "extra/Affordance.md",
+          "extra/Param_Input_and_Option.md",
+          "extra/Condition_and_Validation.md",
+        ]},
+        {"Examples", Path.wildcard("testdoc/**/*.md")}
+      ]
+      |> Enum.flat_map(fn({group, files}) ->
+        Enum.map(files, fn(file) ->
+          {file, [group: group]}
+        end)
+      end)
     else
       []
     end
