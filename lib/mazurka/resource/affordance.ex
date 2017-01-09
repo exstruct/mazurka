@@ -41,7 +41,7 @@ defmodule Mazurka.Resource.Affordance do
         affordance = rel_self()
         props = unquote(block)
         unquote(Utils.conn()) = var!(conn)
-        unquote(mediatype).__handle_affordance__(affordance, props)
+        unquote(mediatype).handle_affordance(affordance, props)
       end
     end
   end

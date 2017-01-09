@@ -1,15 +1,15 @@
 defmodule Mazurka.Mediatype.Text do
   use Mazurka.Mediatype
 
-  def __content_types__ do
+  def content_types do
     [{"text", "plain", %{}}]
   end
 
-  defmacro __handle_action__(block) do
+  defmacro handle_action(block) do
     block
   end
 
-  defmacro __handle_affordance__(affordance, props) do
+  defmacro handle_affordance(affordance, props) do
     quote location: :keep do
       to_string(unquote(props) || unquote(affordance))
     end

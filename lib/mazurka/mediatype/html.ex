@@ -1,15 +1,15 @@
 defmodule Mazurka.Mediatype.HTML do
   use Mazurka.Mediatype
 
-  def __content_types__ do
+  def content_types do
     [{"text", "html", %{}}]
   end
 
-  defmacro __handle_action__(block) do
+  defmacro handle_action(block) do
     block
   end
 
-  defmacro __handle_affordance__(affordance, props) do
+  defmacro handle_affordance(affordance, props) do
     quote location: :keep do
       affordance = unquote(affordance)
       case {affordance, unquote(props) || to_string(affordance)} do

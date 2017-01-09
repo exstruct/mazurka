@@ -1,15 +1,15 @@
 defmodule Mazurka.Mediatype.XML do
   use Mazurka.Mediatype
 
-  def __content_types__ do
+  def content_types do
     [{"application", "xml", %{}}]
   end
 
-  defmacro __handle_action__(block) do
+  defmacro handle_action(block) do
     block
   end
 
-  defmacro __handle_affordance__(affordance, _props) do
+  defmacro handle_affordance(affordance, _props) do
     quote location: :keep do
       to_string(unquote(affordance))
     end

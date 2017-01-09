@@ -2,14 +2,14 @@ defmodule Mazurka.Mediatype.Hyper do
   use Mazurka.Mediatype
   alias Mazurka.Resource.Utils
 
-  def __content_types__ do
+  def content_types do
     [{"application", "json", %{}},
      {"application", "hyper+json", %{}},
      {"application", "hyper+x-erlang-binary", %{}},
      {"application", "hyper+msgpack", %{}}]
   end
 
-  defmacro __handle_action__(block) do
+  defmacro handle_action(block) do
     quote location: :keep do
       case unquote(block) do
         %{__struct__: _} = response ->
@@ -22,7 +22,7 @@ defmodule Mazurka.Mediatype.Hyper do
     end
   end
 
-  defmacro __handle_affordance__(affordance, props) do
+  defmacro handle_affordance(affordance, props) do
     quote location: :keep do
       affordance = unquote(affordance)
       props = Mazurka.Mediatype.Hyper.__noop__(unquote(props)) || %{}

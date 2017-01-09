@@ -39,7 +39,7 @@ defmodule Mazurka.Resource.Action do
         Mazurka.Resource.Utils.Scope.dump()
         var!(conn) = unquote(Utils.conn)
         action = unquote(block)
-        res = unquote(mediatype).__handle_action__(action)
+        res = unquote(mediatype).handle_action(action)
         unquote(Utils.conn) = var!(conn)
         __mazurka_event__(res, unquote_splicing(Utils.arguments), unquote(Utils.scope), unquote(Utils.mediatype))
       end

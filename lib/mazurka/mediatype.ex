@@ -9,17 +9,17 @@ defmodule Mazurka.Mediatype do
   @doc """
   TODO write the docs
   """
-  @macrocallback __handle_action__(ast) :: any
+  @macrocallback handle_action(ast) :: any
 
   @doc """
   TODO write the docs
   """
-  @macrocallback __handle_affordance__(ast, props) :: any
+  @macrocallback handle_affordance(ast, props) :: any
 
   @doc """
   TODO write the docs
   """
-  @callback __content_types__() :: [{binary, binary, binary, module}]
+  @callback content_types() :: [{binary, binary, binary, module}]
 
   @doc """
   Create a mediatype with default macros for action, affordance, error, and provides
@@ -34,15 +34,15 @@ defmodule Mazurka.Mediatype do
       alias Mazurka.Resource.Utils
 
       defmacro __using__(_) do
-        content_types = __content_types__() |> Macro.escape()
+        content_types = content_types() |> Macro.escape()
         quote location: :keep do
           require Mazurka.Resource.Provides
           Mazurka.Resource.Provides.__mediatype_provides__(unquote(__MODULE__), unquote(content_types))
-          import unquote(__MODULE__)
+          import unquote(__MODULE__), except: [handle_action: 1, handle_affordance: 2, content_types: 0]
 
           defp mazurka__default_affordance(unquote(__MODULE__) = unquote(Utils.mediatype), unquote_splicing(Utils.arguments), unquote(Utils.scope)) do
             affordance = Mazurka.Resource.Link.resolve(__MODULE__, unquote_splicing(Utils.arguments))
-            unquote(__MODULE__).__handle_affordance__(affordance, nil)
+            unquote(__MODULE__).handle_affordance(affordance, nil)
           end
         end
       end
