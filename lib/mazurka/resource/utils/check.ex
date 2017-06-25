@@ -15,11 +15,8 @@ defmodule Mazurka.Resource.Utils.Check do
         quote do
           import unquote(__MODULE__)
 
-          @doc false
-          def unquote(check)(unquote_splicing(Utils.arguments), _) do
-            :ok
-          end
-          defoverridable [{unquote(check), unquote(length(Utils.arguments) + 1)}]
+          Module.register_attribute(__MODULE__, unquote(check), accumulate: true)
+          @before_compile unquote(__MODULE__)
         end
       end
 
@@ -37,27 +34,39 @@ defmodule Mazurka.Resource.Utils.Check do
       defp to_quoted(block, message) do
         check = unquote(mazurka_check)
         quote location: :keep do
-          @doc false
-          def unquote(check)(unquote_splicing(Utils.arguments), unquote(Utils.scope)) do
-            case super(unquote_splicing(Utils.arguments), unquote(Utils.scope)) do
-              :ok ->
-                Mazurka.Resource.Utils.Scope.dump()
-                if unquote(block) do
-                  :ok
-                else
-                  {:error, unquote(message)}
-                end
-              other ->
-                other
-            end
-          end
-          defoverridable [{unquote(check), unquote(length(Utils.arguments) + 1)}]
+          Module.put_attribute(__MODULE__, unquote(check), {unquote(Macro.escape(block)), unquote(message)})
         end
       end
 
       defp message(block) do
         code = Macro.to_string(block)
         "#{unquote(name)} failure of #{inspect(code)}"
+      end
+
+      defmacro __before_compile__(env) do
+        check = unquote(mazurka_check)
+        checks = Module.get_attribute(env.module, check)
+          |> Enum.reduce(:ok, fn({block, message}, parent) ->
+            quote do
+              if unquote(block) do
+                unquote(parent)
+              else
+                {:error, unquote(message)}
+              end
+            end
+          end)
+        scope = case checks do
+          :ok ->
+            []
+          _ ->
+            [quote(do: Mazurka.Resource.Utils.Scope.dump())]
+        end
+        quote do
+          defp unquote(check)(unquote_splicing(Utils.arguments), unquote(Utils.scope)) do
+            unquote_splicing(scope)
+            unquote(checks)
+          end
+        end
       end
     end
   end

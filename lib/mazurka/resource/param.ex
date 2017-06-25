@@ -7,15 +7,13 @@ defmodule Mazurka.Resource.Param do
   alias Utils.Scope
 
   defmacro __using__(_) do
+    Module.register_attribute(__CALLER__.module, :mazurka_param_checks, accumulate: true)
     quote do
       require unquote(__MODULE__)
       alias unquote(__MODULE__), as: Params
       import unquote(__MODULE__), only: [param: 1, param: 2]
 
-      def __mazurka_check_params__(_) do
-        {[], []}
-      end
-      defoverridable __mazurka_check_params__: 1
+      @before_compile unquote(__MODULE__)
     end
   end
 
@@ -33,22 +31,49 @@ defmodule Mazurka.Resource.Param do
 
   defmacro param(name, block \\ []) do
     bin_name = elem(name, 0) |> to_string()
-    [
-      Scope.define(Utils.params, name, block),
-      quote do
-        def __mazurka_check_params__(params) do
-          {missing, nil_params} = super(params)
-          case Map.fetch(params, unquote(bin_name)) do
-            :error ->
-              {[unquote(bin_name) | missing], nil_params}
-            {:ok, nil} ->
-              {missing, [unquote(bin_name) | nil_params]}
-            _ ->
-              {missing, nil_params}
+    Module.put_attribute(__CALLER__.module, :mazurka_param_checks, bin_name)
+    Scope.define(Utils.params, name, block)
+  end
+
+  defmacro __before_compile__(env) do
+    case Module.get_attribute(env.module, :mazurka_param_checks) do
+      [] ->
+        quote do
+          defp __mazurka_check_params__(_params) do
+            {[], []}
           end
         end
-        defoverridable __mazurka_check_params__: 1
-      end
-    ]
+      [name] ->
+        quote do
+          defp __mazurka_check_params__(params) do
+            Mazurka.Resource.Param.__check_param__(params, unquote(name), [], [])
+          end
+        end
+      names ->
+        checks = Enum.map(names, fn(name) ->
+          quote do
+            {missing, nil_params} = Mazurka.Resource.Param.__check_param__(params, unquote(name), missing, nil_params)
+          end
+        end)
+        quote do
+          defp __mazurka_check_params__(params) do
+            missing = []
+            nil_params = []
+            unquote_splicing(checks)
+            {missing, nil_params}
+          end
+        end
+    end
+  end
+
+  def __check_param__(params, name, missing, nil_params) do
+    case Map.fetch(params, name) do
+      :error ->
+        {[name | missing], nil_params}
+      {:ok, nil} ->
+        {missing, [name | nil_params]}
+      _ ->
+        {missing, nil_params}
+    end
   end
 end

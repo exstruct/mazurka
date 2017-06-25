@@ -62,35 +62,35 @@ defmodule Mazurka.Resource.Provides do
         type
       end)
 
-      defp mazurka__acceptable_content_types() do
+      defp __mazurka_acceptable_content_types__() do
         unquote(list |> Macro.escape)
       end
 
-      defp mazurka__select_content_type(types) when types in [nil, []] do
+      defp __mazurka_select_content_type__(types) when types in [nil, []] do
         unquote(list |> hd |> Macro.escape)
       end
-      defp mazurka__select_content_type(types) do
-        mazurka__select_acceptable_content_type(types)
+      defp __mazurka_select_content_type__(types) do
+        __mazurka_select_acceptable_content_type__(types)
       end
 
-      defp mazurka__select_acceptable_content_type([]) do
+      defp __mazurka_select_acceptable_content_type__([]) do
         nil
       end
       for {{type, subtype, params}, {target_type, target_subtype}} <- Mazurka.Resource.Provides.__format_matches__(provides) do
-        defp mazurka__select_acceptable_content_type([{unquote(type), unquote(subtype), unquote(Macro.escape(params)) = params} | _]) do
+        defp __mazurka_select_acceptable_content_type__([{unquote(type), unquote(subtype), unquote(Macro.escape(params)) = params} | _]) do
           {unquote(target_type), unquote(target_subtype), params}
         end
       end
-      defp mazurka__select_acceptable_content_type([_ | content_types]) do
-        mazurka__select_acceptable_content_type(content_types)
+      defp __mazurka_select_acceptable_content_type__([_ | content_types]) do
+        __mazurka_select_acceptable_content_type__(content_types)
       end
 
       for {content_type, mediatype} <- provides do
-        defp mazurka__provide_content_type(unquote(Macro.escape(content_type))) do
+        defp __mazurka_provide_content_type__(unquote(Macro.escape(content_type))) do
           unquote(mediatype)
         end
       end
-      defp mazurka__provide_content_type(_) do
+      defp __mazurka_provide_content_type__(_) do
         nil
       end
     end

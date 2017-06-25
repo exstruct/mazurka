@@ -35,7 +35,7 @@ defmodule Mazurka.Resource.Action do
 
   defmacro action(mediatype, [do: block]) do
     quote do
-      defp mazurka__match_action(unquote(mediatype) = unquote(Utils.mediatype), unquote_splicing(Utils.arguments), unquote(Utils.scope)) do
+      defp __mazurka_match_action__(unquote(mediatype) = unquote(Utils.mediatype), unquote_splicing(Utils.arguments), unquote(Utils.scope)) do
         Mazurka.Resource.Utils.Scope.dump()
         var!(conn) = unquote(Utils.conn)
         action = unquote(block)
@@ -49,11 +49,11 @@ defmodule Mazurka.Resource.Action do
   defmacro __before_compile__(_) do
     quote location: :keep do
       def action(content_type = {_, _, _}, unquote_splicing(Utils.arguments)) do
-        case mazurka__provide_content_type(content_type) do
+        case __mazurka_provide_content_type__(content_type) do
           nil ->
             raise Mazurka.UnacceptableContentTypeException, [
               content_type: content_type,
-              acceptable: mazurka__acceptable_content_types(),
+              acceptable: __mazurka_acceptable_content_types__(),
               conn: unquote(Utils.conn)
             ]
           mediatype ->
@@ -70,7 +70,7 @@ defmodule Mazurka.Resource.Action do
                       {:error, message} ->
                         raise Mazurka.ValidationException, message: message, conn: unquote(Utils.conn)
                       :ok ->
-                        mazurka__match_action(mediatype, unquote_splicing(Utils.arguments), scope)
+                        __mazurka_match_action__(mediatype, unquote_splicing(Utils.arguments), scope)
                     end
                 end
               {missing, nil_params} ->
@@ -79,7 +79,7 @@ defmodule Mazurka.Resource.Action do
         end
       end
 
-      defp mazurka__match_action(_, unquote_splicing(Utils.arguments), _) do
+      defp __mazurka_match_action__(_, unquote_splicing(Utils.arguments), _) do
         ## TODO raise exception
       end
     end

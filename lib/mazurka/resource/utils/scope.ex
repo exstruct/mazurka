@@ -5,11 +5,8 @@ defmodule Mazurka.Resource.Utils.Scope do
 
   defmacro __using__(_) do
     quote do
-      @mazurka_scope []
-      def __mazurka_scope__(unquote(Utils.mediatype), unquote_splicing(Utils.arguments)) do
-        %{}
-      end
-      defoverridable __mazurka_scope__: unquote(length(Utils.arguments) + 1)
+      Module.register_attribute(__MODULE__, :mazurka_scope, accumulate: true)
+      @before_compile unquote(__MODULE__)
     end
   end
 
@@ -42,27 +39,37 @@ defmodule Mazurka.Resource.Utils.Scope do
     end
   end
 
+  defmacro __before_compile__(env) do
+    scope = Module.get_attribute(env.module, :mazurka_scope) |> :lists.reverse()
+    values = Enum.flat_map(scope, fn({name, code}) ->
+      var = Macro.var(name, nil)
+      quote do
+        unquote(var) = unquote(code)
+        _ = unquote(var)
+      end
+      |> elem(2)
+    end)
+    map = Enum.map(scope, fn({n, _}) -> Macro.var(n, nil) end)
+    quote do
+      defp __mazurka_scope__(unquote(Utils.mediatype), unquote_splicing(Utils.arguments)) do
+        unquote_splicing(values)
+        {unquote_splicing(map)}
+      end
+    end
+  end
+
   def compile(name, block) do
     quote do
-      def __mazurka_scope__(unquote(Utils.mediatype), unquote_splicing(Utils.arguments)) do
-        unquote(Utils.scope) = super(unquote(Utils.mediatype), unquote_splicing(Utils.arguments))
-        var!(conn) = unquote(Utils.conn)
-        _ = var!(conn)
-        unquote(__MODULE__).dump()
-        Map.put(unquote(Utils.scope), unquote(name), unquote(block))
-      end
-      defoverridable __mazurka_scope__: unquote(length(Utils.arguments) + 1)
-
-      @mazurka_scope :ordsets.add_element(unquote(name), @mazurka_scope)
+      @mazurka_scope {unquote(name), unquote(Macro.escape(block))}
     end
   end
 
   defmacro dump() do
-    scope = Module.get_attribute(__CALLER__.module, :mazurka_scope)
-    vars = Enum.map(scope, &{&1, Macro.var(&1, nil)})
-    assigns = Enum.map(scope, &quote(do: _ = unquote(Macro.var(&1, nil))))
+    scope = Module.get_attribute(__CALLER__.module, :mazurka_scope) |> :lists.reverse()
+    vars = Enum.map(scope, fn({n, _}) -> Macro.var(n, nil) end)
+    assigns = Enum.map(scope, fn({n, _}) -> quote(do: _ = unquote(Macro.var(n, nil))) end)
     quote do
-      %{unquote_splicing(vars)} = unquote(Utils.scope)
+      {unquote_splicing(vars)} = unquote(Utils.scope)
       unquote_splicing(assigns)
     end
   end

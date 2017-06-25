@@ -35,7 +35,7 @@ defmodule Mazurka.Resource.Affordance do
 
   defmacro affordance(mediatype, [do: block]) do
     quote location: :keep do
-      defp mazurka__match_affordance(unquote(mediatype) = unquote(Utils.mediatype), unquote_splicing(Utils.arguments), unquote(Utils.scope)) do
+      defp __mazurka_match_affordance__(unquote(mediatype) = unquote(Utils.mediatype), unquote_splicing(Utils.arguments), unquote(Utils.scope)) do
         Mazurka.Resource.Utils.Scope.dump()
         var!(conn) = unquote(Utils.conn())
         affordance = rel_self()
@@ -49,7 +49,7 @@ defmodule Mazurka.Resource.Affordance do
   defmacro __before_compile__(_) do
     quote location: :keep do
       def affordance(content_type = {_, _, _}, unquote_splicing(Utils.arguments)) do
-        case mazurka__provide_content_type(content_type) do
+        case __mazurka_provide_content_type__(content_type) do
           nil ->
             %Mazurka.Affordance.Unacceptable{resource: __MODULE__,
                                              params: unquote(Utils.params),
@@ -71,7 +71,7 @@ defmodule Mazurka.Resource.Affordance do
                                               input: unquote(Utils.input),
                                               opts: unquote(Utils.opts)}
               :ok ->
-                mazurka__match_affordance(mediatype, unquote_splicing(Utils.arguments), scope)
+                __mazurka_match_affordance__(mediatype, unquote_splicing(Utils.arguments), scope)
             end
           {missing, _} when length(missing) > 0 ->
             raise Mazurka.MissingParametersException, params: missing, conn: unquote(Utils.conn())
@@ -84,8 +84,8 @@ defmodule Mazurka.Resource.Affordance do
         end
       end
 
-      defp mazurka__match_affordance(mediatype, unquote_splicing(Utils.arguments), scope) do
-        mazurka__default_affordance(mediatype, unquote_splicing(Utils.arguments), scope)
+      defp __mazurka_match_affordance__(mediatype, unquote_splicing(Utils.arguments), scope) do
+        __mazurka_default_affordance__(mediatype, unquote_splicing(Utils.arguments), scope)
       end
     end
   end

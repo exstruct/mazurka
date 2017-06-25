@@ -55,11 +55,11 @@ defmodule Mazurka.Resource do
       def action(accept, params, input, conn, router \\ nil, opts \\ %{})
 
       def action(content_types, unquote_splicing(Utils.arguments)) when is_list(content_types) do
-        case mazurka__select_content_type(content_types) do
+        case __mazurka_select_content_type__(content_types) do
           nil ->
             raise Mazurka.UnacceptableContentTypeException, [
               content_type: content_types,
-              acceptable: mazurka__acceptable_content_types()
+              acceptable: __mazurka_acceptable_content_types__()
             ]
           content_type ->
             {response, conn} = action(content_type, unquote_splicing(Utils.arguments))
@@ -81,11 +81,11 @@ defmodule Mazurka.Resource do
       def affordance(accept, params, input, conn, router \\ nil, opts \\ %{})
 
       def affordance(content_types, unquote_splicing(Utils.arguments)) when is_list(content_types) do
-        case mazurka__select_content_type(content_types) do
+        case __mazurka_select_content_type__(content_types) do
           nil ->
             raise Mazurka.UnacceptableContentTypeException, [
               content_type: content_types,
-              acceptable: mazurka__acceptable_content_types()
+              acceptable: __mazurka_acceptable_content_types__()
             ]
           content_type ->
             response = affordance(content_type, unquote_splicing(Utils.arguments))
