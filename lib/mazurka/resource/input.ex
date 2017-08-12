@@ -6,10 +6,16 @@ defmodule Mazurka.Resource.Input do
   alias Utils.Scope
 
   defmacro __using__(_) do
+    %{module: module} = __CALLER__
+    Module.register_attribute(module, :mazurka_inputs, accumulate: true)
     quote do
       require unquote(__MODULE__)
       alias unquote(__MODULE__)
       import unquote(__MODULE__), only: [input: 1, input: 2]
+
+      def inputs do
+        @mazurka_inputs
+      end
     end
   end
 
@@ -26,6 +32,9 @@ defmodule Mazurka.Resource.Input do
   """
 
   defmacro input(name, block \\ []) do
+    bin_name = name |> elem(0) |> to_string()
+    %{module: module} = __CALLER__
+    Module.put_attribute(module, :mazurka_inputs, bin_name)
     Scope.define(Utils.input, name, block)
   end
 end

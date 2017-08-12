@@ -7,13 +7,19 @@ defmodule Mazurka.Resource.Param do
   alias Utils.Scope
 
   defmacro __using__(_) do
-    Module.register_attribute(__CALLER__.module, :mazurka_param_checks, accumulate: true)
+    %{module: module} = __CALLER__
+    Module.register_attribute(module, :mazurka_params, accumulate: true)
+    Module.register_attribute(module, :mazurka_param_checks, accumulate: true)
     quote do
       require unquote(__MODULE__)
       alias unquote(__MODULE__), as: Params
       import unquote(__MODULE__), only: [param: 1, param: 2]
 
       @before_compile unquote(__MODULE__)
+
+      def params do
+        @mazurka_params
+      end
     end
   end
 
@@ -30,8 +36,10 @@ defmodule Mazurka.Resource.Param do
   """
 
   defmacro param(name, block \\ []) do
-    bin_name = elem(name, 0) |> to_string()
-    Module.put_attribute(__CALLER__.module, :mazurka_param_checks, bin_name)
+    bin_name = name |> elem(0) |> to_string()
+    %{module: module} = __CALLER__
+    Module.put_attribute(module, :mazurka_params, bin_name)
+    Module.put_attribute(module, :mazurka_param_checks, bin_name)
     Scope.define(Utils.params, name, block)
   end
 
