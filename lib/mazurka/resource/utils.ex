@@ -6,30 +6,30 @@ defmodule Mazurka.Resource.Utils do
   end
 
   def router do
-    {:_@mazurka_router, [warn: false], nil}
+    {:'$mazurka_router', [warn: false], __MODULE__}
   end
 
   def params do
-    {:_@mazurka_params, [warn: false], nil}
+    {:'$mazurka_params', [warn: false], __MODULE__}
   end
 
   def input do
-    {:_@mazurka_input, [warn: false], nil}
+    {:'$mazurka_input', [warn: false], __MODULE__}
   end
 
   def conn do
-    {:_@mazurka_conn, [warn: false], nil}
+    {:'$mazurka_conn', [warn: false], __MODULE__}
   end
 
   def opts do
-    {:_@mazurka_opts, [warn: false], nil}
+    {:'$mazurka_opts', [warn: false], __MODULE__}
   end
 
   def mediatype do
-    {:_@mazurka_mediatype, [warn: false], nil}
+    {:'$mazurka_mediatype', [warn: false], __MODULE__}
   end
 
   def scope do
-    {:_@mazurka_scope, [warn: false], nil}
+    {:'$mazurka_scope', [warn: false], __MODULE__}
   end
 end

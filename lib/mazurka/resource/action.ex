@@ -81,6 +81,7 @@ defmodule Mazurka.Resource.Action do
 
       defp __mazurka_match_action__(_, unquote_splicing(Utils.arguments), _) do
         ## TODO raise exception
+        nil
       end
     end
   end
