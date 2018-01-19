@@ -52,6 +52,8 @@ defmodule Mazurka.Resource.Utils.Scope do
     map = Enum.map(scope, fn({n, _}) -> Macro.var(n, nil) end)
     quote do
       defp __mazurka_scope__(unquote(Utils.mediatype), unquote_splicing(Utils.arguments)) do
+        var!(conn) = unquote(Utils.conn)
+        _ = var!(conn)
         unquote_splicing(values)
         {unquote_splicing(map)}
       end

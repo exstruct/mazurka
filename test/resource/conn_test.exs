@@ -26,4 +26,21 @@ defmodule Test.Mazurka.Resource.Conn do
     "affordance" ->
       assert {_, _} = Foo.affordance([], %{"foo" => "foo"}, %{}, %{port: 123}, Router)
   end
+
+  context "Conn Access in let" do
+    defmodule Foo do
+      use Mazurka.Resource
+
+      let bar = conn.port
+
+      mediatype Hyper do
+        action do
+          bar
+        end
+      end
+    end
+  after
+    "action" ->
+      assert {_, _, _} = Foo.action([], %{}, %{}, %{port: 123})
+  end
 end
