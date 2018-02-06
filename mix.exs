@@ -40,7 +40,7 @@ defmodule Mazurka.Mixfile do
       {:plug, "~> 1.4", optional: true},
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:mix_test_watch, "~> 0.5", only: :dev, runtime: false},
-      {:excoveralls, "~> 0.5.1", only: :test}
+      {:excoveralls, "~> 0.8", only: :test}
     ]
   end
 

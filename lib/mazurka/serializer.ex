@@ -32,7 +32,7 @@ defmodule Mazurka.Serializer do
         quote(do: {unquote(vars.buffer), unquote(vars.conn)})
       ])
 
-    body |> Macro.to_string() |> IO.puts()
+    # body |> Macro.to_string() |> IO.puts()
 
     body
   end
@@ -213,7 +213,7 @@ defmodule Mazurka.Serializer do
 
   defp compile(
          %Resource.Resolve{conn: conn, opts: opts, body: body, line: line} = resolve,
-         %{buffer: buffer, conn: v_conn, opts: v_opts} = vars,
+         %{conn: v_conn, opts: v_opts} = vars,
          impl
        ) do
     value = Macro.var(:value, __MODULE__)

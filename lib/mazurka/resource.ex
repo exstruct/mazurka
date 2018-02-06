@@ -21,6 +21,7 @@ defmodule Mazurka.Resource do
   end
 
   defmacro __after_compile__(%{module: module}, beam) do
+    _ = module
     _ = beam
     # {:ok,{_,[{:abstract_code,{_,ac}}]}} = :beam_lib.chunks(beam,[:abstract_code])
     # :io.fwrite('~s~n', [:erl_prettypr.format(:erl_syntax.form_list(ac))])
