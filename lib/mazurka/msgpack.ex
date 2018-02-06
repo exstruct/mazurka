@@ -1,10 +1,14 @@
 defmodule Mazurka.Msgpack do
+  @moduledoc false
+
   defmacro __using__(_) do
     quote do
+      @doc false
       def enter(value, vars) do
         Mazurka.Msgpack.enter(value, vars, __MODULE__)
       end
 
+      @doc false
       def exit(value, vars) do
         Mazurka.Msgpack.exit(value, vars, __MODULE__)
       end

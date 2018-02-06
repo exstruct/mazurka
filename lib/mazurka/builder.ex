@@ -111,7 +111,7 @@ defmodule Mazurka.Builder do
                  [
                    [false],
                    quote do
-                     raise Mazurka.UnacceptableContentTypeException,
+                     raise Mazurka.UnacceptableContentTypeError,
                        acceptable:
                          unquote(
                            for {mediatype, _impl} <- mediatypes do

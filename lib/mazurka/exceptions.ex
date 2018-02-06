@@ -1,6 +1,6 @@
-defmodule Mazurka.UnacceptableContentTypeException do
+defmodule Mazurka.UnacceptableContentTypeError do
   @moduledoc """
-  TODO write the docs
+  This exception is thrown when no acceptable content types are found for a request
   """
 
   defexception [:acceptable, :content_type, :conn]
@@ -22,4 +22,12 @@ defmodule Mazurka.UnacceptableContentTypeException do
     # TODO add params
     "#{type}/#{subtype}"
   end
+end
+
+defmodule Mazurka.ConditionError do
+  @moduledoc """
+  This exception is thrown when a condition fails
+  """
+
+  defexception [:message, :conn]
 end

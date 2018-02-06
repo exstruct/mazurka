@@ -2,6 +2,8 @@ defmodule Test.Mazurka.Resource do
   use Test.Mazurka.Case
 
   block("""
+  # Tutorial
+
   In this tutorial we'll be using a helper module that sets our mediatype.
   """)
 
@@ -64,13 +66,13 @@ defmodule Test.Mazurka.Resource do
     block """
     You've now created your first resource! You've been introduced to three new keywords in this basic example:
 
-    ### `Mazurka.Resource.map/1`
-    ### `Mazurka.Resource.field/2`
-    ### `Mazurka.Resource.constant/1`
+    ### `map/1`
+    ### `field/2`
+    ### `constant/1`
     """
   end
 
-  describe "Dynamic data with `Mazurka.Resource.resolve/1`" do
+  describe "Dynamic data" do
     block """
     In the last section, we learned how to create a simple static resource. This time we'll make the data dynamic.
     Let's start by creating a new `User` module. Instead of using the `constant/1` keyword, we'll be using `resolve/1`.
@@ -126,7 +128,7 @@ defmodule Test.Mazurka.Resource do
     end
 
     block """
-    ### `Mazurka.Resource.resolve/1`
+    ### `resolve/1`
     """
   end
 

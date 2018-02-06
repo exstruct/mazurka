@@ -16,7 +16,7 @@ defmodule Mazurka.Mixfile do
       ],
       package: package(),
       deps: deps(),
-      docs: [extras: examples(), logo: "extra/logo.png"]
+      docs: [extras: extras(), logo: "extra/logo.png"]
     ]
   end
 
@@ -53,19 +53,10 @@ defmodule Mazurka.Mixfile do
     ]
   end
 
-  def examples() do
+  def extras() do
     if Mix.env() == :dev do
       [
-        {"Getting Started",
-         [
-           "extra/Overview.md",
-           "extra/Installation.md",
-           "extra/Mediatype.md",
-           "extra/Affordance.md",
-           "extra/Param_Input_and_Option.md",
-           "extra/Condition_and_Validation.md"
-         ]},
-        {"Examples", Path.wildcard("testdoc/**/*.md")}
+        {"Tutorials", Path.wildcard("test/**/*.md")}
       ]
       |> Enum.flat_map(fn {group, files} ->
         Enum.map(files, fn file ->

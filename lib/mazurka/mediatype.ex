@@ -1,4 +1,6 @@
 defmodule Mazurka.Mediatype do
+  @moduledoc false
+
   defstruct provides: [],
             serializer: nil
 

@@ -1,10 +1,14 @@
 defmodule Mazurka.Serializer do
+  @moduledoc false
+
   defmacro __using__(_) do
     quote do
+      @doc false
       def action(resource, vars) do
         Mazurka.Serializer.action(resource, vars, __MODULE__)
       end
 
+      @doc false
       def affordance(resource, vars) do
         Mazurka.Serializer.affordance(resource, vars, __MODULE__)
       end
@@ -118,9 +122,9 @@ defmodule Mazurka.Serializer do
   defp compile_condition(%{doc: doc, line: line} = condition, vars, invariant)
        when not is_nil(invariant) do
     {ast, vars} = compile_condition(condition, vars, nil)
-
+    %{conn: conn} = vars
     {quote line: line do
-       unquote(ast) || raise(unquote(invariant), message: unquote(doc))
+       unquote(ast) || raise(unquote(invariant), message: unquote(doc), conn: unquote(conn))
      end, vars}
   end
 
