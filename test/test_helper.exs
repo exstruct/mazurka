@@ -63,11 +63,18 @@ defmodule Test.Mazurka.Case do
     end
   end
 
-  defp format_code(ast, caller) do
-    ast
-    |> Macro.to_string()
-    |> Code.Formatter.to_algebra!(file: caller.file, line: caller.line)
-    |> Inspect.Algebra.format(80)
+  if Code.ensure_compiled?(Code.Formatter) do
+    defp format_code(ast, caller) do
+      ast
+      |> Macro.to_string()
+      |> Code.Formatter.to_algebra!(file: caller.file, line: caller.line)
+      |> Inspect.Algebra.format(80)
+    end
+  else
+    defp format_code(ast, caller) do
+      ast
+      |> Macro.to_string()
+    end
   end
 
   defmacro __before_compile__(_) do
