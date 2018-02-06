@@ -1,97 +1,56 @@
 defmodule Mazurka.Resource do
   @moduledoc """
-  TODO write the docs
   """
 
-  alias Mazurka.Resource.Utils
+  defstruct action: nil,
+            conditions: [],
+            inputs: [],
+            params: [],
+            scope: [],
+            value: nil
 
-  @doc """
-  Initialize a module as a mazurka resource
-
-      defmodule My.Resource do
-        use Mazurka.Resource
-      end
-
-  TODO document condition, event, input, let, link, mediatype, param, params, and validation
-  """
   defmacro __using__(_opts) do
-    module = __CALLER__.module
-    attr = :__mazurka_resource__
-    if !Module.get_attribute(module, attr) do
-      Module.put_attribute(module, attr, true)
-      quote do
-        @before_compile unquote(__MODULE__)
+    quote line: __CALLER__.line do
+      use Mazurka.Builder
+      import Mazurka.Resource.Let, only: [let: 2]
+      import Mazurka.Resource.{Action, Condition, Let, Input, Param, Map}
 
-        use Mazurka.Resource.Condition
-        use Mazurka.Resource.Event
-        use Mazurka.Resource.Input
-        use Mazurka.Resource.Let
-        use Mazurka.Resource.Link
-        use Mazurka.Resource.Mediatype
-        use Mazurka.Resource.Option
-        use Mazurka.Resource.Param
-        use Mazurka.Resource.Validation
-        use Mazurka.Resource.Utils.Scope
-      end
+      @mazurka_subject %unquote(__MODULE__){}
+      # @after_compile unquote(__MODULE__)
     end
   end
 
-  defmacro __before_compile__(_) do
-    quote location: :keep do
-      @doc """
-      Execute a request against the #{inspect(__MODULE__)} resource
+  defmacro __after_compile__(%{module: module}, beam) do
+    _ = beam
+    # {:ok,{_,[{:abstract_code,{_,ac}}]}} = :beam_lib.chunks(beam,[:abstract_code])
+    # :io.fwrite('~s~n', [:erl_prettypr.format(:erl_syntax.form_list(ac))])
 
-          accept = [
-            {"application", "json", %{}},
-            {"text", "*", %{}}
-          ]
-          params = %{"user" => "123"}
-          input = %{"name" => "Joe"}
-          conn = %Plug.Conn{}
-          router = My.Router
+    IO.inspect :beam_disasm.file(beam), pretty: true, limit: :infinity
 
-          #{inspect(__MODULE__)}.action(accept, params, input, conn, router)
-      """
-      def action(accept, params, input, conn, router \\ nil, opts \\ %{})
+    # seed = :os.timestamp()
 
-      def action(content_types, unquote_splicing(Utils.arguments)) when is_list(content_types) do
-        case __mazurka_select_content_type__(content_types) do
-          nil ->
-            raise Mazurka.UnacceptableContentTypeException, [
-              content_type: content_types,
-              acceptable: __mazurka_acceptable_content_types__()
-            ]
-          content_type ->
-            {response, conn} = action(content_type, unquote_splicing(Utils.arguments))
-            {response, content_type, conn}
-        end
-      end
+    # :rand.seed(:exsplus, seed)
+    # {v, _} = module.__resource__([{"application", "json", %{}}], %{}, %{})
 
-      @doc """
-      Render an affordance for #{inspect(__MODULE__)}
+    # v
+    # |> :erts_debug.size_shared()
+    # |> IO.inspect()
 
-          content_type = {"appliction", "json", %{}}
-          params = %{"user" => "123"}
-          input = %{"name" => "Fred"}
-          conn = %Plug.Conn{}
-          router = My.Router
+    # v
+    # |> Poison.decode()
+    # |> IO.inspect()
 
-          #{inspect(__MODULE__)}.affordance(content_type, params, input, conn, router)
-      """
-      def affordance(accept, params, input, conn, router \\ nil, opts \\ %{})
+    # :rand.seed(:exsplus, seed)
+    # {v, _} = module.__resource__([{"application", "msgpack", %{}}], %{}, %{})
 
-      def affordance(content_types, unquote_splicing(Utils.arguments)) when is_list(content_types) do
-        case __mazurka_select_content_type__(content_types) do
-          nil ->
-            raise Mazurka.UnacceptableContentTypeException, [
-              content_type: content_types,
-              acceptable: __mazurka_acceptable_content_types__()
-            ]
-          content_type ->
-            response = affordance(content_type, unquote_splicing(Utils.arguments))
-            {response, content_type}
-        end
-      end
-    end
+    # v
+    # |> :erts_debug.size_shared()
+    # |> IO.inspect()
+
+    # v
+    # |> Msgpax.unpack()
+    # |> IO.inspect()
+
+    nil
   end
 end

@@ -1,5 +1,10 @@
 defmodule Mazurka do
   @moduledoc """
-  TODO write the main mazurka docs
   """
+
+  defmacro __using__(_opts) do
+    quote do
+      use Mazurka.Resource
+    end
+  end
 end

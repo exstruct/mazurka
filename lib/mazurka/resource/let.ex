@@ -1,34 +1,35 @@
 defmodule Mazurka.Resource.Let do
   @moduledoc false
 
-  alias Mazurka.Resource.Utils.Scope
+  defstruct doc: nil,
+            lhs: nil,
+            rhs: nil,
+            conn: nil,
+            opts: nil,
+            line: nil
 
-  defmacro __using__(_) do
+  defmacro let({:=, _, [lhs, rhs]}) do
+    let_body(lhs, rhs, nil, nil)
+  end
+
+  # TODO
+  defmacro let(_args, _body) do
     quote do
-      import unquote(__MODULE__)
     end
   end
 
-  @doc """
-  Define a resource-wide variable
+  defp let_body(lhs, rhs, conn, opts) do
+    quote do
+      scope = %unquote(__MODULE__){
+        doc: Mazurka.Builder.get_doc(__MODULE__),
+        lhs: unquote(Macro.escape(lhs)),
+        rhs: unquote(Macro.escape(rhs)),
+        conn: unquote(Macro.escape(conn)),
+        opts: unquote(Macro.escape(opts)),
+        line: __ENV__.line
+      }
 
-      let foo = 1
-  """
-
-  defmacro let({:=, _, [{name, _, _}, block]}) when is_atom(name) do
-    Scope.compile(name, block)
-  end
-
-  @doc """
-  Define a resource-wide variable with a block
-
-      let foo do
-        id = Params.get("user")
-        User.get(id)
-      end
-  """
-
-  defmacro let({name, _, _}, [do: block]) when is_atom(name) do
-    Scope.compile(name, block)
+      @mazurka_subject Mazurka.Builder.append(@mazurka_subject, :scope, scope)
+    end
   end
 end

@@ -1,88 +1,42 @@
 defmodule Mazurka.Resource.Action do
   @moduledoc false
 
-  alias Mazurka.Resource.Utils
+  defstruct doc: nil,
+            scope: [],
+            inputs: nil,
+            conn: nil,
+            opts: nil,
+            body: nil,
+            line: nil
 
-  defmacro __using__(_) do
-    quote do
-      @doc """
-      Create an action block
-
-          mediatype #{inspect(__MODULE__)} do
-            action do
-              # action goes here
-            end
-          end
-      """
-
-      defmacro action(block) do
-        mediatype = __MODULE__
-        quote do
-          require Mazurka.Resource.Action
-          Mazurka.Resource.Action.action(unquote(mediatype), unquote(block))
-        end
-      end
-    end
+  defmacro action(do: body) do
+    action_body(nil, nil, nil, body)
   end
 
-  @doc """
-  Create an action block for a mediatype
-
-      action Mazurka.Mediatype.MyCustomMediatype do
-        # action goes here
-      end
-  """
-
-  defmacro action(mediatype, [do: block]) do
-    quote do
-      defp __mazurka_match_action__(unquote(mediatype) = unquote(Utils.mediatype), unquote_splicing(Utils.arguments), unquote(Utils.scope)) do
-        Mazurka.Resource.Utils.Scope.dump()
-        var!(conn) = unquote(Utils.conn)
-        action = unquote(block)
-        res = unquote(mediatype).handle_action(action)
-        unquote(Utils.conn) = var!(conn)
-        __mazurka_event__(res, unquote_splicing(Utils.arguments), unquote(Utils.scope), unquote(Utils.mediatype))
-      end
-    end
+  defmacro action(inputs, do: body) do
+    action_body(inputs, nil, nil, body)
   end
 
-  defmacro __before_compile__(_) do
-    quote location: :keep do
-      def action(content_type = {_, _, _}, unquote_splicing(Utils.arguments)) do
-        case __mazurka_provide_content_type__(content_type) do
-          nil ->
-            raise Mazurka.UnacceptableContentTypeException, [
-              content_type: content_type,
-              acceptable: __mazurka_acceptable_content_types__(),
-              conn: unquote(Utils.conn)
-            ]
-          mediatype ->
-            case __mazurka_check_params__(unquote(Utils.params)) do
-              {[], []} ->
-                scope = __mazurka_scope__(mediatype, unquote_splicing(Utils.arguments))
-                case __mazurka_conditions__(unquote_splicing(Utils.arguments), scope) do
-                  {:error, %{:__struct__ => _} = exception} ->
-                    raise exception
-                  {:error, message} ->
-                    raise Mazurka.ConditionException, message: message, conn: unquote(Utils.conn)
-                  :ok ->
-                    case __mazurka_validations__(unquote_splicing(Utils.arguments), scope) do
-                      {:error, message} ->
-                        raise Mazurka.ValidationException, message: message, conn: unquote(Utils.conn)
-                      :ok ->
-                        __mazurka_match_action__(mediatype, unquote_splicing(Utils.arguments), scope)
-                    end
-                end
-              {missing, nil_params} ->
-                raise Mazurka.MissingParametersException, params: missing ++ nil_params, conn: unquote(Utils.conn)
-            end
-        end
-      end
+  defmacro action(inputs, conn, do: body) do
+    action_body(inputs, conn, nil, body)
+  end
 
-      defp __mazurka_match_action__(_, unquote_splicing(Utils.arguments), _) do
-        ## TODO raise exception
-        nil
-      end
+  defmacro action(inputs, conn, opts, do: body) do
+    action_body(inputs, conn, opts, body)
+  end
+
+  defp action_body(inputs, conn, opts, body) do
+    quote do
+      action = %unquote(__MODULE__){
+        doc: Mazurka.Builder.get_doc(__MODULE__),
+        inputs: unquote(Macro.escape(inputs)),
+        conn: unquote(Macro.escape(conn)),
+        opts: unquote(Macro.escape(opts)),
+        body: unquote(Macro.escape(body)),
+        line: __ENV__.line
+      }
+
+      @mazurka_subject Mazurka.Builder.put(@mazurka_subject, :action, action)
     end
   end
 end
