@@ -9,6 +9,9 @@ defmodule Mazurka.Resource do
             scope: [],
             value: nil
 
+  @doc """
+
+  """
   defmacro __using__(_opts) do
     quote line: __CALLER__.line do
       use Mazurka.Builder

@@ -30,4 +30,8 @@ defmodule Mazurka.ConditionError do
   """
 
   defexception [:message, :conn]
+
+  def message(%{message: message}) do
+    message || "Invalid request"
+  end
 end

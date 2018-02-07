@@ -123,8 +123,12 @@ defmodule Mazurka.Serializer do
        when not is_nil(invariant) do
     {ast, vars} = compile_condition(condition, vars, nil)
     %{conn: conn} = vars
+    message = case doc do
+      nil -> nil
+      doc -> doc |> String.trim |> String.split("\n") |> hd()
+    end
     {quote line: line do
-       unquote(ast) || raise(unquote(invariant), message: unquote(doc), conn: unquote(conn))
+       unquote(ast) || raise(unquote(invariant), message: unquote(message), conn: unquote(conn))
      end, vars}
   end
 

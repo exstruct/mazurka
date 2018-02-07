@@ -185,4 +185,62 @@ defmodule Test.Mazurka.Resource do
       %{"name" => "Mike", "email" => "mike@example.com"} = Msgpax.unpack!(resp_body)
     end
   end
+
+  describe "Conditional requests" do
+    block """
+    Usually we want to restrict requests to authenticated clients. We can accomplish
+    that functionality with `condition/1`.
+    """
+
+    defmodule User do
+      use MyApp.Resource
+
+      @doc """
+      Client must be authenticated
+      """
+      condition %{assigns: assigns} do
+        assigns[:authenticated?]
+      end
+
+      map do
+        field :name do
+          resolve %{assigns: %{name: name}} = conn do
+            {name, conn}
+          end
+        end
+      end
+    end
+
+    test """
+    hyper+json unauthenticated request
+
+    Now we can verify that the request fails without passing the correct `conn`.
+    """ do
+      conn = Plug.Test.conn(:get, "/")
+        |> Plug.Conn.assign(:name, "Robert")
+      opts = User.init([])
+      try do
+        User.call(conn, opts)
+      rescue
+        e in Mazurka.ConditionError ->
+          "Client must be authenticated" = e.message
+      end
+    end
+
+    test """
+    hyper+msgpack authenticated request
+
+    Let's make sure that authenticated requests go through as well.
+    """ do
+      conn = Plug.Test.conn(:get, "/")
+        |> Plug.Conn.put_req_header("accept", "application/msgpack")
+        |> Plug.Conn.assign(:name, "Joe")
+        |> Plug.Conn.assign(:authenticated?, true)
+      opts = User.init([])
+      conn = User.call(conn, opts)
+
+      %{status: 200, resp_body: resp_body} = conn
+      %{"name" => "Joe"} = Msgpax.unpack!(resp_body)
+    end
+  end
 end

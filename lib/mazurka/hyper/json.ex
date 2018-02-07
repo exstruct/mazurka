@@ -1,4 +1,11 @@
 defmodule Mazurka.Hyper.JSON do
+  @moduledoc """
+
+  """
+
+  @doc """
+
+  """
   defmacro __using__(opts) do
     provides =
       opts[:provides] ||
