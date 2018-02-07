@@ -189,7 +189,7 @@ defmodule Test.Mazurka.Resource do
   describe "Conditional requests" do
     block """
     Usually we want to restrict requests to authenticated clients. We can accomplish
-    that functionality with `condition/1`.
+    that functionality with `condition/2`.
     """
 
     defmodule User do
@@ -199,13 +199,27 @@ defmodule Test.Mazurka.Resource do
       Client must be authenticated
       """
       condition %{assigns: assigns} do
-        assigns[:authenticated?]
+        assigns[:authenticated_user]
       end
 
       map do
         field :name do
           resolve %{assigns: %{name: name}} = conn do
             {name, conn}
+          end
+        end
+
+        field :email do
+          @doc """
+          The authenticated user must be the same
+          """
+          condition %{assigns: %{name: name} = assigns} do
+            assigns[:authenticated_user] == name
+          end
+
+          resolve %{assigns: %{name: name}, host: host} = conn do
+            "www." <> domain = host
+            {"#{String.downcase(name)}@#{domain}", conn}
           end
         end
       end
@@ -235,12 +249,29 @@ defmodule Test.Mazurka.Resource do
       conn = Plug.Test.conn(:get, "/")
         |> Plug.Conn.put_req_header("accept", "application/msgpack")
         |> Plug.Conn.assign(:name, "Joe")
-        |> Plug.Conn.assign(:authenticated?, true)
+        |> Plug.Conn.assign(:authenticated_user, "Robert")
       opts = User.init([])
       conn = User.call(conn, opts)
 
       %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Joe"} = Msgpax.unpack!(resp_body)
+      %{"name" => "Joe"} = body = Msgpax.unpack!(resp_body)
+      false = Map.has_key?(body, "email")
+    end
+
+    test """
+    hyper+json authenticated request with email
+
+    We can also check that the email field shows up when the users match.
+    """ do
+      conn = Plug.Test.conn(:get, "/")
+        |> Plug.Conn.put_req_header("accept", "application/msgpack")
+        |> Plug.Conn.assign(:name, "Robert")
+        |> Plug.Conn.assign(:authenticated_user, "Robert")
+      opts = User.init([])
+      conn = User.call(conn, opts)
+
+      %{status: 200, resp_body: resp_body} = conn
+      %{"name" => "Robert", "email" => "robert@example.com"} = Msgpax.unpack!(resp_body)
     end
   end
 end

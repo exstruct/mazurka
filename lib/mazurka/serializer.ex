@@ -187,19 +187,21 @@ defmodule Mazurka.Serializer do
        ) do
     {enter, vars} = impl.enter(field, vars)
     {body, vars} = compile(value, vars, impl)
+    args =
+      vars
+      |> Map.drop([:buffer, :conn, :opts])
+      |> Map.values()
+      |> Enum.map(fn
+        ([var | _]) when is_tuple(var) ->
+          var
+        (var) when is_tuple(var) ->
+          var
+      end)
     {exit, vars} = impl.exit(field, vars)
 
+    body = join([enter, body, exit], line)
     {body, vars} = wrap_scope(body, vars, scope)
-    {body, vars} = wrap_conditions(body, vars, conditions)
-
-    {join(
-       [
-         enter,
-         body,
-         exit
-       ],
-       line
-     ), vars}
+    wrap_conditions(body, vars, conditions, nil, args)
   end
 
   defp compile(
