@@ -26,8 +26,8 @@ defmodule Mazurka.Serializer do
     vars = Map.put(vars, :buffer, buffer)
     # TODO action callback
     {body, vars} = compile(value, vars, impl)
-    {body, vars} = wrap_scope(body, vars, scope)
     {body, vars} = wrap_conditions(body, vars, conditions, Mazurka.ConditionError)
+    {body, vars} = wrap_scope(body, vars, scope, impl)
 
     body =
       join([
@@ -50,8 +50,8 @@ defmodule Mazurka.Serializer do
     vars = Map.put(vars, :buffer, buffer)
     # TODO affordance callback
     {body, vars} = compile(value, vars, impl)
-    {body, vars} = wrap_scope(body, vars, scope)
     {body, vars} = wrap_conditions(body, vars, conditions)
+    {body, vars} = wrap_scope(body, vars, scope, impl)
 
     join([
       quote(do: unquote(buffer) = []),
@@ -60,13 +60,17 @@ defmodule Mazurka.Serializer do
     ])
   end
 
-  defp wrap_scope(ast, vars, []) do
+  defp wrap_scope(ast, vars, [], _impl) do
     {ast, vars}
   end
 
-  defp wrap_scope(ast, vars, _) do
-    # TODO
-    {ast, vars}
+  defp wrap_scope(ast, vars, assigns, impl) do
+    {body, vars} = Enum.reduce(assigns, {[], vars}, fn(assign, {acc, vars}) ->
+      {assign, vars} = compile(assign, vars, impl)
+      {[assign | acc], vars}
+    end)
+    body = {:__block__, [], :lists.reverse([ast | body])}
+    {body, vars}
   end
 
   defp wrap_conditions(
@@ -97,8 +101,12 @@ defmodule Mazurka.Serializer do
              {unquote(buffer), unquote(conn), unquote_splicing(args)}
 
            _ ->
-             unquote(ast)
-             {unquote(buffer), unquote(conn), unquote_splicing(args)}
+             unquote(join([
+              ast,
+              quote do
+                {unquote(buffer), unquote(conn), unquote_splicing(args)}
+              end
+             ]))
          end
      end, vars}
   end
@@ -167,8 +175,8 @@ defmodule Mazurka.Serializer do
     body = :lists.reverse(body)
     {exit, vars} = impl.exit(map, vars)
 
-    {body, vars} = wrap_scope(body, vars, scope)
     {body, vars} = wrap_conditions(body, vars, conditions)
+    {body, vars} = wrap_scope(body, vars, scope, impl)
 
     {join(
        [
@@ -200,8 +208,9 @@ defmodule Mazurka.Serializer do
     {exit, vars} = impl.exit(field, vars)
 
     body = join([enter, body, exit], line)
-    {body, vars} = wrap_scope(body, vars, scope)
-    wrap_conditions(body, vars, conditions, nil, args)
+    {body, vars} = wrap_conditions(body, vars, conditions, nil, args)
+    {body, vars} = wrap_scope(body, vars, scope, impl)
+    {body, vars}
   end
 
   defp compile(
@@ -256,6 +265,41 @@ defmodule Mazurka.Serializer do
     {join(
        [
          enter,
+         exit
+       ],
+       line
+     ), vars}
+  end
+
+  defstruct doc: nil,
+            lhs: nil,
+            rhs: nil,
+            conn: nil,
+            opts: nil,
+            line: nil
+  defp compile(
+         %Resource.Let{line: line} = let,
+         vars,
+         impl
+       ) do
+    {enter, vars} = impl.enter(let, vars)
+    body = case let do
+      %{conn: nil, opts: nil, lhs: lhs, rhs: rhs} ->
+        {:=, [line: line], [lhs, rhs]}
+      %{conn: conn, opts: opts, lhs: lhs, rhs: rhs} ->
+        %{conn: v_conn, opts: v_opts} = vars
+        quote do
+          unquote(conn || Macro.var(:_, nil)) = unquote(v_conn)
+          unquote(opts || Macro.var(:_, nil)) = unquote(v_opts)
+          {unquote(lhs), unquote(v_conn)} = unquote(rhs)
+        end
+    end
+    {exit, vars} = impl.exit(let, vars)
+
+    {join(
+       [
+         enter,
+         body,
          exit
        ],
        line

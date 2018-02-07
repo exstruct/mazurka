@@ -203,6 +203,9 @@ defmodule Test.Mazurka.Resource do
       end
 
       map do
+        @doc """
+
+        """
         field :name do
           resolve %{assigns: %{name: name}} = conn do
             {name, conn}
@@ -264,14 +267,71 @@ defmodule Test.Mazurka.Resource do
     We can also check that the email field shows up when the users match.
     """ do
       conn = Plug.Test.conn(:get, "/")
-        |> Plug.Conn.put_req_header("accept", "application/msgpack")
         |> Plug.Conn.assign(:name, "Robert")
         |> Plug.Conn.assign(:authenticated_user, "Robert")
       opts = User.init([])
       conn = User.call(conn, opts)
 
       %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Robert", "email" => "robert@example.com"} = Msgpax.unpack!(resp_body)
+      %{"name" => "Robert", "email" => "robert@example.com"} = Poison.decode!(resp_body)
+    end
+  end
+
+  describe "Assigning scoped variables" do
+    block """
+    You may have noticed we're using `conn.assigns.name` and `conn.assigns.authenticated_user` in a few locations.
+    Let's clean things up a bit with `let/1`.
+    """
+
+    defmodule User do
+      use MyApp.Resource
+
+      let authenticated_user = conn.assigns[:authenticated_user]
+
+      @doc """
+      Client must be authenticated
+      """
+      condition do: authenticated_user
+
+      map do
+        let %{assigns: %{name: name}} = conn
+
+        @doc """
+
+        """
+        field :name do
+          resolve do: name
+        end
+
+        field :email do
+          @doc """
+          The authenticated user must be the same
+          """
+          condition do
+            authenticated_user == name
+          end
+
+          resolve %{host: host} = conn do
+            "www." <> domain = host
+            {"#{String.downcase(name)}@#{domain}", conn}
+          end
+        end
+      end
+    end
+
+    test """
+    hyper+json request
+
+    The request should be identical to the previous version.
+    """ do
+      conn = Plug.Test.conn(:get, "/")
+        |> Plug.Conn.assign(:name, "Robert")
+        |> Plug.Conn.assign(:authenticated_user, "Robert")
+      opts = User.init([])
+      conn = User.call(conn, opts)
+
+      %{status: 200, resp_body: resp_body} = conn
+      %{"name" => "Robert", "email" => "robert@example.com"} = Poison.decode!(resp_body)
     end
   end
 end
