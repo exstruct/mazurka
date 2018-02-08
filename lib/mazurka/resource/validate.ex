@@ -48,7 +48,7 @@ defmodule Mazurka.Resource.Validate do
   defp validate_body(value, conn, opts, body) do
     quote do
       validation = %unquote(__MODULE__){
-        doc: Mazurka.Builder.get_doc(__MODULE__),
+        doc: Mazurka.Builder.get_attribute(__MODULE__, :doc),
         conn: unquote(Macro.escape(conn)),
         opts: unquote(Macro.escape(opts)),
         body: unquote(Macro.escape(body)),

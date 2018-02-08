@@ -12,7 +12,7 @@ defmodule Mazurka.Resource.Map do
       prev = @mazurka_subject
 
       @mazurka_subject %unquote(__MODULE__){
-        doc: Mazurka.Builder.get_doc(__MODULE__),
+        doc: Mazurka.Builder.get_attribute(__MODULE__, :doc),
         line: __ENV__.line
       }
 

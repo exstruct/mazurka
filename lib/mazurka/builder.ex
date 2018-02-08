@@ -54,14 +54,15 @@ defmodule Mazurka.Builder do
     end
   end
 
-  def get_doc(module) do
-    case Module.get_attribute(module, :doc) do
-      {_line, doc} ->
-        Module.delete_attribute(module, :doc)
+  def get_attribute(module, name) do
+    case Module.get_attribute(module, name) do
+      {_line, doc} when name === :doc ->
+        Module.delete_attribute(module, name)
         doc
 
-      _ ->
-        nil
+      value ->
+        Module.delete_attribute(module, name)
+        value
     end
   end
 

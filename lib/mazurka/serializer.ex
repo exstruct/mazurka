@@ -127,7 +127,7 @@ defmodule Mazurka.Serializer do
     {conditions_ast, vars}
   end
 
-  defp compile_condition(%{doc: doc, line: line} = condition, vars, invariant)
+  defp compile_condition(%{doc: doc, line: line, exception: exception} = condition, vars, invariant)
        when not is_nil(invariant) do
     {ast, vars} = compile_condition(condition, vars, nil)
     %{conn: conn} = vars
@@ -135,9 +135,13 @@ defmodule Mazurka.Serializer do
       nil -> nil
       doc -> doc |> String.trim |> String.split("\n") |> hd()
     end
-    {quote line: line do
-       unquote(ast) || raise(unquote(invariant), message: unquote(message), conn: unquote(conn))
-     end, vars}
+    error = struct(exception || invariant, message: message, conn: conn) |> Map.to_list()
+    ast =
+      quote line: line do
+        unquote(ast) ||
+          Mazurka.Resource.__raise__(%{unquote_splicing(error)}, unquote(conn))
+      end
+    {ast, vars}
   end
 
   defp compile_condition(

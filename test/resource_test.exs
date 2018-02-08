@@ -239,8 +239,8 @@ defmodule Test.Mazurka.Resource do
       try do
         User.call(conn, opts)
       rescue
-        e in Mazurka.ConditionError ->
-          "Client must be authenticated" = e.message
+        error ->
+          true = Exception.message(error) =~ "Client must be authenticated"
       end
     end
 

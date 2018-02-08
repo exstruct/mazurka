@@ -2,6 +2,7 @@ defmodule Mazurka.Resource.Condition do
   @moduledoc false
 
   defstruct doc: nil,
+            exception: nil,
             conn: nil,
             opts: nil,
             body: nil,
@@ -23,7 +24,8 @@ defmodule Mazurka.Resource.Condition do
   defp condition_body(conn, opts, body) do
     quote do
       condition = %unquote(__MODULE__){
-        doc: Mazurka.Builder.get_doc(__MODULE__),
+        doc: Mazurka.Builder.get_attribute(__MODULE__, :doc),
+        exception: Mazurka.Builder.get_attribute(__MODULE__, :exception),
         conn: unquote(Macro.escape(conn)),
         opts: unquote(Macro.escape(opts)),
         body: unquote(Macro.escape(body)),

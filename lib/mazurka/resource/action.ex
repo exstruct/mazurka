@@ -28,7 +28,7 @@ defmodule Mazurka.Resource.Action do
   defp action_body(inputs, conn, opts, body) do
     quote do
       action = %unquote(__MODULE__){
-        doc: Mazurka.Builder.get_doc(__MODULE__),
+        doc: Mazurka.Builder.get_attribute(__MODULE__, :doc),
         inputs: unquote(Macro.escape(inputs)),
         conn: unquote(Macro.escape(conn)),
         opts: unquote(Macro.escape(opts)),

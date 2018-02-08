@@ -24,7 +24,7 @@ defmodule Mazurka.Resource.Input do
 
       @mazurka_subject %unquote(__MODULE__){
         name: unquote(name),
-        doc: Mazurka.Builder.get_doc(__MODULE__),
+        doc: Mazurka.Builder.get_attribute(__MODULE__, :doc),
         line: __ENV__.line
       }
 

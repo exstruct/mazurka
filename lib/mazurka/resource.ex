@@ -2,12 +2,14 @@ defmodule Mazurka.Resource do
   @moduledoc """
   """
 
-  defstruct action: nil,
+  defstruct doc: nil,
+            action: nil,
             conditions: [],
             inputs: [],
             params: [],
             scope: [],
-            value: nil
+            value: nil,
+            line: nil
 
   @doc """
 
@@ -18,8 +20,32 @@ defmodule Mazurka.Resource do
       import Mazurka.Resource.Let, only: [let: 2]
       import Mazurka.Resource.{Action, Condition, Let, Input, Param, Map}
 
-      @mazurka_subject %unquote(__MODULE__){}
+      @mazurka_subject %unquote(__MODULE__){
+        doc: Module.get_attribute(__MODULE__, :moduledoc),
+        line: __ENV__.line
+      }
       # @after_compile unquote(__MODULE__)
+    end
+  end
+
+  @doc false
+  if Code.ensure_compiled?(Plug.Conn.WrapperError) do
+    def __raise__(error, conn) do
+      try do
+        raise error
+      rescue
+        error ->
+          Plug.Conn.WrapperError.reraise(conn, :error, error)
+      end
+    end
+  else
+    def __raise__(error, conn) do
+      try do
+        raise error
+      rescue
+        error ->
+          Mazurka.WrapperError.reraise(conn, :error, error)
+      end
     end
   end
 

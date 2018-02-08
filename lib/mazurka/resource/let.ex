@@ -26,7 +26,7 @@ defmodule Mazurka.Resource.Let do
   defp let_body(lhs, rhs, conn, opts) do
     quote do
       scope = %unquote(__MODULE__){
-        doc: Mazurka.Builder.get_doc(__MODULE__),
+        doc: Mazurka.Builder.get_attribute(__MODULE__, :doc),
         lhs: unquote(Macro.escape(lhs)),
         rhs: unquote(Macro.escape(rhs)),
         conn: unquote(Macro.escape(conn)),
