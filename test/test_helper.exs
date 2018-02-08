@@ -63,7 +63,7 @@ defmodule Test.Mazurka.Case do
     end
   end
 
-  @format_config Code.eval_file("../.formatter.exs", __DIR__) |> elem(0)
+  @format_config Code.eval_file(".formatter.exs") |> elem(0)
   if Code.ensure_compiled?(Code.Formatter) do
     defp format_code(ast, caller) do
       ast
@@ -88,6 +88,18 @@ defmodule Test.Mazurka.Case do
       end
     end
   end
+  defp ast_to_string({:"@", _, [{name, _, [doc]}]}, _string) when name in [:doc, :moduledoc] do
+    ~s[@#{name} """\n#{doc}"""]
+  end
+  defp ast_to_string({{:., _, _}, _, []}, string) do
+    string
+    |> String.trim_trailing("()")
+  end
+  defp ast_to_string({:|>, _, _}, string) do
+    string
+    |> String.split(" |> ")
+    |> Enum.join("\n|> ")
+  end
   defp ast_to_string(_ast, string) do
     string
   end
@@ -97,7 +109,7 @@ defmodule Test.Mazurka.Case do
       output = @doc_output
 
       case @blocks do
-        [_ | _] = blocks when output !== nil ->
+        [_ | _] = blocks when output ->
           data =
             blocks
             |> :lists.reverse()
