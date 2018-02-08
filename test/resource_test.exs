@@ -63,20 +63,20 @@ defmodule Test.Mazurka.Resource do
       %{"name" => "Joe"} = Msgpax.unpack!(resp_body)
     end
 
-    block """
+    block("""
     You've now created your first resource! You've been introduced to three new keywords in this basic example:
 
     ### `map/1`
     ### `field/2`
     ### `constant/1`
-    """
+    """)
   end
 
   describe "Dynamic data" do
-    block """
+    block("""
     In the last section, we learned how to create a simple static resource. This time we'll make the data dynamic.
     Let's start by creating a new `User` module. Instead of using the `constant/1` keyword, we'll be using `resolve/1`.
-    """
+    """)
 
     defmodule User do
       use MyApp.Resource
@@ -127,15 +127,15 @@ defmodule Test.Mazurka.Resource do
       true = age >= 20 && is_integer(age)
     end
 
-    block """
+    block("""
     ### `resolve/1`
-    """
+    """)
   end
 
   describe "Reading data from `conn`" do
-    block """
+    block("""
     Now let's try pulling data from the `Plug.Conn` struct to change the way our `User` responds.
-    """
+    """)
 
     defmodule User do
       use MyApp.Resource
@@ -161,8 +161,10 @@ defmodule Test.Mazurka.Resource do
 
     We can now pass a `name` in the `assigns` field.
     """ do
-      conn = Plug.Test.conn(:get, "/")
+      conn =
+        Plug.Test.conn(:get, "/")
         |> Plug.Conn.assign(:name, "Robert")
+
       opts = User.init([])
       conn = User.call(conn, opts)
 
@@ -175,9 +177,11 @@ defmodule Test.Mazurka.Resource do
 
     Let's make another request with a different name just to make sure.
     """ do
-      conn = Plug.Test.conn(:get, "/")
+      conn =
+        Plug.Test.conn(:get, "/")
         |> Plug.Conn.put_req_header("accept", "application/msgpack")
         |> Plug.Conn.assign(:name, "Mike")
+
       opts = User.init([])
       conn = User.call(conn, opts)
 
@@ -187,10 +191,10 @@ defmodule Test.Mazurka.Resource do
   end
 
   describe "Conditional requests" do
-    block """
+    block("""
     Usually we want to restrict requests to authenticated clients. We can accomplish
     that functionality with `condition/2`.
-    """
+    """)
 
     defmodule User do
       use MyApp.Resource
@@ -233,9 +237,12 @@ defmodule Test.Mazurka.Resource do
 
     Now we can verify that the request fails without passing the correct `conn`.
     """ do
-      conn = Plug.Test.conn(:get, "/")
+      conn =
+        Plug.Test.conn(:get, "/")
         |> Plug.Conn.assign(:name, "Robert")
+
       opts = User.init([])
+
       try do
         User.call(conn, opts)
       rescue
@@ -249,10 +256,12 @@ defmodule Test.Mazurka.Resource do
 
     Let's make sure that authenticated requests go through as well.
     """ do
-      conn = Plug.Test.conn(:get, "/")
+      conn =
+        Plug.Test.conn(:get, "/")
         |> Plug.Conn.put_req_header("accept", "application/msgpack")
         |> Plug.Conn.assign(:name, "Joe")
         |> Plug.Conn.assign(:authenticated_user, "Robert")
+
       opts = User.init([])
       conn = User.call(conn, opts)
 
@@ -266,9 +275,11 @@ defmodule Test.Mazurka.Resource do
 
     We can also check that the email field shows up when the users match.
     """ do
-      conn = Plug.Test.conn(:get, "/")
+      conn =
+        Plug.Test.conn(:get, "/")
         |> Plug.Conn.assign(:name, "Robert")
         |> Plug.Conn.assign(:authenticated_user, "Robert")
+
       opts = User.init([])
       conn = User.call(conn, opts)
 
@@ -278,29 +289,29 @@ defmodule Test.Mazurka.Resource do
   end
 
   describe "Assigning scoped variables" do
-    block """
+    block("""
     You may have noticed we're using `conn.assigns.name` and `conn.assigns.authenticated_user` in a few locations.
     Let's clean things up a bit with `let/1`.
-    """
+    """)
 
     defmodule User do
       use MyApp.Resource
 
-      let authenticated_user = conn.assigns[:authenticated_user]
+      let(authenticated_user = conn.assigns[:authenticated_user])
 
       @doc """
       Client must be authenticated
       """
-      condition do: authenticated_user
+      condition(do: authenticated_user)
 
       map do
-        let %{assigns: %{name: name}} = conn
+        let(%{assigns: %{name: name}} = conn)
 
         @doc """
 
         """
         field :name do
-          resolve do: name
+          resolve(do: name)
         end
 
         field :email do
@@ -324,9 +335,11 @@ defmodule Test.Mazurka.Resource do
 
     The request should be identical to the previous version.
     """ do
-      conn = Plug.Test.conn(:get, "/")
+      conn =
+        Plug.Test.conn(:get, "/")
         |> Plug.Conn.assign(:name, "Robert")
         |> Plug.Conn.assign(:authenticated_user, "Robert")
+
       opts = User.init([])
       conn = User.call(conn, opts)
 

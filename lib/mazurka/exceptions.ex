@@ -3,7 +3,7 @@ defmodule Mazurka.UnacceptableContentTypeError do
   This exception is thrown when no acceptable content types are found for a request
   """
 
-  defexception [:acceptable, :content_type, :conn]
+  defexception [:acceptable, :content_type]
 
   def message(%{content_type: [content_type]} = ex) do
     message(%{ex | content_type: content_type})
@@ -29,7 +29,7 @@ defmodule Mazurka.ConditionError do
   This exception is thrown when a condition fails
   """
 
-  defexception [:message, :conn]
+  defexception [:message]
 
   def message(%{message: message}) do
     message || "Invalid request"
@@ -54,12 +54,14 @@ defmodule Mazurka.WrappedError do
   def reraise(_conn, :error, %__MODULE__{stack: stack} = reason) do
     :erlang.raise(:error, reason, stack)
   end
+
   def reraise(conn, :error, reason) do
-    stack   = System.stacktrace
+    stack = System.stacktrace()
     wrapper = %__MODULE__{conn: conn, kind: :error, reason: reason, stack: stack}
     :erlang.raise(:error, wrapper, stack)
   end
+
   def reraise(_conn, kind, reason) do
-    :erlang.raise(kind, reason, System.stacktrace)
+    :erlang.raise(kind, reason, System.stacktrace())
   end
 end

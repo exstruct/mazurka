@@ -55,7 +55,7 @@ defmodule Mazurka.Resource do
     # {:ok,{_,[{:abstract_code,{_,ac}}]}} = :beam_lib.chunks(beam,[:abstract_code])
     # :io.fwrite('~s~n', [:erl_prettypr.format(:erl_syntax.form_list(ac))])
 
-    IO.inspect :beam_disasm.file(beam), pretty: true, limit: :infinity
+    IO.inspect(:beam_disasm.file(beam), pretty: true, limit: :infinity)
 
     # seed = :os.timestamp()
 

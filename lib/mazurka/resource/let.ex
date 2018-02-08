@@ -11,10 +11,16 @@ defmodule Mazurka.Resource.Let do
   defmacro let({:=, _, [lhs, rhs]}) do
     conn = Macro.var(:conn, nil)
     opts = Macro.var(:opts, nil)
-    let_body(lhs, quote do
-      _ = unquote(opts)
-      {unquote(rhs), unquote(conn)}
-    end, conn, opts)
+
+    let_body(
+      lhs,
+      quote do
+        _ = unquote(opts)
+        {unquote(rhs), unquote(conn)}
+      end,
+      conn,
+      opts
+    )
   end
 
   # TODO

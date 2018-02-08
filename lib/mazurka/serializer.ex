@@ -65,10 +65,12 @@ defmodule Mazurka.Serializer do
   end
 
   defp wrap_scope(ast, vars, assigns, impl) do
-    {body, vars} = Enum.reduce(assigns, {[], vars}, fn(assign, {acc, vars}) ->
-      {assign, vars} = compile(assign, vars, impl)
-      {[assign | acc], vars}
-    end)
+    {body, vars} =
+      Enum.reduce(assigns, {[], vars}, fn assign, {acc, vars} ->
+        {assign, vars} = compile(assign, vars, impl)
+        {[assign | acc], vars}
+      end)
+
     body = {:__block__, [], :lists.reverse([ast | body])}
     {body, vars}
   end
@@ -101,12 +103,14 @@ defmodule Mazurka.Serializer do
              {unquote(buffer), unquote(conn), unquote_splicing(args)}
 
            _ ->
-             unquote(join([
-              ast,
-              quote do
-                {unquote(buffer), unquote(conn), unquote_splicing(args)}
-              end
-             ]))
+             unquote(
+               join([
+                 ast,
+                 quote do
+                   {unquote(buffer), unquote(conn), unquote_splicing(args)}
+                 end
+               ])
+             )
          end
      end, vars}
   end
@@ -127,20 +131,28 @@ defmodule Mazurka.Serializer do
     {conditions_ast, vars}
   end
 
-  defp compile_condition(%{doc: doc, line: line, exception: exception} = condition, vars, invariant)
+  defp compile_condition(
+         %{doc: doc, line: line, exception: exception} = condition,
+         vars,
+         invariant
+       )
        when not is_nil(invariant) do
     {ast, vars} = compile_condition(condition, vars, nil)
     %{conn: conn} = vars
-    message = case doc do
-      nil -> nil
-      doc -> doc |> String.trim |> String.split("\n") |> hd()
-    end
-    error = struct(exception || invariant, message: message, conn: conn) |> Map.to_list()
+
+    message =
+      case doc do
+        nil -> nil
+        doc -> doc |> String.trim() |> String.split("\n") |> hd()
+      end
+
+    error = struct(exception || invariant, message: message) |> Map.to_list()
+
     ast =
       quote line: line do
-        unquote(ast) ||
-          Mazurka.Resource.__raise__(%{unquote_splicing(error)}, unquote(conn))
+        unquote(ast) || Mazurka.Resource.__raise__(%{unquote_splicing(error)}, unquote(conn))
       end
+
     {ast, vars}
   end
 
@@ -199,16 +211,19 @@ defmodule Mazurka.Serializer do
        ) do
     {enter, vars} = impl.enter(field, vars)
     {body, vars} = compile(value, vars, impl)
+
     args =
       vars
       |> Map.drop([:buffer, :conn, :opts])
       |> Map.values()
       |> Enum.map(fn
-        ([var | _]) when is_tuple(var) ->
+        [var | _] when is_tuple(var) ->
           var
-        (var) when is_tuple(var) ->
+
+        var when is_tuple(var) ->
           var
       end)
+
     {exit, vars} = impl.exit(field, vars)
 
     body = join([enter, body, exit], line)
@@ -252,7 +267,7 @@ defmodule Mazurka.Serializer do
            {unquote(value), unquote(v_conn)} = unquote(body)
          end,
          enter,
-         exit,
+         exit
        ],
        line
      ), vars}
@@ -281,23 +296,29 @@ defmodule Mazurka.Serializer do
             conn: nil,
             opts: nil,
             line: nil
+
   defp compile(
          %Resource.Let{line: line} = let,
          vars,
          impl
        ) do
     {enter, vars} = impl.enter(let, vars)
-    body = case let do
-      %{conn: nil, opts: nil, lhs: lhs, rhs: rhs} ->
-        {:=, [line: line], [lhs, rhs]}
-      %{conn: conn, opts: opts, lhs: lhs, rhs: rhs} ->
-        %{conn: v_conn, opts: v_opts} = vars
-        quote do
-          unquote(conn || Macro.var(:_, nil)) = unquote(v_conn)
-          unquote(opts || Macro.var(:_, nil)) = unquote(v_opts)
-          {unquote(lhs), unquote(v_conn)} = unquote(rhs)
-        end
-    end
+
+    body =
+      case let do
+        %{conn: nil, opts: nil, lhs: lhs, rhs: rhs} ->
+          {:=, [line: line], [lhs, rhs]}
+
+        %{conn: conn, opts: opts, lhs: lhs, rhs: rhs} ->
+          %{conn: v_conn, opts: v_opts} = vars
+
+          quote do
+            unquote(conn || Macro.var(:_, nil)) = unquote(v_conn)
+            unquote(opts || Macro.var(:_, nil)) = unquote(v_opts)
+            {unquote(lhs), unquote(v_conn)} = unquote(rhs)
+          end
+      end
+
     {exit, vars} = impl.exit(let, vars)
 
     {join(

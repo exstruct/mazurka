@@ -112,15 +112,18 @@ defmodule Mazurka.Builder do
                  [
                    [false],
                    quote do
-                     raise Mazurka.UnacceptableContentTypeError,
-                       acceptable:
-                         unquote(
-                           for {mediatype, _impl} <- mediatypes do
-                             Macro.escape(mediatype)
-                           end
-                         ),
-                       content_type: accepts,
-                       conn: conn
+                     Mazurka.Resource.__raise__(
+                       %Mazurka.UnacceptableContentTypeError{
+                         acceptable:
+                           unquote(
+                             for {mediatype, _impl} <- mediatypes do
+                               Macro.escape(mediatype)
+                             end
+                           ),
+                         content_type: accepts
+                       },
+                       conn
+                     )
                    end
                  ]}
                 | Enum.map(impls, &compile_action_impl(&1, subject, vars))
