@@ -63,18 +63,33 @@ defmodule Test.Mazurka.Case do
     end
   end
 
+  @format_config Code.eval_file("../.formatter.exs", __DIR__) |> elem(0)
   if Code.ensure_compiled?(Code.Formatter) do
     defp format_code(ast, caller) do
       ast
-      |> Macro.to_string()
-      |> Code.Formatter.to_algebra!(file: caller.file, line: caller.line)
+      |> Macro.to_string(&ast_to_string/2)
+      |> Code.Formatter.to_algebra!([{:file, caller.file}, {:line, caller.line} | @format_config])
       |> Inspect.Algebra.format(80)
     end
   else
-    defp format_code(ast, caller) do
+    defp format_code(ast, _caller) do
       ast
-      |> Macro.to_string()
+      |> Macro.to_string(&ast_to_string/2)
     end
+  end
+
+  for {keyword, _} <- [{:use, :*} | @format_config[:locals_without_parens]] do
+    defp ast_to_string({unquote(keyword), _, _}, unquote("#{keyword}(") <> string = prev) do
+      case String.split(string, "\n") do
+        [_] ->
+          unquote("#{keyword} ") <> String.trim_trailing(string, ")")
+        _ ->
+          prev
+      end
+    end
+  end
+  defp ast_to_string(_ast, string) do
+    string
   end
 
   defmacro __before_compile__(_) do
