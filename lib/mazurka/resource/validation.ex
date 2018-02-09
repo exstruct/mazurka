@@ -5,7 +5,7 @@ defmodule Mazurka.Resource.Validation do
     put_info_body(
       name,
       quote do
-        %Mazurka.Builder.Resolve{
+        %Mazurka.Resource.Resolve{
           body: unquote(body),
           line: __ENV__.line
         }
@@ -17,7 +17,7 @@ defmodule Mazurka.Resource.Validation do
     put_info_body(
       name,
       quote do
-        %Mazurka.Builder.Constant{
+        %Mazurka.Resource.Constant{
           value: unquote(value),
           line: __ENV__.line
         }
@@ -29,7 +29,7 @@ defmodule Mazurka.Resource.Validation do
     put_info_body(
       name,
       quote do
-        %Mazurka.Builder.Resolve{
+        %Mazurka.Resource.Resolve{
           body: unquote(body),
           conn: unquote(conn),
           line: __ENV__.line
@@ -42,7 +42,7 @@ defmodule Mazurka.Resource.Validation do
     put_info_body(
       name,
       quote do
-        %Mazurka.Builder.Resolve{
+        %Mazurka.Resource.Resolve{
           body: unquote(body),
           conn: unquote(conn),
           opts: unquote(opts),
@@ -76,7 +76,7 @@ defmodule Mazurka.Resource.Validation do
 
       quote do
         validate(Kernel.unquote(guard) / 1)
-        Mazurka.Action.Validation.put_info(:type, unquote(type))
+        Mazurka.Resource.Validation.put_info(:type, unquote(type))
       end
     end
   end
