@@ -46,7 +46,7 @@ defmodule Mazurka.Resource.AffordanceFor do
         line: __ENV__.line
       }
 
-      @mazurka_subject Mazurka.Builder.put(@mazurka_subject, :value, link)
+      @mazurka_subject Mazurka.Builder.append(@mazurka_subject, :value, link)
     end
   end
 end

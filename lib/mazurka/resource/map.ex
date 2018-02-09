@@ -28,7 +28,7 @@ defmodule Mazurka.Resource.Map do
           conditions: :lists.reverse(conditions)
       }
 
-      @mazurka_subject Mazurka.Builder.put(prev, :value, map)
+      @mazurka_subject Mazurka.Builder.append(prev, :value, map)
     end
   end
 end

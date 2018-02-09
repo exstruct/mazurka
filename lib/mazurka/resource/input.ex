@@ -7,7 +7,7 @@ defmodule Mazurka.Resource.Input do
             name: nil,
             scope: [],
             validations: [],
-            value: nil,
+            value: [],
             line: nil
 
   defmacro input(name) do

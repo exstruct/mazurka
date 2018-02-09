@@ -3,7 +3,7 @@ defmodule Mazurka.Resource.Collection do
 
   defstruct conditions: [],
             expression: nil,
-            value: nil,
+            value: [],
             line: nil
 
   # TODO implement this
@@ -26,7 +26,7 @@ defmodule Mazurka.Resource.Collection do
         | conditions: :lists.reverse(conditions)
       }
 
-      @mazurka_subject Mazurka.Builder.put(prev, :value, collection)
+      @mazurka_subject Mazurka.Builder.append(prev, :value, collection)
     end
   end
 end

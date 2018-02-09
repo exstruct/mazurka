@@ -5,7 +5,7 @@ defmodule Mazurka.Resource.Param do
             name: nil,
             scope: [],
             validations: [],
-            value: nil,
+            value: [],
             line: nil
 
   defmacro param(name) do

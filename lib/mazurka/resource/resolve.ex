@@ -27,7 +27,7 @@ defmodule Mazurka.Resource.Resolve do
         line: __ENV__.line
       }
 
-      @mazurka_subject Mazurka.Builder.put(@mazurka_subject, :value, resolve)
+      @mazurka_subject Mazurka.Builder.append(@mazurka_subject, :value, resolve)
     end
   end
 end

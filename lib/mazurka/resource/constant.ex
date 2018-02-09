@@ -19,7 +19,7 @@ defmodule Mazurka.Resource.Constant do
         line: __ENV__.line
       }
 
-      @mazurka_subject Mazurka.Builder.put(@mazurka_subject, :value, constant)
+      @mazurka_subject Mazurka.Builder.append(@mazurka_subject, :value, constant)
     end
   end
 end

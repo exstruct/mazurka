@@ -3,12 +3,12 @@ defmodule Mazurka.Resource do
   """
 
   defstruct doc: nil,
-            action: nil,
+            action: [],
             conditions: [],
             inputs: [],
             params: [],
             scope: [],
-            value: nil,
+            value: [],
             line: nil
 
   @doc """

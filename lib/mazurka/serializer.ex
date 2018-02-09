@@ -91,10 +91,10 @@ defmodule Mazurka.Serializer do
          ast,
          %{buffer: buffer, conn: conn} = vars,
          conditions,
-         invariant,
+         nil,
          args
        ) do
-    {conditions_ast, vars} = compile_conditions(conditions, vars, invariant)
+    {conditions_ast, vars} = compile_conditions(conditions, vars, nil)
 
     {quote do
        {unquote(buffer), unquote(conn), unquote_splicing(args)} =
@@ -112,6 +112,21 @@ defmodule Mazurka.Serializer do
                ])
              )
          end
+     end, vars}
+  end
+
+  defp wrap_conditions(
+         ast,
+         vars,
+         conditions,
+         invariant,
+         _args
+       ) do
+    {conditions_ast, vars} = compile_conditions(conditions, vars, invariant)
+
+    {quote do
+      unquote(conditions_ast)
+      unquote(ast)
      end, vars}
   end
 
@@ -304,19 +319,14 @@ defmodule Mazurka.Serializer do
        ) do
     {enter, vars} = impl.enter(let, vars)
 
+    %{conn: conn, opts: opts, body: body} = let
+    %{conn: v_conn, opts: v_opts} = vars
+
     body =
-      case let do
-        %{conn: nil, opts: nil, lhs: lhs, rhs: rhs} ->
-          {:=, [line: line], [lhs, rhs]}
-
-        %{conn: conn, opts: opts, lhs: lhs, rhs: rhs} ->
-          %{conn: v_conn, opts: v_opts} = vars
-
-          quote do
-            unquote(conn || Macro.var(:_, nil)) = unquote(v_conn)
-            unquote(opts || Macro.var(:_, nil)) = unquote(v_opts)
-            {unquote(lhs), unquote(v_conn)} = unquote(rhs)
-          end
+      quote do
+        unquote(conn || Macro.var(:_, nil)) = unquote(v_conn)
+        unquote(opts || Macro.var(:_, nil)) = unquote(v_opts)
+        unquote(v_conn) = unquote(body)
       end
 
     {exit, vars} = impl.exit(let, vars)
@@ -329,6 +339,19 @@ defmodule Mazurka.Serializer do
        ],
        line
      ), vars}
+  end
+
+  defp compile([struct], vars, impl) do
+    compile(struct, vars, impl)
+  end
+
+  defp compile([], vars, _impl) do
+    {nil, vars}
+  end
+
+  defp compile(structs, _vars, _impl) when is_list(structs) do
+    # TODO
+    raise CompileError, "Multiple clauses not currently implemented"
   end
 
   defp compile(struct, vars, _) do

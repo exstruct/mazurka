@@ -36,7 +36,7 @@ defmodule Mazurka.Resource.Action do
         line: __ENV__.line
       }
 
-      @mazurka_subject Mazurka.Builder.put(@mazurka_subject, :action, action)
+      @mazurka_subject Mazurka.Builder.append(@mazurka_subject, :action, action)
     end
   end
 end

@@ -83,23 +83,28 @@ defmodule Test.Mazurka.Case do
       case String.split(string, "\n") do
         [_] ->
           unquote("#{keyword} ") <> String.trim_trailing(string, ")")
+
         _ ->
           prev
       end
     end
   end
-  defp ast_to_string({:"@", _, [{name, _, [doc]}]}, _string) when name in [:doc, :moduledoc] do
+
+  defp ast_to_string({:@, _, [{name, _, [doc]}]}, _string) when name in [:doc, :moduledoc] do
     ~s[@#{name} """\n#{doc}"""]
   end
+
   defp ast_to_string({{:., _, _}, _, []}, string) do
     string
     |> String.trim_trailing("()")
   end
+
   defp ast_to_string({:|>, _, _}, string) do
     string
     |> String.split(" |> ")
     |> Enum.join("\n|> ")
   end
+
   defp ast_to_string(_ast, string) do
     string
   end
@@ -109,7 +114,7 @@ defmodule Test.Mazurka.Case do
       output = @doc_output
 
       case @blocks do
-        [_ | _] = blocks when output ->
+        [_ | _] = blocks when is_binary(output) ->
           data =
             blocks
             |> :lists.reverse()

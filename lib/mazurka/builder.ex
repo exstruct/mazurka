@@ -82,7 +82,7 @@ defmodule Mazurka.Builder do
       |> Stream.uniq_by(&elem(&1, 0))
       |> Enum.to_list()
 
-    %{value: %{line: line}} = subject
+    %{line: line} = subject
     opts = Macro.var(:opts, __MODULE__)
 
     vars = %{

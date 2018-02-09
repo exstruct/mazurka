@@ -5,7 +5,7 @@ defmodule Mazurka.Resource.Field do
             doc: nil,
             name: nil,
             scope: [],
-            value: nil,
+            value: [],
             line: nil
 
   defmacro field(name, do: block) do
