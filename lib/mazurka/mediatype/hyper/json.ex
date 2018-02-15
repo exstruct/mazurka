@@ -1,4 +1,4 @@
-defmodule Mazurka.Hyper.JSON do
+defmodule Mazurka.Mediatype.Hyper.JSON do
   @moduledoc """
 
   """
@@ -22,8 +22,8 @@ defmodule Mazurka.Hyper.JSON do
     end
   end
 
-  use Mazurka.Serializer
-  use Mazurka.JSON
+  use Mazurka.Compiler
+  use Mazurka.Serializer.JSON
 end
 
 # defimpl Mazurka.Hyper.JSON, for: Mazurka.Resource.Action do

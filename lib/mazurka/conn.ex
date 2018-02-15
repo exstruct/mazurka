@@ -3,6 +3,8 @@ defprotocol Mazurka.Conn do
   def put_content_type(conn, mediatype)
   def get_content_type(conn)
   def send_resp(conn, buffer)
+  def get_params(conn)
+  def get_input(conn)
 end
 
 if Code.ensure_compiled?(Plug.Conn) do
@@ -72,6 +74,22 @@ if Code.ensure_compiled?(Plug.Conn) do
 
     def send_resp(conn, buffer) do
       Plug.Conn.send_resp(conn, 200, buffer)
+    end
+
+    def get_params(%{path_params: path_params} = conn) do
+      {path_params, conn}
+    end
+
+    def get_input(conn) do
+      conn
+      |> Plug.Conn.fetch_query_params()
+      |> case do
+        %{query_params: query_params, body_params: %Plug.Conn.Unfetched{}} ->
+          query_params
+
+        %{query_params: query_params, body_params: body_params} ->
+          Map.merge(query_params, body_params)
+      end
     end
   end
 end

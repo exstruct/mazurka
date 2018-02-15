@@ -1,4 +1,4 @@
-defmodule Mazurka.Hyper do
+defmodule Mazurka.Mediatype.Hyper do
   @moduledoc false
 
   defmacro __using__(_) do

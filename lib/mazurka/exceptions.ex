@@ -36,6 +36,18 @@ defmodule Mazurka.ConditionError do
   end
 end
 
+defmodule Mazurka.ValidationError do
+  @moduledoc """
+  This exception is thrown when a validation fails
+  """
+
+  defexception [:message]
+
+  def message(%{message: message}) do
+    message || "Invalid request"
+  end
+end
+
 defmodule Mazurka.WrappedError do
   @moduledoc """
   Wraps the connection in an error which is meant

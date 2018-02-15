@@ -35,4 +35,74 @@ defmodule Mazurka.Resource.Condition do
       @mazurka_subject Mazurka.Builder.append(@mazurka_subject, :conditions, condition)
     end
   end
+
+  alias Mazurka.Compiler
+
+  defimpl Compiler.Compilable do
+    def compile(
+          %{
+            doc: doc,
+            line: line,
+            exception: exception
+          } = condition,
+          vars,
+          invariant
+        )
+        when not is_nil(invariant) do
+      {ast, vars} = compile(condition, vars, nil)
+      %{conn: conn} = vars
+
+      message =
+        case doc do
+          nil -> nil
+          doc -> doc |> String.trim() |> String.split("\n") |> hd()
+        end
+
+      error = struct(exception || invariant, message: message) |> Map.to_list()
+
+      ast =
+        quote line: line do
+          unquote(ast) || Mazurka.Resource.__raise__(%{unquote_splicing(error)}, unquote(conn))
+        end
+
+      {ast, vars}
+    end
+
+    def compile(
+          %{
+            conn: nil,
+            opts: nil,
+            body: body
+          },
+          vars,
+          _
+        ) do
+      {body, vars}
+    end
+
+    def compile(
+          %{
+            conn: conn,
+            opts: opts,
+            body: body,
+            line: line
+          },
+          %{
+            conn: v_conn,
+            opts: v_opts
+          } = vars,
+          _
+        ) do
+      {Compiler.join(
+         [
+           quote do
+             unquote(conn) = unquote(v_conn)
+             unquote(opts || Macro.var(:_, nil)) = unquote(v_opts)
+           end,
+           body
+         ],
+         line
+       ), vars}
+    end
+  end
 end

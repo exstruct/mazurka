@@ -1,4 +1,4 @@
-defmodule Mazurka.Hyper.Msgpack do
+defmodule Mazurka.Mediatype.Hyper.Msgpack do
   @moduledoc """
 
   """
@@ -24,6 +24,6 @@ defmodule Mazurka.Hyper.Msgpack do
     end
   end
 
-  use Mazurka.Serializer
-  use Mazurka.Msgpack
+  use Mazurka.Compiler
+  use Mazurka.Serializer.Msgpack
 end

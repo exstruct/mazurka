@@ -70,4 +70,37 @@ defmodule Mazurka.Resource.Let do
       @mazurka_subject Mazurka.Builder.append(@mazurka_subject, :scope, scope)
     end
   end
+
+  alias Mazurka.Compiler
+
+  defimpl Compiler.Compilable do
+    def compile(
+          %@for{
+            conn: conn,
+            opts: opts,
+            body: body,
+            line: line
+          },
+          %{
+            conn: v_conn,
+            opts: v_opts
+          } = vars,
+          _opts
+        ) do
+      body =
+        quote line: line do
+          unquote(conn || Macro.var(:_, nil)) = unquote(v_conn)
+          unquote(opts || Macro.var(:_, nil)) = unquote(v_opts)
+          unquote(v_conn) = unquote(body)
+        end
+
+      {body, vars}
+    end
+  end
+
+  defimpl Compiler.Scopable do
+    def compile(_, vars) do
+      {nil, vars}
+    end
+  end
 end

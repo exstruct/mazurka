@@ -39,8 +39,9 @@ defmodule Mazurka.Mixfile do
       {:msgpax, "~> 2.1", optional: true},
       {:plug, "~> 1.4", optional: true},
       {:ex_doc, ">= 0.0.0", only: :dev},
-      {:mix_test_watch, "~> 0.5", only: :dev, runtime: false},
-      {:excoveralls, "~> 0.8", only: :test}
+      {:rl, "~> 0.1", only: :dev, runtime: false},
+      {:excoveralls, "~> 0.8", only: :test},
+      {:dialyzex, "~> 1.1.0", only: :dev}
     ]
   end
 
