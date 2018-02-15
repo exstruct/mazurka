@@ -100,6 +100,7 @@ defmodule Mazurka.Builder do
     quote line: line do
       defoverridable call: 2
 
+      @spec call(conn :: Mazurka.Conn.t(), opts :: term) :: Mazurka.Conn.t()
       def call(conn, unquote(opts)) do
         conn = super(conn, unquote(opts))
         {accepts, conn} = Mazurka.Conn.accepts(conn)
@@ -132,6 +133,8 @@ defmodule Mazurka.Builder do
         Mazurka.Conn.send_resp(conn, buffer)
       end
 
+      @spec affordance(conn :: Mazurka.Conn.t(), opts :: term) ::
+              {affordance :: term, Mazurka.Conn.t()}
       def affordance(conn, opts) do
         mediatype = Mazurka.Conn.get_content_type(conn)
 

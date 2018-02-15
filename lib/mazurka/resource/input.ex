@@ -10,11 +10,17 @@ defmodule Mazurka.Resource.Input do
             value: [],
             line: nil
 
+  @input Macro.var(:"@mazurka_input", nil)
+
   defmacro input(name) do
     input_body(name, nil)
   end
 
   defmacro input(name, do: body) do
+    input_body(name, body)
+  end
+
+  defp input_body({name, _, context}, body) when is_atom(name) and is_atom(context) do
     input_body(name, body)
   end
 
@@ -29,6 +35,11 @@ defmodule Mazurka.Resource.Input do
       }
 
       import Mazurka.Resource.{Condition, Constant, Resolve, Validate, Validation}
+
+      resolve do
+        unquote(__MODULE__).get(unquote(@input), unquote(to_string(name)), unquote(name))
+      end
+
       unquote(body)
 
       %{conditions: conditions} = input = @mazurka_subject
@@ -39,6 +50,62 @@ defmodule Mazurka.Resource.Input do
       }
 
       @mazurka_subject Mazurka.Builder.append(prev, :scope, input)
+    end
+  end
+
+  def get(map, binary, atom) do
+    case Map.fetch(map, binary) do
+      {:ok, value} ->
+        value
+
+      _ ->
+        Map.get(map, atom)
+    end
+  end
+
+  alias Mazurka.Compiler
+
+  defimpl Compiler.Compilable do
+    def compile(
+          %@for{
+            name: name,
+            value: value,
+            scope: scope,
+            validations: validations,
+            line: line
+          },
+          vars,
+          _opts
+        ) do
+      {body, vars} = @protocol.compile(value, vars)
+
+      body =
+        quote line: line do
+          unquote(Macro.var(name, nil)) = unquote(body)
+        end
+
+      {body, vars} = Compiler.wrap_conditions(body, vars, validations, Mazurka.ValidationError)
+      {body, vars} = Compiler.wrap_scope(body, vars, scope)
+      {body, vars}
+    end
+  end
+
+  defimpl Compiler.Scopable do
+    @input Macro.var(:"@mazurka_input", nil)
+
+    def compile(_, %{input: @input} = vars) do
+      {nil, vars}
+    end
+
+    def compile(_, %{conn: conn} = vars) do
+      vars = Map.put(vars, :input, @input)
+
+      body =
+        quote do
+          {unquote(@input), unquote(conn)} = Mazurka.Conn.get_input(unquote(conn))
+        end
+
+      {body, vars}
     end
   end
 end

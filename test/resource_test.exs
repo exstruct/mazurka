@@ -343,6 +343,10 @@ defmodule Test.Mazurka.Resource do
   end
 
   describe "Params" do
+    block("""
+
+    """)
+
     defmodule User do
       use MyApp.Resource
 
@@ -402,6 +406,49 @@ defmodule Test.Mazurka.Resource do
 
       %{status: 200, resp_body: resp_body} = conn
       %{"name" => "Robert", "email" => "robert@example.com"} = Poison.decode!(resp_body)
+    end
+  end
+
+  describe "Input" do
+    block("""
+
+    """)
+
+    defmodule User do
+      use MyApp.Resource
+
+      let(authenticated_user = conn.assigns[:authenticated_user])
+
+      param(user)
+
+      input show_email do
+        # type(:boolean)
+        # required()
+      end
+
+      map do
+        field :name do
+          resolve(do: user)
+        end
+
+        field :email do
+          @doc """
+          The authenticated user must be the same
+          """
+          condition do
+            authenticated_user == user
+          end
+
+          condition do
+            show_email
+          end
+
+          resolve %{host: host} = conn do
+            "www." <> domain = host
+            {"#{String.downcase(user)}@#{domain}", conn}
+          end
+        end
+      end
     end
   end
 end
