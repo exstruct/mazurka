@@ -100,7 +100,6 @@ defmodule Mazurka.Builder do
     quote line: line do
       defoverridable call: 2
 
-      @spec call(conn :: Mazurka.Conn.t(), opts :: term) :: Mazurka.Conn.t()
       def call(conn, unquote(opts)) do
         conn = super(conn, unquote(opts))
         {accepts, conn} = Mazurka.Conn.accepts(conn)
@@ -156,10 +155,19 @@ defmodule Mazurka.Builder do
         for {match, mediatype, impl} <- expand_wildcards(mediatypes) do
           selector = compile_mediatype(match)
           key = Mazurka.Mediatype.key(impl)
+          escaped = Macro.escape(mediatype)
 
-          quote line: line do
-            defp negotiate_content_type([unquote(selector) | _], _, conn) do
-              {unquote(key), unquote(Macro.escape(mediatype)), conn}
+          if escaped === selector do
+            quote line: line do
+              defp negotiate_content_type([unquote(selector) = mediatype | _], _, conn) do
+                {unquote(key), mediatype, conn}
+              end
+            end
+          else
+            quote line: line do
+              defp negotiate_content_type([unquote(selector) | _], _, conn) do
+                {unquote(key), unquote(Macro.escape(mediatype)), conn}
+              end
             end
           end
         end
