@@ -42,11 +42,12 @@ defmodule Mazurka.Resource.Input do
 
       unquote(body)
 
-      %{conditions: conditions} = input = @mazurka_subject
+      %{conditions: conditions, validations: validations} = input = @mazurka_subject
 
       input = %{
         input
-        | conditions: :lists.reverse(conditions)
+        | conditions: :lists.reverse(conditions),
+          validations: :lists.reverse(validations)
       }
 
       @mazurka_subject Mazurka.Builder.append(prev, :scope, input)
@@ -78,15 +79,25 @@ defmodule Mazurka.Resource.Input do
           _opts
         ) do
       {body, vars} = @protocol.compile(value, vars)
+      value = Macro.var(name, nil)
+      vars = Map.put(vars, :value, value)
 
       body =
         quote line: line do
-          unquote(Macro.var(name, nil)) = unquote(body)
+          unquote(value) = unquote(body)
         end
 
-      {body, vars} = Compiler.wrap_conditions(body, vars, validations, Mazurka.ValidationError)
       {body, vars} = Compiler.wrap_scope(body, vars, scope)
-      {body, vars}
+      {validations, vars} = Enum.map_reduce(validations, vars, &@protocol.compile(&1, &2, name))
+      vars = Map.delete(vars, :value)
+
+      {Compiler.join(
+         [
+           body,
+           validations
+         ],
+         line
+       ), vars}
     end
   end
 

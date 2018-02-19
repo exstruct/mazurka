@@ -73,9 +73,11 @@ defmodule Mazurka.Resource.Validation do
       type <- aliases do
     defmacro type(type) when type in [unquote(type), unquote(to_string(type))] do
       guard = unquote(guard)
+      type = unquote(type)
 
       quote do
-        validate(Kernel.unquote(guard) / 1)
+        @failure unquote("should be of type #{type}")
+        validate(&(Kernel.unquote(guard) / 1))
         Mazurka.Resource.Validation.put_info(:type, unquote(type))
       end
     end
@@ -89,6 +91,7 @@ defmodule Mazurka.Resource.Validation do
 
   defmacro required do
     quote do
+      @failure "is required"
       validate value do
         case value do
           nil ->

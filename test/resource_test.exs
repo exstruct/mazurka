@@ -398,6 +398,7 @@ defmodule Test.Mazurka.Resource do
     """ do
       conn =
         Plug.Test.conn(:get, "/Robert")
+        |> Plug.Conn.put_req_header("accept", "application/msgpack")
         |> Map.put(:path_params, %{user: "Robert"})
         |> Plug.Conn.assign(:authenticated_user, "Robert")
 
@@ -405,7 +406,7 @@ defmodule Test.Mazurka.Resource do
       conn = User.call(conn, opts)
 
       %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Robert", "email" => "robert@example.com"} = Poison.decode!(resp_body)
+      %{"name" => "Robert", "email" => "robert@example.com"} = Msgpax.unpack!(resp_body)
     end
   end
 
@@ -422,8 +423,8 @@ defmodule Test.Mazurka.Resource do
       param(user)
 
       input show_email do
-        # type(:boolean)
-        # required()
+        required()
+        type(:boolean)
       end
 
       map do
@@ -448,6 +449,45 @@ defmodule Test.Mazurka.Resource do
             {"#{String.downcase(user)}@#{domain}", conn}
           end
         end
+      end
+    end
+
+    test """
+    hyper+json request
+
+    Let's try sending some input
+    """ do
+      conn =
+        Plug.Test.conn(:get, "/Robert")
+        |> Plug.Conn.assign(:authenticated_user, "Robert")
+        |> Map.put(:path_params, %{user: "Robert"})
+        |> Map.put(:body_params, %{show_email: true})
+
+      opts = User.init([])
+      conn = User.call(conn, opts)
+
+      %{status: 200, resp_body: resp_body} = conn
+      %{"name" => "Robert", "email" => _} = Poison.decode!(resp_body)
+    end
+
+    test """
+    hyper+msgpack request
+
+    If we don't send `show_email` we'll get a `Mazurka.ValidationError`
+    """ do
+      conn =
+        Plug.Test.conn(:get, "/Robert")
+        |> Plug.Conn.put_req_header("accept", "application/msgpack")
+        |> Plug.Conn.assign(:authenticated_user, "Robert")
+        |> Map.put(:path_params, %{user: "Robert"})
+
+      opts = User.init([])
+
+      try do
+        User.call(conn, opts)
+      rescue
+        error ->
+          true = Exception.message(error) =~ "show_email is required"
       end
     end
   end

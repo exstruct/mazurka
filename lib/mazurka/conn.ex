@@ -85,10 +85,10 @@ if Code.ensure_compiled?(Plug.Conn) do
       |> Plug.Conn.fetch_query_params()
       |> case do
         %{query_params: query_params, body_params: %Plug.Conn.Unfetched{}} ->
-          query_params
+          {query_params, conn}
 
         %{query_params: query_params, body_params: body_params} ->
-          Map.merge(query_params, body_params)
+          {Map.merge(query_params, body_params), conn}
       end
     end
   end

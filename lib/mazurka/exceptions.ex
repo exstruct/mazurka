@@ -41,10 +41,10 @@ defmodule Mazurka.ValidationError do
   This exception is thrown when a validation fails
   """
 
-  defexception [:message]
+  defexception [:message, :input, :failure]
 
-  def message(%{message: message}) do
-    message || "Invalid request"
+  def message(%{message: message, input: input, failure: failure}) do
+    message || "Input #{input} #{failure || "failed to validate"}"
   end
 end
 
