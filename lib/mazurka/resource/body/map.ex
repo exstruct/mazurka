@@ -1,15 +1,15 @@
-defmodule Mazurka.Resource.Action.Map do
+defmodule Mazurka.Resource.Body.Map do
   defstruct children: [],
             line: 0
 
-  alias Mazurka.Resource.{Builder, Action}
+  alias Mazurka.Resource.{Builder, Body}
 
   defmacro map(do: body) do
     Builder.child(
       __MODULE__,
       body,
       quote do
-        import unquote(Action).{
+        import unquote(Body).{
           Field
         }
       end

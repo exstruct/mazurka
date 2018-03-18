@@ -23,7 +23,15 @@ defmodule Mazurka.Resource.Builder do
           raise e
       end
     end
-    |> Code.eval_quoted([], env)
+    |> Code.eval_quoted(
+      [],
+      file: env.file,
+      line: env.line,
+      aliases: env.aliases,
+      requires: env.requires,
+      functions: env.functions,
+      macros: env.macros
+    )
     |> elem(0)
   end
 

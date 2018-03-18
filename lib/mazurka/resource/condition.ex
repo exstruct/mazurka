@@ -73,7 +73,7 @@ defmodule Mazurka.Resource.Condition do
 
       case {unquote(body), var!(conn, nil)} do
         {res, %{private: %{mazurka_affordance: true}} = conn} when res === false or res === nil ->
-          raise Mazurka.AffordanceError, conn: conn, error: unquote(error)
+          raise Mazurka.AffordanceConditionError, conn: conn, error: unquote(error)
 
         {res, _} when res === false or res === nil ->
           raise unquote(error)

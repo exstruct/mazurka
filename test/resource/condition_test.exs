@@ -85,7 +85,7 @@ defmodule Test.Mazurka.Condition do
         conn(:get, "/")
         |> Plug.Conn.put_private(:mazurka_affordance, true)
 
-      assert_raise(Mazurka.AffordanceError, fn ->
+      assert_raise(Mazurka.AffordanceConditionError, fn ->
         condition do
           false
         end

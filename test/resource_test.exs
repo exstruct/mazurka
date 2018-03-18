@@ -26,20 +26,7 @@ defmodule Test.Mazurka.Resource do
       use MyApp.Resource
 
       def call(conn, opts) do
-        %{assigns: %{authenticated_user: authed}} = conn
-
-        param(:user, fn value ->
-          User.get!(value)
-        end)
-
-        param(:thingy, &User.get!/1)
-        param(:thingy, [as: test], &User.get(&1, :foo))
-
-        condition raise: %ArgumentError{} do
-          user === authed
-        end
-
-        input as: body do
+        input do
           map do
             @doc "foo"
             field :name do
@@ -53,13 +40,41 @@ defmodule Test.Mazurka.Resource do
           end
         end
 
+        input = %{}
+        user = %{}
+
         action do
-          # let(user = Users.update!(user, body))
+          user = Users.update!(user, input)
 
-          # conn
-          # |> redirect_to(UserGet, %{user: user})
+          conn |> redirect_to(UserGet, %{user: user})
+        end
 
-          collection user <- users do
+        body do
+          map do
+            @doc """
+
+            """
+            field :id, user.id
+
+            @doc """
+
+            """
+            field :name, user.name
+
+            @doc """
+            This is the display name
+            """
+            field :display_name do
+              let display_name = user.display_name || user.name |> String.split(" ") |> hd()
+
+              resolve do
+                display_name
+              end
+            end
+
+            field :subscription do
+              affordance_for(Subscriptions, id: user.subscription_id)
+            end
           end
         end
       end

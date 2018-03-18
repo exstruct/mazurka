@@ -8,6 +8,7 @@ defmodule Mazurka.Resource do
   defmacro __using__(_opts) do
     quote line: __CALLER__.line do
       use Mazurka.Resource.Action
+      use Mazurka.Resource.Body
       use Mazurka.Resource.Condition
       use Mazurka.Resource.Input
       use Mazurka.Resource.Param

@@ -36,7 +36,7 @@ defmodule Mazurka.ConditionError do
   end
 end
 
-defmodule Mazurka.AffordanceError do
+defmodule Mazurka.AffordanceConditionError do
   @moduledoc """
   Thrown when an affordance cannot be rendered, due to a condition failure
   """

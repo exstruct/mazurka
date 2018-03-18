@@ -30,7 +30,7 @@ defmodule Mazurka.Resource.Input do
     Macro.var(:"@mazurka_input", __MODULE__)
   end
 
-  defp input_body(conn, opts, body, env) do
+  defp input_body(conn, _opts, body, env) do
     input =
       Mazurka.Resource.Builder.eval(
         __MODULE__,

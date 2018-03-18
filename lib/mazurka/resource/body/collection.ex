@@ -1,10 +1,10 @@
-defmodule Mazurka.Resource.Action.Collection do
+defmodule Mazurka.Resource.Body.Collection do
   defstruct items: nil,
             item: nil,
             children: [],
             line: 0
 
-  alias Mazurka.Resource.{Builder, Action}
+  alias Mazurka.Resource.{Builder, Body}
 
   defmacro collection({:<-, _, [item, items]}, do: body) do
     Builder.child(
@@ -16,7 +16,7 @@ defmodule Mazurka.Resource.Action.Collection do
       end,
       body,
       quote do
-        import unquote(Action).{
+        import unquote(Body).{
           Map
         }
       end

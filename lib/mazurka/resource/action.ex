@@ -19,33 +19,29 @@ defmodule Mazurka.Resource.Action do
   end
 
   defp action_body(conn, body, env) do
-    action =
-      Mazurka.Resource.Builder.eval(
-        __MODULE__,
-        body,
-        quote do
-          import Mazurka.Resource.Let
-
-          import Mazurka.Resource.Action.{
-            AffordanceFor,
-            Collection,
-            Condition,
-            Constant,
-            Map,
-            RedirectTo,
-            Resolve
-          }
-        end,
-        env
-      )
-
-    Module.put_attribute(env.module, :mazurka_action, action)
-
-    IO.inspect(action)
-
     quote do
-      conn = unquote(conn)
-      conn
+      case unquote(conn || Macro.var(:conn, nil)) do
+        %{private: %{mazurka_affordance: true}} = conn ->
+          conn
+
+        conn ->
+          import unquote(__MODULE__).{
+            RedirectTo
+          }
+
+          unquote(body)
+      end
     end
+    |> maybe_assign(conn)
+  end
+
+  defp maybe_assign(body, nil) do
+    quote do
+      unquote(Macro.var(:conn, nil)) = unquote(body)
+    end
+  end
+
+  defp maybe_assign(body, _) do
+    body
   end
 end

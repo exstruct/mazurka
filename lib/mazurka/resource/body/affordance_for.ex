@@ -1,4 +1,4 @@
-defmodule Mazurka.Resource.Action.AffordanceFor do
+defmodule Mazurka.Resource.Body.AffordanceFor do
   defstruct module: nil,
             params: [],
             input: [],
