@@ -1,108 +1,117 @@
 defmodule Mazurka.Resource.Condition do
   @moduledoc false
 
-  defstruct doc: nil,
-            exception: nil,
-            conn: nil,
-            opts: nil,
-            body: nil,
-            line: nil
+  defmacro __using__(_) do
+    Module.register_attribute(__CALLER__.module, :mazurka_conditions, accumulate: true)
 
-  # TODO add remote/local calls
-  defmacro condition(do: body) do
-    condition_body(nil, nil, body)
-  end
-
-  defmacro condition(conn, do: body) do
-    condition_body(conn, nil, body)
-  end
-
-  defmacro condition(conn, opts, do: body) do
-    condition_body(conn, opts, body)
-  end
-
-  defp condition_body(conn, opts, body) do
     quote do
-      condition = %unquote(__MODULE__){
-        doc: Mazurka.Builder.get_attribute(__MODULE__, :doc),
-        exception: Mazurka.Builder.get_attribute(__MODULE__, :exception),
-        conn: unquote(Macro.escape(conn)),
-        opts: unquote(Macro.escape(opts)),
-        body: unquote(Macro.escape(body)),
-        line: __ENV__.line
-      }
-
-      @mazurka_subject Mazurka.Builder.append(@mazurka_subject, :conditions, condition)
+      import unquote(__MODULE__)
     end
   end
 
-  alias Mazurka.Compiler
+  defmacro condition(impl) do
+    condition_body(nil, [], impl, __CALLER__)
+  end
 
-  defimpl Compiler.Compilable do
-    def compile(
-          %{
-            doc: doc,
-            line: line,
-            exception: exception
-          } = condition,
-          vars,
-          invariant
-        )
-        when not is_nil(invariant) do
-      {ast, vars} = compile(condition, vars, nil)
-      %{conn: conn} = vars
+  defmacro condition(opts, impl) when is_list(opts) do
+    condition_body(nil, opts, impl, __CALLER__)
+  end
 
-      message =
-        case doc do
-          nil -> nil
-          doc -> doc |> String.trim() |> String.split("\n") |> hd()
-        end
+  defmacro condition(conn, impl) do
+    condition_body(conn, [], impl, __CALLER__)
+  end
 
-      error = struct(exception || invariant, message: message) |> Map.to_list()
+  defmacro condition(conn, opts, impl) do
+    condition_body(conn, opts, impl, __CALLER__)
+  end
 
-      ast =
-        quote line: line do
-          unquote(ast) || Mazurka.Resource.__raise__(%{unquote_splicing(error)}, unquote(conn))
-        end
+  defp condition_body(conn, opts, impl, env) do
+    doc = opts[:message] || "Condition failure"
+    {exception, error} = extract_exception(opts[:raise], doc)
 
-      {ast, vars}
+    {exception, _} = Code.eval_quoted(exception, [], env)
+    # TODO only set if available
+    %{module: module} = env
+    Module.put_attribute(module, :mazurka_conditions, {doc, exception})
+
+    v_conn = Macro.var(:conn, __MODULE__)
+
+    body = compile_impl(v_conn, error, impl)
+
+    quote generated: true do
+      unquote(v_conn) = unquote(conn || Macro.var(:conn, nil))
+      unquote(body)
     end
+    |> maybe_assign(conn)
+  end
 
-    def compile(
-          %{
-            conn: nil,
-            opts: nil,
-            body: body
-          },
-          vars,
-          _
-        ) do
-      {body, vars}
+  defp compile_impl(conn, error, {:&, _, [{:/, meta, [{call, _, _}, arity]}]}) do
+    case arity do
+      1 ->
+        body = {call, meta, [conn]}
+        compile_impl(conn, error, do: body)
     end
+  end
 
-    def compile(
-          %{
-            conn: conn,
-            opts: opts,
-            body: body,
-            line: line
-          },
-          %{
-            conn: v_conn,
-            opts: v_opts
-          } = vars,
-          _
-        ) do
-      {Compiler.join(
-         [
-           quote do
-             unquote(conn) = unquote(v_conn)
-             unquote(opts || Macro.var(:_, nil)) = unquote(v_opts)
-           end,
-           body
-         ],
-         line
-       ), vars}
+  defp compile_impl(conn, error, {:&, _, _} = fun) do
+    body = {{:., [], [fun]}, [], [conn]}
+    compile_impl(conn, error, do: body)
+  end
+
+  defp compile_impl(conn, error, {:fn, _, clauses}) do
+    body =
+      quote do
+        case var!(conn, nil), do: unquote(clauses)
+      end
+
+    compile_impl(conn, error, do: body)
+  end
+
+  defp compile_impl(conn, error, do: body) do
+    quote generated: true do
+      var!(conn, nil) = unquote(conn)
+
+      case {unquote(body), var!(conn, nil)} do
+        {res, %{private: %{mazurka_affordance: true}} = conn} when res === false or res === nil ->
+          raise Mazurka.AffordanceError, conn: conn, error: unquote(error)
+
+        {res, _} when res === false or res === nil ->
+          raise unquote(error)
+
+        {true, conn} ->
+          conn
+
+        {term, _conn} ->
+          raise %BadBooleanError{operator: :condition, term: term}
+      end
     end
+  end
+
+  defp extract_exception({:%, _, [struct, _fields]} = ast, _) do
+    {struct, ast}
+  end
+
+  defp extract_exception(nil, message) do
+    {Mazurka.ConditionError,
+     quote do
+       %Mazurka.ConditionError{message: unquote(message)}
+     end}
+  end
+
+  defp extract_exception({:__aliases__, _, _} = exception, message) do
+    {exception,
+     quote do
+       %unquote(exception){message: unquote(message)}
+     end}
+  end
+
+  defp maybe_assign(body, nil) do
+    quote do
+      unquote(Macro.var(:conn, nil)) = unquote(body)
+    end
+  end
+
+  defp maybe_assign(body, _) do
+    body
   end
 end

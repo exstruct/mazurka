@@ -5,4 +5,4 @@ erl_crash.dump
 mix.lock
 /doc
 /cover
-/test/*.md
+/test/**/*.md

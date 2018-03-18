@@ -1,42 +1,51 @@
 defmodule Mazurka.Resource.Action do
   @moduledoc false
 
-  defstruct doc: nil,
-            scope: [],
-            inputs: nil,
-            conn: nil,
-            opts: nil,
-            body: nil,
-            line: nil
+  defstruct children: [],
+            line: 0
+
+  defmacro __using__(_) do
+    quote do
+      import unquote(__MODULE__)
+    end
+  end
 
   defmacro action(do: body) do
-    action_body(nil, nil, nil, body)
+    action_body(Macro.var(:conn, nil), body, __CALLER__)
   end
 
-  defmacro action(inputs, do: body) do
-    action_body(inputs, nil, nil, body)
+  defmacro action(conn, do: body) do
+    action_body(conn, body, __CALLER__)
   end
 
-  defmacro action(inputs, conn, do: body) do
-    action_body(inputs, conn, nil, body)
-  end
+  defp action_body(conn, body, env) do
+    action =
+      Mazurka.Resource.Builder.eval(
+        __MODULE__,
+        body,
+        quote do
+          import Mazurka.Resource.Let
 
-  defmacro action(inputs, conn, opts, do: body) do
-    action_body(inputs, conn, opts, body)
-  end
+          import Mazurka.Resource.Action.{
+            AffordanceFor,
+            Collection,
+            Condition,
+            Constant,
+            Map,
+            RedirectTo,
+            Resolve
+          }
+        end,
+        env
+      )
 
-  defp action_body(inputs, conn, opts, body) do
+    Module.put_attribute(env.module, :mazurka_action, action)
+
+    IO.inspect(action)
+
     quote do
-      action = %unquote(__MODULE__){
-        doc: Mazurka.Builder.get_attribute(__MODULE__, :doc),
-        inputs: unquote(Macro.escape(inputs)),
-        conn: unquote(Macro.escape(conn)),
-        opts: unquote(Macro.escape(opts)),
-        body: unquote(Macro.escape(body)),
-        line: __ENV__.line
-      }
-
-      @mazurka_subject Mazurka.Builder.append(@mazurka_subject, :action, action)
+      conn = unquote(conn)
+      conn
     end
   end
 end

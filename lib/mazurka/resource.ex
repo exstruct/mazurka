@@ -2,50 +2,29 @@ defmodule Mazurka.Resource do
   @moduledoc """
   """
 
-  defstruct doc: nil,
-            action: [],
-            conditions: [],
-            inputs: [],
-            params: [],
-            scope: [],
-            value: [],
-            line: nil
-
   @doc """
 
   """
   defmacro __using__(_opts) do
     quote line: __CALLER__.line do
-      use Mazurka.Builder
-      import Mazurka.Resource.Let, only: [let: 2]
-      import Mazurka.Resource.{Action, Condition, Let, Input, Param, Map}
+      use Mazurka.Resource.Action
+      use Mazurka.Resource.Condition
+      use Mazurka.Resource.Input
+      use Mazurka.Resource.Param
 
-      @mazurka_subject %unquote(__MODULE__){
-        doc: Module.get_attribute(__MODULE__, :moduledoc),
-        line: __ENV__.line
-      }
       # @after_compile unquote(__MODULE__)
     end
   end
 
-  @doc false
-  if Code.ensure_compiled?(Plug.Conn.WrapperError) do
-    def __raise__(error, conn) do
-      try do
-        raise error
-      rescue
-        error ->
-          Plug.Conn.WrapperError.reraise(conn, :error, error)
-      end
-    end
-  else
-    def __raise__(error, conn) do
-      try do
-        raise error
-      rescue
-        error ->
-          Mazurka.WrapperError.reraise(conn, :error, error)
-      end
+  def __pop_attr__(module, name) do
+    case Module.get_attribute(module, name) do
+      {_line, doc} when name === :doc ->
+        Module.delete_attribute(module, name)
+        doc
+
+      value ->
+        Module.delete_attribute(module, name)
+        value
     end
   end
 

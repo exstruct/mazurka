@@ -36,6 +36,18 @@ defmodule Mazurka.ConditionError do
   end
 end
 
+defmodule Mazurka.AffordanceError do
+  @moduledoc """
+  Thrown when an affordance cannot be rendered, due to a condition failure
+  """
+
+  defexception [:conn, :error]
+
+  def message(%{error: error}) do
+    Exception.message(error)
+  end
+end
+
 defmodule Mazurka.ValidationError do
   @moduledoc """
   This exception is thrown when a validation fails

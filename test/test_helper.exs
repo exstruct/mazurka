@@ -1,5 +1,5 @@
 defmodule Test.Mazurka.Case do
-  use ExUnit.CaseTemplate
+  use ExUnit.CaseTemplate, async: true
 
   using do
     quote do
@@ -68,8 +68,7 @@ defmodule Test.Mazurka.Case do
     defp format_code(ast, caller) do
       ast
       |> Macro.to_string(&ast_to_string/2)
-      |> Code.Formatter.to_algebra!([{:file, caller.file}, {:line, caller.line} | @format_config])
-      |> Inspect.Algebra.format(80)
+      |> Code.format_string!([{:file, caller.file}, {:line, caller.line} | @format_config])
     end
   else
     defp format_code(ast, _caller) do
@@ -82,7 +81,7 @@ defmodule Test.Mazurka.Case do
     defp ast_to_string({unquote(keyword), _, _}, unquote("#{keyword}(") <> string = prev) do
       case String.split(string, "\n") do
         [_] ->
-          unquote("#{keyword} ") <> String.trim_trailing(string, ")")
+          unquote("#{keyword} ") <> Regex.replace(~r/\)$/, string, "")
 
         _ ->
           prev
@@ -91,7 +90,7 @@ defmodule Test.Mazurka.Case do
   end
 
   defp ast_to_string({:@, _, [{name, _, [doc]}]}, _string) when name in [:doc, :moduledoc] do
-    ~s[@#{name} """\n#{doc}"""]
+    ~s[@#{name} """\n#{doc}\n"""]
   end
 
   defp ast_to_string({{:., _, _}, _, []}, string) do
@@ -100,6 +99,7 @@ defmodule Test.Mazurka.Case do
   end
 
   defp ast_to_string({:|>, _, _}, string) do
+    # TODO put (...) back on locals in pipes
     string
     |> String.split(" |> ")
     |> Enum.join("\n|> ")

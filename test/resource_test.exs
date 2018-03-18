@@ -11,8 +11,8 @@ defmodule Test.Mazurka.Resource do
     defmacro __using__(_) do
       quote do
         use Mazurka
-        use Mazurka.Mediatype.Hyper.JSON
-        use Mazurka.Mediatype.Hyper.Msgpack
+        # use Mazurka.Mediatype.Hyper.JSON
+        # use Mazurka.Mediatype.Hyper.Msgpack
       end
     end
   end
@@ -22,473 +22,552 @@ defmodule Test.Mazurka.Resource do
     Start by creating a module. Use our resource module `MyApp.Resource` at the top of the module. In this example, we'll create a `User` resource.
     """)
 
-    defmodule User do
+    defmodule UserUpdate do
       use MyApp.Resource
 
-      map do
-        field :name do
-          constant do
-            "Joe"
+      def call(conn, opts) do
+        %{assigns: %{authenticated_user: authed}} = conn
+
+        param(:user, fn value ->
+          User.get!(value)
+        end)
+
+        param(:thingy, &User.get!/1)
+        param(:thingy, [as: test], &User.get(&1, :foo))
+
+        condition raise: %ArgumentError{} do
+          user === authed
+        end
+
+        input as: body do
+          map do
+            @doc "foo"
+            field :name do
+              type(:string)
+              required()
+
+              default do
+                user.name
+              end
+            end
+          end
+        end
+
+        action do
+          # let(user = Users.update!(user, body))
+
+          # conn
+          # |> redirect_to(UserGet, %{user: user})
+
+          collection user <- users do
           end
         end
       end
     end
 
-    test """
-    hyper+json request
+    # test """
+    # hyper+json request
 
-    Now let's test that it responds to our request
-    """ do
-      conn = Plug.Test.conn(:get, "/")
-      opts = User.init([])
-      conn = User.call(conn, opts)
+    # Now let's test that it responds to our request
+    # """ do
+    #   conn = Plug.Test.conn(:get, "/")
+    #   opts = User.init([])
+    #   conn = User.call(conn, opts)
 
-      %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Joe"} = Poison.decode!(resp_body)
-    end
+    #   %{status: 200, resp_body: resp_body} = conn
+    #   %{"name" => "Joe"} = Poison.decode!(resp_body)
+    # end
 
-    test """
-    hyper+msgpack request
+    # test """
+    # hyper+msgpack request
 
-    We can also pass an `Accept` header and request Msgpack
-    """ do
-      conn =
-        Plug.Test.conn(:get, "/")
-        |> Plug.Conn.put_req_header("accept", "application/msgpack")
+    # We can also pass an `Accept` header and request Msgpack
+    # """ do
+    #   conn =
+    #     Plug.Test.conn(:get, "/")
+    #     |> Plug.Conn.put_req_header("accept", "application/msgpack")
 
-      opts = User.init([])
-      conn = User.call(conn, opts)
+    #   opts = User.init([])
+    #   conn = User.call(conn, opts)
 
-      %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Joe"} = Msgpax.unpack!(resp_body)
-    end
+    #   %{status: 200, resp_body: resp_body} = conn
+    #   %{"name" => "Joe"} = Msgpax.unpack!(resp_body)
+    # end
 
-    block("""
-    You've now created your first resource! You've been introduced to three new keywords in this basic example:
+    # block("""
+    # You've ow created your first resource! You've been introduced to three new keywords in this basic example:
 
-    ### `map/1`
-    ### `field/2`
-    ### `constant/1`
-    """)
+    # ### `map/1`
+    # ### `field/2`
+    # ### `constant/1`
+    # """)
   end
 
-  describe "Dynamic data" do
-    block("""
-    In the last section, we learned how to create a simple static resource. This time we'll make the data dynamic.
-    Let's start by creating a new `User` module. Instead of using the `constant/1` keyword, we'll be using `resolve/1`.
-    """)
-
-    defmodule User do
-      use MyApp.Resource
-
-      map do
-        field :name do
-          constant do
-            "Joe"
-          end
-        end
-
-        field :age do
-          resolve do
-            :rand.uniform(50) + 20
-          end
-        end
-      end
-    end
-
-    test """
-    hyper+json request
-
-    We should now get a random age back each time we request our `User` resource.
-    """ do
-      conn = Plug.Test.conn(:get, "/")
-      opts = User.init([])
-      conn = User.call(conn, opts)
-
-      %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Joe", "age" => age} = Poison.decode!(resp_body)
-      true = age >= 20 && is_integer(age)
-    end
-
-    test """
-    hyper+msgpack request
-
-    Let's make sure our Msgpack request works as well.
-    """ do
-      conn =
-        Plug.Test.conn(:get, "/")
-        |> Plug.Conn.put_req_header("accept", "application/msgpack")
-
-      opts = User.init([])
-      conn = User.call(conn, opts)
-
-      %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Joe", "age" => age} = Msgpax.unpack!(resp_body)
-      true = age >= 20 && is_integer(age)
-    end
-
-    block("""
-    ### `resolve/1`
-    """)
-  end
-
-  describe "Reading data from `conn`" do
-    block("""
-    Now let's try pulling data from the `Plug.Conn` struct to change the way our `User` responds.
-    """)
-
-    defmodule User do
-      use MyApp.Resource
-
-      map do
-        field :name do
-          resolve %{assigns: %{name: name}} = conn do
-            {name, conn}
-          end
-        end
-
-        field :email do
-          resolve %{assigns: %{name: name}, host: host} = conn do
-            "www." <> domain = host
-            {"#{String.downcase(name)}@#{domain}", conn}
-          end
-        end
-      end
-    end
-
-    test """
-    hyper+json request
-
-    We can now pass a `name` in the `assigns` field.
-    """ do
-      conn =
-        Plug.Test.conn(:get, "/")
-        |> Plug.Conn.assign(:name, "Robert")
-
-      opts = User.init([])
-      conn = User.call(conn, opts)
-
-      %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Robert", "email" => "robert@example.com"} = Poison.decode!(resp_body)
-    end
-
-    test """
-    hyper+msgpack request
-
-    Let's make another request with a different name just to make sure.
-    """ do
-      conn =
-        Plug.Test.conn(:get, "/")
-        |> Plug.Conn.put_req_header("accept", "application/msgpack")
-        |> Plug.Conn.assign(:name, "Mike")
-
-      opts = User.init([])
-      conn = User.call(conn, opts)
-
-      %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Mike", "email" => "mike@example.com"} = Msgpax.unpack!(resp_body)
-    end
-  end
-
-  describe "Conditional requests" do
-    block("""
-    Usually we want to restrict requests to authenticated clients. We can accomplish
-    that functionality with `condition/2`.
-    """)
-
-    defmodule User do
-      use MyApp.Resource
-
-      @doc """
-      Client must be authenticated
-      """
-      condition %{assigns: assigns} do
-        assigns[:authenticated_user]
-      end
-
-      map do
-        field :name do
-          resolve %{assigns: %{name: name}} = conn do
-            {name, conn}
-          end
-        end
-
-        field :email do
-          @doc """
-          The authenticated user must be the same
-          """
-          condition %{assigns: %{name: name} = assigns} do
-            assigns[:authenticated_user] == name
-          end
-
-          resolve %{assigns: %{name: name}, host: host} = conn do
-            "www." <> domain = host
-            {"#{String.downcase(name)}@#{domain}", conn}
-          end
-        end
-      end
-    end
-
-    test """
-    hyper+json unauthenticated request
-
-    Now we can verify that the request fails without passing the correct `conn`.
-    """ do
-      conn =
-        Plug.Test.conn(:get, "/")
-        |> Plug.Conn.assign(:name, "Robert")
-
-      opts = User.init([])
-
-      try do
-        User.call(conn, opts)
-      rescue
-        error ->
-          true = Exception.message(error) =~ "Client must be authenticated"
-      end
-    end
-
-    test """
-    hyper+msgpack authenticated request
-
-    Let's make sure that authenticated requests go through as well.
-    """ do
-      conn =
-        Plug.Test.conn(:get, "/")
-        |> Plug.Conn.put_req_header("accept", "application/msgpack")
-        |> Plug.Conn.assign(:name, "Joe")
-        |> Plug.Conn.assign(:authenticated_user, "Robert")
-
-      opts = User.init([])
-      conn = User.call(conn, opts)
-
-      %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Joe"} = body = Msgpax.unpack!(resp_body)
-      false = Map.has_key?(body, "email")
-    end
-
-    test """
-    hyper+json authenticated request with email
-
-    We can also check that the email field shows up when the users match.
-    """ do
-      conn =
-        Plug.Test.conn(:get, "/")
-        |> Plug.Conn.assign(:name, "Robert")
-        |> Plug.Conn.assign(:authenticated_user, "Robert")
-
-      opts = User.init([])
-      conn = User.call(conn, opts)
-
-      %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Robert", "email" => "robert@example.com"} = Poison.decode!(resp_body)
-    end
-  end
-
-  describe "Assigning scoped variables" do
-    block("""
-    You may have noticed we're using `conn.assigns.name` and `conn.assigns.authenticated_user` in a few locations.
-    Let's clean things up a bit with `let/1`.
-    """)
-
-    defmodule User do
-      use MyApp.Resource
-
-      let(authenticated_user = conn.assigns[:authenticated_user])
-
-      @doc """
-      Client must be authenticated
-      """
-      condition(do: authenticated_user)
-
-      map do
-        let(%{assigns: %{name: name}} = conn)
-
-        field :name do
-          resolve(do: name)
-        end
-
-        field :email do
-          @doc """
-          The authenticated user must be the same
-          """
-          condition do
-            authenticated_user == name
-          end
-
-          resolve %{host: host} = conn do
-            "www." <> domain = host
-            {"#{String.downcase(name)}@#{domain}", conn}
-          end
-        end
-      end
-    end
-
-    test """
-    hyper+json request
-
-    The request should be identical to the previous version.
-    """ do
-      conn =
-        Plug.Test.conn(:get, "/")
-        |> Plug.Conn.assign(:name, "Robert")
-        |> Plug.Conn.assign(:authenticated_user, "Robert")
-
-      opts = User.init([])
-      conn = User.call(conn, opts)
-
-      %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Robert", "email" => "robert@example.com"} = Poison.decode!(resp_body)
-    end
-  end
-
-  describe "Params" do
-    block("""
-
-    """)
-
-    defmodule User do
-      use MyApp.Resource
-
-      let(authenticated_user = conn.assigns[:authenticated_user])
-
-      param(user)
-
-      map do
-        field :name do
-          resolve(do: user)
-        end
-
-        field :email do
-          @doc """
-          The authenticated user must be the same
-          """
-          condition do
-            authenticated_user == user
-          end
-
-          resolve %{host: host} = conn do
-            "www." <> domain = host
-            {"#{String.downcase(user)}@#{domain}", conn}
-          end
-        end
-      end
-    end
-
-    test """
-    hyper+json request
-
-    We can now pass parameters to the connection. This is what a router, such as `Plug.Router`, would do.
-    """ do
-      conn =
-        Plug.Test.conn(:get, "/Robert")
-        |> Map.put(:path_params, %{user: "Robert"})
-
-      opts = User.init([])
-      conn = User.call(conn, opts)
-
-      %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Robert"} = Poison.decode!(resp_body)
-    end
-
-    test """
-    hyper+msgpack request
-
-    We can also pass the `:authenticated_user` to see the email
-    """ do
-      conn =
-        Plug.Test.conn(:get, "/Robert")
-        |> Plug.Conn.put_req_header("accept", "application/msgpack")
-        |> Map.put(:path_params, %{user: "Robert"})
-        |> Plug.Conn.assign(:authenticated_user, "Robert")
-
-      opts = User.init([])
-      conn = User.call(conn, opts)
-
-      %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Robert", "email" => "robert@example.com"} = Msgpax.unpack!(resp_body)
-    end
-  end
-
-  describe "Input" do
-    block("""
-
-    """)
-
-    defmodule User do
-      use MyApp.Resource
-
-      let(authenticated_user = conn.assigns[:authenticated_user])
-
-      param(user)
-
-      input show_email do
-        required()
-        type(:boolean)
-      end
-
-      map do
-        field :name do
-          resolve(do: user)
-        end
-
-        field :email do
-          @doc """
-          The authenticated user must be the same
-          """
-          condition do
-            authenticated_user == user
-          end
-
-          condition do
-            show_email
-          end
-
-          resolve %{host: host} = conn do
-            "www." <> domain = host
-            {"#{String.downcase(user)}@#{domain}", conn}
-          end
-        end
-      end
-    end
-
-    test """
-    hyper+json request
-
-    Let's try sending some input
-    """ do
-      conn =
-        Plug.Test.conn(:get, "/Robert")
-        |> Plug.Conn.assign(:authenticated_user, "Robert")
-        |> Map.put(:path_params, %{user: "Robert"})
-        |> Map.put(:body_params, %{show_email: true})
-
-      opts = User.init([])
-      conn = User.call(conn, opts)
-
-      %{status: 200, resp_body: resp_body} = conn
-      %{"name" => "Robert", "email" => _} = Poison.decode!(resp_body)
-    end
-
-    test """
-    hyper+msgpack request
-
-    If we don't send `show_email` we'll get a `Mazurka.ValidationError`
-    """ do
-      conn =
-        Plug.Test.conn(:get, "/Robert")
-        |> Plug.Conn.put_req_header("accept", "application/msgpack")
-        |> Plug.Conn.assign(:authenticated_user, "Robert")
-        |> Map.put(:path_params, %{user: "Robert"})
-
-      opts = User.init([])
-
-      try do
-        User.call(conn, opts)
-      rescue
-        error ->
-          true = Exception.message(error) =~ "show_email is required"
-      end
-    end
-  end
+  # describe "Dynamic data" do
+  #   block("""
+  #   In the last section, we learned how to create a simple static resource. This time we'll make the data dynamic.
+  #   Let's start by creating a new `User` module. Instead of using the `constant/1` keyword, we'll be using `resolve/1`.
+  #   """)
+
+  #   defmodule User do
+  #     use MyApp.Resource
+
+  #     map do
+  #       field :name do
+  #         constant do
+  #           "Joe"
+  #         end
+  #       end
+
+  #       field :age do
+  #         resolve do
+  #           :rand.uniform(50) + 20
+  #         end
+  #       end
+  #     end
+  #   end
+
+  #   test """
+  #   hyper+json request
+
+  #   We should now get a random age back each time we request our `User` resource.
+  #   """ do
+  #     conn = Plug.Test.conn(:get, "/")
+  #     opts = User.init([])
+  #     conn = User.call(conn, opts)
+
+  #     %{status: 200, resp_body: resp_body} = conn
+  #     %{"name" => "Joe", "age" => age} = Poison.decode!(resp_body)
+  #     true = age >= 20 && is_integer(age)
+  #   end
+
+  #   test """
+  #   hyper+msgpack request
+
+  #   Let's make sure our Msgpack request works as well.
+  #   """ do
+  #     conn =
+  #       Plug.Test.conn(:get, "/")
+  #       |> Plug.Conn.put_req_header("accept", "application/msgpack")
+
+  #     opts = User.init([])
+  #     conn = User.call(conn, opts)
+
+  #     %{status: 200, resp_body: resp_body} = conn
+  #     %{"name" => "Joe", "age" => age} = Msgpax.unpack!(resp_body)
+  #     true = age >= 20 && is_integer(age)
+  #   end
+
+  #   block("""
+  #   ### `resolve/1`
+  #   """)
+  # end
+
+  # describe "Reading data from `conn`" do
+  #   block("""
+  #   Now let's try pulling data from the `Plug.Conn` struct to change the way our `User` responds.
+  #   """)
+
+  #   defmodule User do
+  #     use MyApp.Resource
+
+  #     map do
+  #       field :name do
+  #         resolve %{assigns: %{name: name}} = conn do
+  #           {name, conn}
+  #         end
+  #       end
+
+  #       field :email do
+  #         resolve %{assigns: %{name: name}, host: host} = conn do
+  #           "www." <> domain = host
+  #           {"#{String.downcase(name)}@#{domain}", conn}
+  #         end
+  #       end
+  #     end
+  #   end
+
+  #   test """
+  #   hyper+json request
+
+  #   We can now pass a `name` in the `assigns` field.
+  #   """ do
+  #     conn =
+  #       Plug.Test.conn(:get, "/")
+  #       |> Plug.Conn.assign(:name, "Robert")
+
+  #     opts = User.init([])
+  #     conn = User.call(conn, opts)
+
+  #     %{status: 200, resp_body: resp_body} = conn
+  #     %{"name" => "Robert", "email" => "robert@example.com"} = Poison.decode!(resp_body)
+  #   end
+
+  #   test """
+  #   hyper+msgpack request
+
+  #   Let's make another request with a different name just to make sure.
+  #   """ do
+  #     conn =
+  #       Plug.Test.conn(:get, "/")
+  #       |> Plug.Conn.put_req_header("accept", "application/msgpack")
+  #       |> Plug.Conn.assign(:name, "Mike")
+
+  #     opts = User.init([])
+  #     conn = User.call(conn, opts)
+
+  #     %{status: 200, resp_body: resp_body} = conn
+  #     %{"name" => "Mike", "email" => "mike@example.com"} = Msgpax.unpack!(resp_body)
+  #   end
+  # end
+
+  # describe "Conditional requests" do
+  #   block("""
+  #   Usually we want to restrict requests to authenticated clients. We can accomplish
+  #   that functionality with `condition/2`.
+  #   """)
+
+  #   defmodule User do
+  #     use MyApp.Resource
+
+  #     @doc """
+  #     Client must be authenticated
+  #     """
+  #     condition %{assigns: assigns} do
+  #       assigns[:authenticated_user]
+  #     end
+
+  #     map do
+  #       field :name do
+  #         resolve %{assigns: %{name: name}} = conn do
+  #           {name, conn}
+  #         end
+  #       end
+
+  #       field :email do
+  #         @doc """
+  #         The authenticated user must be the same
+  #         """
+  #         condition %{assigns: %{name: name} = assigns} do
+  #           assigns[:authenticated_user] == name
+  #         end
+
+  #         resolve %{assigns: %{name: name}, host: host} = conn do
+  #           "www." <> domain = host
+  #           {"#{String.downcase(name)}@#{domain}", conn}
+  #         end
+  #       end
+  #     end
+  #   end
+
+  #   test """
+  #   hyper+json unauthenticated request
+
+  #   Now we can verify that the request fails without passing the correct `conn`.
+  #   """ do
+  #     conn =
+  #       Plug.Test.conn(:get, "/")
+  #       |> Plug.Conn.assign(:name, "Robert")
+
+  #     opts = User.init([])
+
+  #     try do
+  #       User.call(conn, opts)
+  #     rescue
+  #       error ->
+  #         true = Exception.message(error) =~ "Client must be authenticated"
+  #     end
+  #   end
+
+  #   test """
+  #   hyper+msgpack authenticated request
+
+  #   Let's make sure that authenticated requests go through as well.
+  #   """ do
+  #     conn =
+  #       Plug.Test.conn(:get, "/")
+  #       |> Plug.Conn.put_req_header("accept", "application/msgpack")
+  #       |> Plug.Conn.assign(:name, "Joe")
+  #       |> Plug.Conn.assign(:authenticated_user, "Robert")
+
+  #     opts = User.init([])
+  #     conn = User.call(conn, opts)
+
+  #     %{status: 200, resp_body: resp_body} = conn
+  #     %{"name" => "Joe"} = body = Msgpax.unpack!(resp_body)
+  #     false = Map.has_key?(body, "email")
+  #   end
+
+  #   test """
+  #   hyper+json authenticated request with email
+
+  #   We can also check that the email field shows up when the users match.
+  #   """ do
+  #     conn =
+  #       Plug.Test.conn(:get, "/")
+  #       |> Plug.Conn.assign(:name, "Robert")
+  #       |> Plug.Conn.assign(:authenticated_user, "Robert")
+
+  #     opts = User.init([])
+  #     conn = User.call(conn, opts)
+
+  #     %{status: 200, resp_body: resp_body} = conn
+  #     %{"name" => "Robert", "email" => "robert@example.com"} = Poison.decode!(resp_body)
+  #   end
+  # end
+
+  # describe "Assigning scoped variables" do
+  #   block("""
+  #   You may have noticed we're using `conn.assigns.name` and `conn.assigns.authenticated_user` in a few locations.
+  #   Let's clean things up a bit with `let/1`.
+  #   """)
+
+  #   defmodule User do
+  #     use MyApp.Resource
+
+  #     let(authenticated_user = conn.assigns[:authenticated_user])
+
+  #     @doc """
+  #     Client must be authenticated
+  #     """
+  #     condition(do: authenticated_user)
+
+  #     map do
+  #       let(%{assigns: %{name: name}} = conn)
+
+  #       field :name do
+  #         resolve(do: name)
+  #       end
+
+  #       field :email do
+  #         @doc """
+  #         The authenticated user must be the same
+  #         """
+  #         condition do
+  #           authenticated_user == name
+  #         end
+
+  #         resolve %{host: host} = conn do
+  #           "www." <> domain = host
+  #           {"#{String.downcase(name)}@#{domain}", conn}
+  #         end
+  #       end
+  #     end
+  #   end
+
+  #   test """
+  #   hyper+json request
+
+  #   The request should be identical to the previous version.
+  #   """ do
+  #     conn =
+  #       Plug.Test.conn(:get, "/")
+  #       |> Plug.Conn.assign(:name, "Robert")
+  #       |> Plug.Conn.assign(:authenticated_user, "Robert")
+
+  #     opts = User.init([])
+  #     conn = User.call(conn, opts)
+
+  #     %{status: 200, resp_body: resp_body} = conn
+  #     %{"name" => "Robert", "email" => "robert@example.com"} = Poison.decode!(resp_body)
+  #   end
+  # end
+
+  # describe "Params" do
+  #   block("""
+
+  #   """)
+
+  #   defmodule User do
+  #     use MyApp.Resource
+
+  #     let(authenticated_user = conn.assigns[:authenticated_user])
+
+  #     param(user)
+
+  #     map do
+  #       field :name do
+  #         resolve(do: user)
+  #       end
+
+  #       field :email do
+  #         @doc """
+  #         The authenticated user must be the same
+  #         """
+  #         condition do
+  #           authenticated_user == user
+  #         end
+
+  #         resolve %{host: host} = conn do
+  #           "www." <> domain = host
+  #           {"#{String.downcase(user)}@#{domain}", conn}
+  #         end
+  #       end
+  #     end
+  #   end
+
+  #   test """
+  #   hyper+json request
+
+  #   We can now pass parameters to the connection. This is what a router, such as `Plug.Router`, would do.
+  #   """ do
+  #     conn =
+  #       Plug.Test.conn(:get, "/Robert")
+  #       |> Map.put(:path_params, %{user: "Robert"})
+
+  #     opts = User.init([])
+  #     conn = User.call(conn, opts)
+
+  #     %{status: 200, resp_body: resp_body} = conn
+  #     %{"name" => "Robert"} = Poison.decode!(resp_body)
+  #   end
+
+  #   test """
+  #   hyper+msgpack request
+
+  #   We can also pass the `:authenticated_user` to see the email
+  #   """ do
+  #     conn =
+  #       Plug.Test.conn(:get, "/Robert")
+  #       |> Plug.Conn.put_req_header("accept", "application/msgpack")
+  #       |> Map.put(:path_params, %{user: "Robert"})
+  #       |> Plug.Conn.assign(:authenticated_user, "Robert")
+
+  #     opts = User.init([])
+  #     conn = User.call(conn, opts)
+
+  #     %{status: 200, resp_body: resp_body} = conn
+  #     %{"name" => "Robert", "email" => "robert@example.com"} = Msgpax.unpack!(resp_body)
+  #   end
+  # end
+
+  # describe "Inputs" do
+  #   block("""
+
+  #   """)
+
+  #   defmodule User do
+  #     use MyApp.Resource
+
+  #     let(authenticated_user = conn.assigns[:authenticated_user])
+
+  #     param(user)
+
+  #     input show_email do
+  #       required()
+  #       type(:boolean)
+  #     end
+
+  #     map do
+  #       field :name do
+  #         resolve(do: user)
+  #       end
+
+  #       field :email do
+  #         @doc """
+  #         The authenticated user must be the same
+  #         """
+  #         condition do
+  #           authenticated_user == user
+  #         end
+
+  #         condition do
+  #           show_email
+  #         end
+
+  #         resolve %{host: host} = conn do
+  #           "www." <> domain = host
+  #           {"#{String.downcase(user)}@#{domain}", conn}
+  #         end
+  #       end
+  #     end
+  #   end
+
+  #   test """
+  #   hyper+json request
+
+  #   Let's try sending some input
+  #   """ do
+  #     conn =
+  #       Plug.Test.conn(:get, "/Robert")
+  #       |> Plug.Conn.assign(:authenticated_user, "Robert")
+  #       |> Map.put(:path_params, %{user: "Robert"})
+  #       |> Map.put(:body_params, %{show_email: true})
+
+  #     opts = User.init([])
+  #     conn = User.call(conn, opts)
+
+  #     %{status: 200, resp_body: resp_body} = conn
+  #     %{"name" => "Robert", "email" => _} = Poison.decode!(resp_body)
+  #   end
+
+  #   test """
+  #   hyper+msgpack request
+
+  #   If we don't send `show_email` we'll get a `Mazurka.ValidationError`
+  #   """ do
+  #     conn =
+  #       Plug.Test.conn(:get, "/Robert")
+  #       |> Plug.Conn.put_req_header("accept", "application/msgpack")
+  #       |> Plug.Conn.assign(:authenticated_user, "Robert")
+  #       |> Map.put(:path_params, %{user: "Robert"})
+
+  #     opts = User.init([])
+
+  #     try do
+  #       User.call(conn, opts)
+  #     rescue
+  #       error ->
+  #         true = Exception.message(error) =~ "show_email is required"
+  #     end
+  #   end
+  # end
+
+  # describe "Affordances" do
+  #   block("""
+
+  #   """)
+
+  #   defmodule User do
+  #     use MyApp.Resource
+
+  #     defp mazurka_resolve(conn, %{user: user} = params, input, _opts) do
+  #       Map.merge(conn, %{
+  #         method: "GET",
+  #         path_info: [user],
+  #         path_params: params,
+  #         body_params: input,
+  #         query_params: %{}
+  #       })
+  #     end
+
+  #     param(user)
+
+  #     map do
+  #       field :name do
+  #         resolve(do: user)
+  #       end
+
+  #       field :friend do
+  #         affordance_for(User, user: "Joe")
+  #       end
+  #     end
+  #   end
+
+  #   test """
+  #   hyper+json request
+
+  #   We should see an affordance pointing to "/Joe"
+  #   """ do
+  #     conn =
+  #       Plug.Test.conn(:get, "/Robert")
+  #       |> Map.put(:path_params, %{user: "Robert"})
+
+  #     opts = User.init([])
+  #     conn = User.call(conn, opts)
+
+  #     %{status: 200, resp_body: resp_body} = conn
+  #     %{"name" => "Robert", "friend" => _} = Poison.decode!(resp_body)
+  #   end
+  # end
 end
